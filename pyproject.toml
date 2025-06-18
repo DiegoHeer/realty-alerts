@@ -3,7 +3,7 @@ name = "realty-alerts"
 version = "0.1.0"
 description = "Realty Alerts is a simple alerting tool for notifying when new homes become available for purchase on Dutch real estate websites, such as Funda.nl."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 
 [dependency-groups]
 dev = [
