@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.pytest_cache/
+
+# Database
+db.sqlite
+
+# Environments
+.env
+.venv
+
+# mypy
+.mypy_cache/
+
+# Ruff:
+.ruff_cache/
