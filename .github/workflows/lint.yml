@@ -1,0 +1,25 @@
+name: Lint python application
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  lint_format_scan:
+    name: Run pre-commit scanning & linting
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: "${{ github.workflow }}-lint-${{ github.ref }}"
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup_env
+
+      - name: Run pre-commit
+        shell: bash
+        run: uv run pre-commit run --all-files

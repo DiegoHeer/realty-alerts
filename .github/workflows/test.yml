@@ -1,0 +1,29 @@
+name: Test python application
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+
+jobs:
+  unit_testing:
+    name: Run python unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: '${{ github.workflow }}-test-${{ github.ref }}'
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup_env
+
+      - name: Run pytest
+        shell: bash
+        run: uv run pytest --junitxml=report.xml

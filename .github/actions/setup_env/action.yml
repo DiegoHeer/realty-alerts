@@ -1,0 +1,53 @@
+name: Setup environment
+description: Github Action for setting up an environment with python & uv
+
+inputs:
+  working_directory:
+    description: The path to the source directory of the application
+    required: false
+    default: './src'
+
+runs:
+  using: composite
+  steps:
+    - name: Install python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: ".python-version"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Restore uv dependencies
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ inputs.working_directory }}/.venv
+        key: uv-
+
+    - name: Restore pre-commit dependencies
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: precommit-
+
+    - name: Update uv dependencies
+      shell: bash
+      run: uv sync --dev
+      working-directory: ${{ inputs.working_directory }}
+
+    - name: Install pre-commit hooks
+      shell: bash
+      run: uv run pre-commit install-hooks
+      working-directory: ${{ inputs.working_directory }}
+
+    - name: Save uv dependencies
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.working_directory }}/.venv
+        key: uv-${{ hashFiles('uv.lock') }}
+
+    - name: Save pre-commit dependencies
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: precommit-${{ hashFiles('.pre-commit-config.yaml') }}
