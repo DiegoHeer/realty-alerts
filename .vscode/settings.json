@@ -33,5 +33,13 @@
             "comments": false,
             "strings": true
         }
+    },
+
+    "files.exclude": {
+        "**/.git": true,
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/.ruff_cache": true,
+        "**/.mypy_cache": true,
     }
 }
