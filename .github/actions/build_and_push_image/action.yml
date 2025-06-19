@@ -1,0 +1,36 @@
+name: Build and push image
+description: Github Action for building docker images and pushing them to Github registry
+
+inputs:
+  working_directory:
+    description: The path to the root directory of the application/service
+    required: true
+
+  image_name:
+    description: The name of the image to be build & pushed
+    required: true
+
+  do_push:
+    description: Boolean flag for pushing image to registry
+    required: false
+    default: 'false'
+
+
+runs:
+  using: composite
+  steps:
+    - name: Login to Github registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Build and push image
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ inputs.working_directory }}
+        push: ${{ inputs.do_push }}
+        tags: |
+          ghcr.io/diegoheer/${{ inputs.image_name }}:latest
+          ghcr.io/diegoheer/${{ inputs.image_name }}:${{ github.sha }}

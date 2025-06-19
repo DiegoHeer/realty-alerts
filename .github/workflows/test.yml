@@ -27,3 +27,21 @@ jobs:
       - name: Run pytest
         shell: bash
         run: uv run pytest --junitxml=report.xml
+
+  test_image_build:
+    name: Build Realty Alerts image
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: '${{ github.workflow }}-test-build-${{ github.ref }}'
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test build image
+        uses: ./.github/actions/build_and_push_image
+        with:
+          working_directory: ./
+          image_name: realty-alerts
+          do_push: 'false'

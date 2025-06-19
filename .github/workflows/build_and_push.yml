@@ -1,0 +1,31 @@
+name: Build and push images
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+jobs:
+  build-and-push-realty-alerts:
+    name: Build and push Realty Alerts image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: "${{ github.workflow }}-build-and-push-${{ github.ref }}"
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and push image
+        uses: ./.github/actions/build_and_push_image
+        with:
+          working_directory: ./
+          image_name: realty-alerts
+          do_push: "true"
