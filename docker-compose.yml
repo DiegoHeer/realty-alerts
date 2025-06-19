@@ -1,0 +1,27 @@
+services:
+  realty-alerts-scheduler:
+    container_name: realty-alerts-scheduler
+    image: ghcr.io/diegoheer/realty-alerts:latest
+    depends_on:
+      realty-alerts-ntfy:
+        condition: service_healthy
+
+  realty-alerts-ntfy:
+    container_name: realty-alerts-ntfy
+    image: binwiederhier/ntfy:v2.12
+    command:
+      - serve
+    environment:
+      - TZ=Europe/Amsterdam
+    volumes:
+      - /var/cache/ntfy:/var/cache/ntfy
+      - ntfy-data:/etc/ntfy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:80/v1/health -O - | grep -Eo '\"healthy\"\\s*:\\s*true' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  ntfy-data:
