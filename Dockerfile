@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Sync the project into a new environment, asserting the lockfile is up to date
 COPY pyproject.toml uv.lock* ./
-RUN uv sync --locked
+RUN uv sync --locked --no-dev
 
 # Copy the project into the image
 ADD ./src ./
