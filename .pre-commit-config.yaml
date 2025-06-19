@@ -22,3 +22,8 @@ repos:
       - id: ruff-format
         name: Format python files
         args: [--config, ./pyproject.toml, --diff]
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.7.13
+    hooks:
+      - id: uv-lock
