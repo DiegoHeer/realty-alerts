@@ -1,0 +1,16 @@
+.env
+
+**/tests/
+
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.cache
+.pytest_cache
+.mypy_cache
+
+.coverage
+.coverage.*
+
+*.log
