@@ -4,6 +4,8 @@ services:
     image: ghcr.io/diegoheer/realty-alerts:latest
     volumes:
       - ./queries:/queries  # Mount here to the folder with your query configs
+    environment:
+      - REDIS_URL=redis://realty-alerts-broker:6379/0
     depends_on:
       realty-alerts-ntfy:
         condition: service_healthy
