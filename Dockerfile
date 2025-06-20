@@ -10,5 +10,8 @@ RUN uv sync --locked --no-dev --compile-bytecode
 # Copy the project into the image
 ADD ./src ./
 
+# Use the new environment
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Run the application
-CMD ["uv", "run", "celery", "-A", "tasks", "worker", "-B", "--loglevel=info"]
+CMD ["celery", "-A", "tasks", "worker", "-B", "--loglevel=info"]
