@@ -19,3 +19,6 @@ celerybeat-schedule.db
 
 # Ruff:
 .ruff_cache/
+
+# Queries
+queries/*.yml
