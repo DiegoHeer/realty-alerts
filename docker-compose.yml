@@ -3,7 +3,9 @@ services:
     container_name: realty-alerts-scheduler
     image: ghcr.io/diegoheer/realty-alerts:latest
     volumes:
-      - ./config:/config  # Mount here to the folder with your query configs
+      - ./queries:/queries  # Mount here to the folder with your query configs
+    environment:
+      - REDIS_URL=redis://realty-alerts-broker:6379/0
     depends_on:
       realty-alerts-ntfy:
         condition: service_healthy
@@ -33,7 +35,6 @@ services:
       interval: 60s
       timeout: 10s
       retries: 3
-      start_period: 40s
 
 volumes:
   ntfy-data:
