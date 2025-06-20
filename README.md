@@ -27,4 +27,3 @@ Realty Alerts can be run as is, without any additional configuration. But in cas
 | ------------ | ------------------------ |
 | REDIS_URL    | redis://localhost:6379/0 |
 | TIMEZONE     | Europe/Amsterdam         |
-
