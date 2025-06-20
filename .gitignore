@@ -8,6 +8,7 @@ __pycache__/
 
 # Database
 db.sqlite
+celerybeat-schedule.db
 
 # Environments
 .env
@@ -18,3 +19,6 @@ db.sqlite
 
 # Ruff:
 .ruff_cache/
+
+# Queries
+queries/*.yml

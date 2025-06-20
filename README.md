@@ -18,3 +18,12 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 ```bash
 docker compose up -d
 ```
+
+## Additional configuration
+
+Realty Alerts can be run as is, without any additional configuration. But in case needed, environment variables can be set. Here is a list of them and their default values:
+
+| Env variable | Default value            |
+| ------------ | ------------------------ |
+| REDIS_URL    | redis://localhost:6379/0 |
+| TIMEZONE     | Europe/Amsterdam         |

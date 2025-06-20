@@ -2,10 +2,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Realty Alerts",
+            "name": "Python: Realty Alerts - Scheduler",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/main.py",
+            "module": "celery",
+            "args": [
+                "-A",
+                "tasks",
+                "worker",
+                "-B",
+                "--loglevel=info"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/src",
             "justMyCode": false
         }
     ]

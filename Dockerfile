@@ -11,4 +11,4 @@ RUN uv sync --locked --no-dev
 ADD ./src ./
 
 # Run the application
-CMD ["uv", "run", "main.py"]
+CMD ["uv", "run", "celery", "-A", "tasks", "worker", "-B", "--loglevel=info"]

@@ -7,6 +7,16 @@ services:
     depends_on:
       realty-alerts-ntfy:
         condition: service_healthy
+      realty-alerts-broker:
+        condition: service_healthy
+
+  realty-alerts-broker:
+    container_name: realty-alerts-broker
+    image: redis:8.0.2
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: redis-cli ping || exit 1
 
   realty-alerts-ntfy:
     container_name: realty-alerts-ntfy
