@@ -3,7 +3,7 @@ services:
     container_name: realty-alerts-scheduler
     image: ghcr.io/diegoheer/realty-alerts:latest
     volumes:
-      - ./config:/config  # Mount here to the folder with your query configs
+      - ./queries:/queries  # Mount here to the folder with your query configs
     depends_on:
       realty-alerts-ntfy:
         condition: service_healthy
