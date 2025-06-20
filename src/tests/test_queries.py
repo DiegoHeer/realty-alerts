@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 
 import pytest
 
+from models import RealtyQuery
 from queries import load_queries
 
 
@@ -18,6 +20,17 @@ def incorrect_queries_dir() -> Path:
 @pytest.fixture
 def no_queries_dir() -> Path:
     return Path(__file__).resolve().parents[0] / "data" / "no_queries"
+
+
+@pytest.fixture
+def query_schema_path() -> Path:
+    return Path(__file__).resolve().parents[2] / "query_schema.json"
+
+
+@pytest.fixture
+def query_schema(query_schema_path) -> dict:
+    with open(query_schema_path) as file:
+        return json.load(file)
 
 
 def test_load_queries__success(correct_queries_dir):
@@ -46,3 +59,13 @@ def test_load_queries__no_queries(no_queries_dir):
         load_queries(no_queries_dir)
 
     assert "There are no query files" in str(exc.value)
+
+
+def test_query_schema(query_schema_path, query_schema):
+    pydantic_query_schema = RealtyQuery.model_json_schema()
+
+    if not query_schema == pydantic_query_schema:
+        with open(query_schema_path, "w") as file:
+            json.dump(pydantic_query_schema, file, indent=2)
+
+        raise ValueError("Query json schema is not equal to pydantic json schema. Query schema has been updated.")
