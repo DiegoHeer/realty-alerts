@@ -1,4 +1,4 @@
-$schema: "https://raw.githubusercontent.com/DiegoHeer/realty-alerts/main/query_schema.json"
+# yaml-language-server: $schema=https://raw.githubusercontent.com/DiegoHeer/realty-alerts/main/query_schema.json
 
 cron_schedule: "0 22 * * 1-5"
 website: funda
