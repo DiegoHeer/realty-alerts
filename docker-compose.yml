@@ -19,6 +19,10 @@ services:
       - 6379:6379
     healthcheck:
       test: redis-cli ping || exit 1
+      interval: 3s
+      timeout: 1s
+      retries: 5
+      start_period: 0s
 
   realty-alerts-ntfy:
     container_name: realty-alerts-ntfy
@@ -32,9 +36,10 @@ services:
       - ntfy-data:/etc/ntfy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:80/v1/health -O - | grep -Eo '\"healthy\"\\s*:\\s*true' || exit 1"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 0s
 
 volumes:
   ntfy-data:
