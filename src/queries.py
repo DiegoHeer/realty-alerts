@@ -9,8 +9,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 def load_queries(queries_dir: Path) -> list[RealtyQuery]:
+    file_paths = [file_path for file_path in queries_dir.rglob("*.yml") if file_path.is_file()]
+    file_paths.sort(key=lambda path: path.name)
+
     try:
-        queries = [_get_query_from_file(file_path) for file_path in queries_dir.rglob("*.yml") if file_path.is_file()]
+        queries = [_get_query_from_file(file_path) for file_path in file_paths]
     except ValueError as exc:
         LOGGER.error(exc)
         raise

@@ -1,4 +1,4 @@
-cron_schedule: "0 test * * 1-5"
-website: random-website
+cron_schedule: "5 4 * * *"
+website: funda
 filters:
-  house_type: Appartement
+  house_type: Street

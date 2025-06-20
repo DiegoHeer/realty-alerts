@@ -36,14 +36,13 @@ def query_schema(query_schema_path) -> dict:
 def test_load_queries__success(correct_queries_dir):
     queries = load_queries(correct_queries_dir)
 
-    queries.sort(key=lambda query: query.cron_schedule)
-    assert queries[0].cron_schedule == "0 22 * * 1-5"
+    assert queries[0].cron_schedule == "5 4 * * *"
     assert queries[0].website == "funda"
-    assert queries[0].filters.house_type == "Appartement"
+    assert queries[0].filters.house_type == "Woonhuis"
 
-    assert queries[1].cron_schedule == "5 4 * * *"
+    assert queries[1].cron_schedule == "0 22 * * 1-5"
     assert queries[1].website == "funda"
-    assert queries[1].filters.house_type == "Woonhuis"
+    assert queries[1].filters.house_type == "Appartement"
 
 
 def test_load_queries__incorrect_queries(incorrect_queries_dir):
