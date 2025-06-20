@@ -1,0 +1,4 @@
+cron_schedule: "0 22 * * 1-5"
+website: funda
+filters:
+  house_type: Appartement
