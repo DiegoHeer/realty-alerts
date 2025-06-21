@@ -38,11 +38,11 @@ def test_load_queries__success(correct_queries_dir):
 
     assert queries[0].cron_schedule == "5 4 * * *"
     assert queries[0].website == "funda"
-    assert queries[0].filters.house_type == "Woonhuis"
+    assert queries[0].filters.house_types == "Woonhuis"
 
     assert queries[1].cron_schedule == "0 22 * * 1-5"
     assert queries[1].website == "funda"
-    assert queries[1].filters.house_type == "Appartement"
+    assert queries[1].filters.house_types == "Appartement"
 
 
 def test_load_queries__incorrect_queries(incorrect_queries_dir):
