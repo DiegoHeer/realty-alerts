@@ -3,6 +3,7 @@ from datetime import datetime
 from peewee import CharField, Check, DateTimeField, Model, SqliteDatabase
 
 from enums import QueryResultORMStatus
+from models import QueryResult
 
 sqlite_db = SqliteDatabase("db.sqlite", pragmas={"journal_mode": "wal"})
 
@@ -36,4 +37,19 @@ def setup_database() -> None:
 def _create_database_tables() -> None:
     with sqlite_db:
         sqlite_db.create_tables([QueryResultsORM])
+
+
+def save_query_results(query_results: list[QueryResult]) -> None:
+    for query_result in query_results:
+        _save_query_result_to_db(query_result)
+
+
+def _save_query_result_to_db(query_result: QueryResult) -> None:
+    if record := QueryResultsORM.get_or_none(QueryResultsORM.url == query_result.url):
+        for key, value in query_result.model_dump().items():
+            setattr(record, key, value)
+        record.status = QueryResultORMStatus.UPDATED
+        record.save()
+    else:
+        QueryResultsORM.create(**query_result.model_dump())
 
