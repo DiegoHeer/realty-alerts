@@ -1,19 +1,14 @@
 from abc import ABC, abstractmethod
 
 from enums import Websites
-from models import QueryFilter, QueryResult
+from models import QueryResult
 
 
 class BaseScraper(ABC):
     website: Websites
-    base_url: str
 
-    def __init__(self, query_filter: QueryFilter) -> None:
-        self.filter = query_filter
-
-    @abstractmethod
-    def build_query_url(self) -> str:
-        pass
+    def __init__(self, query_url: str) -> None:
+        self.query_url = query_url
 
     @abstractmethod
     def scrape_urls_of_query_page(self, query_url: str) -> list[str]:

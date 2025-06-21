@@ -1,51 +1,17 @@
 {
-  "$defs": {
-    "HouseTypes": {
-      "enum": [
-        "Woonhuis",
-        "Appartement",
-        "Parkeergelegenheid",
-        "Bouwgrond"
-      ],
-      "title": "HouseTypes",
-      "type": "string"
-    },
-    "RealtyFilters": {
-      "properties": {
-        "house_type": {
-          "$ref": "#/$defs/HouseTypes"
-        }
-      },
-      "required": [
-        "house_type"
-      ],
-      "title": "RealtyFilters",
-      "type": "object"
-    },
-    "Websites": {
-      "enum": [
-        "funda"
-      ],
-      "title": "Websites",
-      "type": "string"
-    }
-  },
   "properties": {
     "cron_schedule": {
       "title": "Cron Schedule",
       "type": "string"
     },
-    "website": {
-      "$ref": "#/$defs/Websites"
-    },
-    "filters": {
-      "$ref": "#/$defs/RealtyFilters"
+    "query_url": {
+      "title": "Query Url",
+      "type": "string"
     }
   },
   "required": [
     "cron_schedule",
-    "website",
-    "filters"
+    "query_url"
   ],
   "title": "RealtyQuery",
   "type": "object"

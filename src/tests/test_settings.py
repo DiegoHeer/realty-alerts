@@ -1,8 +1,7 @@
 import pytest
 from celery.schedules import crontab
 
-from enums import HouseTypes, Websites
-from models import QueryFilter, RealtyQuery
+from models import RealtyQuery
 from settings import SETTINGS, CeleryConfig
 
 
@@ -11,17 +10,11 @@ def realty_queries() -> list[RealtyQuery]:
     return [
         RealtyQuery(
             cron_schedule="* * * * *",
-            website=Websites.FUNDA,
-            filters=QueryFilter(
-                house_types=[HouseTypes.WOONHUIS],
-            ),
+            query_url="https://www.funda.nl/zoeken/koop",
         ),
         RealtyQuery(
             cron_schedule="*/2 4 6 * 1-5",
-            website=Websites.FUNDA,
-            filters=QueryFilter(
-                house_types=[HouseTypes.APPARTEMENT],
-            ),
+            query_url="https://www.funda.nl/zoeken/koop",
         ),
     ]
 

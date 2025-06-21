@@ -1,28 +1,14 @@
+from urllib.parse import urlparse
+
 from cron_validator import CronValidator
 from pydantic import BaseModel, field_validator
 
-from enums import ConstructionPeriod, ConstructionType, EnergyLabel, HouseTypes, Websites
-
-
-class QueryFilter(BaseModel):
-    house_types: list[HouseTypes] | None = None
-    energy_labels: list[EnergyLabel] | None = None
-    construction_types: list[ConstructionType] | None = None
-    construction_periods: list[ConstructionPeriod] | None = None
-    min_price: int | None = None
-    max_price: int | None = None
-    min_floor_area: int | None = None
-    max_floor_area: int | None = None
-    min_rooms: int | None = None
-    max_rooms: int | None = None
-    min_bedrooms: int | None = None
-    max_bedrooms: int | None = None
+from enums import Websites
 
 
 class RealtyQuery(BaseModel):
     cron_schedule: str
-    website: Websites
-    filters: QueryFilter
+    query_url: str
 
     @field_validator("cron_schedule")
     @classmethod
@@ -32,6 +18,21 @@ class RealtyQuery(BaseModel):
         except ValueError:
             msg = f"The cron schedule {value} is invalid. Please place a valid crontab."
             raise ValueError(msg)
+
+        return value
+
+    @field_validator("query_url")
+    @classmethod
+    def validate_query_url(cls, value: str):
+        parsed = urlparse(value)
+
+        if not parsed.scheme or not parsed.netloc:
+            msg = f"The query url {value} is invalid. Make sure to include a valid scheme (http or https) and domain."
+            raise ValueError(msg)
+
+        VALID_DOMAINS = [item.value for item in Websites]
+        if parsed.netloc not in VALID_DOMAINS:
+            raise ValueError(f"The query url {value} has an invalid domain. Accepted domains are: {VALID_DOMAINS}.")
 
         return value
 
