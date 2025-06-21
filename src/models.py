@@ -23,3 +23,8 @@ class RealtyQuery(BaseModel):
             raise ValueError(msg)
 
         return value
+
+
+class QueryResult(BaseModel):
+    url: str
+    title: str
