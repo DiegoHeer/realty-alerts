@@ -26,3 +26,14 @@ class QueryResultsORM(Model):
     class Meta:
         database = sqlite_db
         table_name = "query_results"
+
+
+def setup_database() -> None:
+    if not sqlite_db.get_tables():
+        _create_database_tables()
+
+
+def _create_database_tables() -> None:
+    with sqlite_db:
+        sqlite_db.create_tables([QueryResultsORM])
+
