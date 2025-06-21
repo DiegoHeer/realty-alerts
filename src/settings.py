@@ -21,7 +21,7 @@ class CeleryConfig:
     result_backend = SETTINGS.redis_url
     timezone = SETTINGS.timezone
     enable_utc = True
-    beat_schedule_filename = str(DATA_PATH / "celerybeat-schedule")
+    beat_schedule_filename = str(DATA_PATH / "celerybeat-schedule.db")
 
     def __init__(self, realty_queries: list[RealtyQuery]) -> None:
         self.beat_schedule = get_beat_schedule(realty_queries)
