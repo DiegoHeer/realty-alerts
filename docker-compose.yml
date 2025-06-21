@@ -4,6 +4,7 @@ services:
     image: ghcr.io/diegoheer/realty-alerts:latest
     volumes:
       - ./queries:/queries  # Mount here to the folder with your query configs
+      - ./data:/data # Mount here the folder where the sqlite and celery-beat database should be stored
     environment:
       - REDIS_URL=redis://realty-alerts-broker:6379/0
     depends_on:
