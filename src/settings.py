@@ -8,6 +8,7 @@ from models import RealtyQuery
 
 
 class Settings(BaseSettings):
+    ntfy_url: str = "https://ntfy.sh/realty-alerts"
     redis_url: str = "redis://localhost:6379/0"
     timezone: str = "Europe/Amsterdam"
 

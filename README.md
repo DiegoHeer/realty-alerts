@@ -23,7 +23,10 @@ docker compose up -d
 
 Realty Alerts can be run as is, without any additional configuration. But in case needed, environment variables can be set. Here is a list of them and their default values:
 
-| Env variable | Default value            |
-| ------------ | ------------------------ |
-| REDIS_URL    | redis://localhost:6379/0 |
-| TIMEZONE     | Europe/Amsterdam         |
+| Env variable | Default value                 |
+| ------------ | ----------------------------- |
+| NTFY_URL     | https://ntfy.sh/realty-alerts |
+| REDIS_URL    | redis://localhost:6379/0      |
+| TIMEZONE     | Europe/Amsterdam              |
+
+If using the standard `ntfy.sh` address, please change the topic (the `realty-alerts` part), to avoid sharing the same channel with other users.
