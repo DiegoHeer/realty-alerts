@@ -4,7 +4,7 @@ import pytest
 from peewee import SqliteDatabase
 
 from models import QueryResult
-from storage import QueryResultsORM, save_query_results
+from storage import QueryResultsORM, get_new_query_results, save_query_results
 
 
 @pytest.fixture(autouse=True)
@@ -57,3 +57,20 @@ def test_save_query_result_to_db__duplicate(query_results: list[QueryResult], ne
     assert row.id == 1
     assert row.title == new_query_result.title
     assert row.updated_at > row.created_at
+
+
+def test_get_new_query_results__success(query_results: list[QueryResult]):
+    save_query_results(query_results)
+
+    new_query_results = get_new_query_results()
+
+    assert len(new_query_results) == 2
+
+
+def test_get_new_query_results__duplicate(query_results: list[QueryResult]):
+    save_query_results(query_results)
+    save_query_results(query_results)
+
+    new_query_results = get_new_query_results()
+
+    assert len(new_query_results) == 0

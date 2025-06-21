@@ -53,3 +53,6 @@ def _save_query_result_to_db(query_result: QueryResult) -> None:
     else:
         QueryResultsORM.create(**query_result.model_dump())
 
+
+def get_new_query_results() -> list[QueryResult]:
+    return list(QueryResultsORM.select().where(QueryResultsORM.status == QueryResultORMStatus.NEW))
