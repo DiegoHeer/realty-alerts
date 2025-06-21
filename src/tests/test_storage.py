@@ -43,6 +43,8 @@ def test_save_query_result_to_db__success(query_results: list[QueryResult]):
     assert row.id == 1
     assert row.url == query_result_1.url
     assert row.title == query_result_1.title
+    assert row.created_at is not None
+    assert row.updated_at is not None
 
 
 def test_save_query_result_to_db__duplicate(query_results: list[QueryResult], new_query_result: QueryResult):

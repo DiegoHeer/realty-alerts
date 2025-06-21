@@ -13,7 +13,7 @@ class QueryResultsORM(Model):
     title = CharField()
 
     created_at = DateTimeField(default=datetime.now)
-    updated_at = DateTimeField(default=datetime.now)
+    updated_at = DateTimeField(null=True)
     status = CharField(
         choices=QueryResultORMStatus.choices(),
         default=QueryResultORMStatus.NEW,
