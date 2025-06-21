@@ -4,8 +4,9 @@ from peewee import CharField, Check, DateTimeField, Model, SqliteDatabase
 
 from enums import QueryResultORMStatus
 from models import QueryResult
+from settings import DATA_PATH
 
-sqlite_db = SqliteDatabase("db.sqlite", pragmas={"journal_mode": "wal"})
+sqlite_db = SqliteDatabase(DATA_PATH / "sqlite.db", pragmas={"journal_mode": "wal"})
 
 
 class QueryResultsORM(Model):

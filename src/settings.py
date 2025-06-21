@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from celery.schedules import crontab
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
 
 
 SETTINGS = Settings()
+DATA_PATH = Path(__file__).resolve().parents[1] / "data"
 
 
 class CeleryConfig:
@@ -19,6 +21,7 @@ class CeleryConfig:
     result_backend = SETTINGS.redis_url
     timezone = SETTINGS.timezone
     enable_utc = True
+    beat_schedule_filename = str(DATA_PATH / "celerybeat-schedule")
 
     def __init__(self, realty_queries: list[RealtyQuery]) -> None:
         self.beat_schedule = get_beat_schedule(realty_queries)
