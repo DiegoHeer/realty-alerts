@@ -7,10 +7,18 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 </div>
 
 ## Key Features
+
 - Queries for each website can be added with simple YAML files, including their scheduling.
 - Notifications can be received through NTFY (app available on Android/iOS)
 - Only new house offers will be notified. The ones that already have been notified won't repeat again.
 - Deployment of the whole tool can be easily done with a docker compose file.
+
+## Supported Websites
+
+- Funda: https://www.funda.nl
+
+> [!NOTE]
+> Only Funda website is currently available for scraping. Other websites (e.g. of real estate brokers) will be supported on request (Github issue).
 
 ## App setup
 
