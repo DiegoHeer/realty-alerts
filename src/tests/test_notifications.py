@@ -18,7 +18,7 @@ def sample_query_result() -> QueryResult:
 def test_build_message(sample_query_result):
     message = _build_message(sample_query_result)
 
-    assert message == "New house available: Charming House in Amsterdam"
+    assert message == "Price: €310000 k.k."
 
 
 def test_build_headers(sample_query_result):
@@ -26,8 +26,9 @@ def test_build_headers(sample_query_result):
 
     assert headers["Priority"] == "urgent"
     assert headers["Tags"] == "house, rotating_light"
-    assert headers["Title"] == "Charming House in Amsterdam"
+    assert headers["Title"] == "New house for sale: Charming House in Amsterdam"
     assert headers["Click"] == "https://example.com/listing/123"
+    assert headers["Attach"] == "https://example-image.com"
 
 
 def test_send_notifications__success(mocker: MockFixture, sample_query_result):
