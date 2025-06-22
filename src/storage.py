@@ -10,8 +10,10 @@ sqlite_db = SqliteDatabase(DATA_PATH / "sqlite.db", pragmas={"journal_mode": "wa
 
 
 class QueryResultsORM(Model):
-    url = CharField(unique=True)
+    detail_url = CharField(unique=True)
     title = CharField()
+    price = CharField()
+    image_url = CharField()
 
     created_at = DateTimeField(default=datetime.now)
     updated_at = DateTimeField(null=True)
@@ -46,7 +48,7 @@ def save_query_results(query_results: list[QueryResult]) -> None:
 
 
 def _save_query_result_to_db(query_result: QueryResult) -> None:
-    if record := QueryResultsORM.get_or_none(QueryResultsORM.url == query_result.url):
+    if record := QueryResultsORM.get_or_none(QueryResultsORM.detail_url == query_result.detail_url):
         for key, value in query_result.model_dump().items():
             setattr(record, key, value)
         record.status = QueryResultORMStatus.UPDATED

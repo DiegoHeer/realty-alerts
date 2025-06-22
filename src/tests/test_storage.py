@@ -23,14 +23,19 @@ def setup_test_db():
 @pytest.fixture
 def query_results() -> list[QueryResult]:
     return [
-        QueryResult(url="https://test_1.com", title="test 1"),
-        QueryResult(url="https://test_2.com", title="test 2"),
+        QueryResult(detail_url="https://test_1.com", title="test 1", price="€777", image_url="https://image_1.com"),
+        QueryResult(detail_url="https://test_2.com", title="test 2", price="€865700", image_url="https://image_2.com"),
     ]
 
 
 @pytest.fixture
 def new_query_result() -> QueryResult:
-    return QueryResult(url="https://test_1.com", title="new test")
+    return QueryResult(
+        detail_url="https://test_1.com",
+        title="new test",
+        price="€1000000",
+        image_url="https://new-image.com",
+    )
 
 
 def test_save_query_result_to_db__success(query_results: list[QueryResult]):
@@ -39,10 +44,12 @@ def test_save_query_result_to_db__success(query_results: list[QueryResult]):
     assert QueryResultsORM.select().count() == 2
 
     query_result_1 = query_results[0]
-    row = QueryResultsORM.get(QueryResultsORM.url == query_result_1.url)
+    row = QueryResultsORM.get(QueryResultsORM.detail_url == query_result_1.detail_url)
     assert row.id == 1
-    assert row.url == query_result_1.url
+    assert row.detail_url == query_result_1.detail_url
     assert row.title == query_result_1.title
+    assert row.price == query_result_1.price
+    assert row.image_url == query_result_1.image_url
     assert row.created_at is not None
     assert row.updated_at is not None
 
@@ -55,7 +62,7 @@ def test_save_query_result_to_db__duplicate(query_results: list[QueryResult], ne
     assert QueryResultsORM.select().count() == 2
 
     query_result_1 = query_results[0]
-    row = QueryResultsORM.get(QueryResultsORM.url == query_result_1.url)
+    row = QueryResultsORM.get(QueryResultsORM.detail_url == query_result_1.detail_url)
     assert row.id == 1
     assert row.title == new_query_result.title
     assert row.updated_at > row.created_at
