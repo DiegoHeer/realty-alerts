@@ -29,7 +29,7 @@ class BaseScraper(ABC):
         return [self.scrape_detail_page(url) for url in detail_urls]
 
     @abstractmethod
-    def scrape_detail_urls_of_listing_page(self) -> list[str]:
+    def scrape_detail_urls_of_listing_page(self) -> set[str]:
         pass
 
     @abstractmethod

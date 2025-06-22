@@ -13,9 +13,9 @@ LOGGER = logging.getLogger(__name__)
 class FundaScraper(BaseScraper):
     website = Websites.FUNDA
 
-    def scrape_detail_urls_of_listing_page(self) -> list[str]:
+    def scrape_detail_urls_of_listing_page(self) -> set[str]:
         stop_range = self._get_last_page() + 1
-        return [url for page_number in range(1, stop_range) for url in self._scrape_urls_per_page_number(page_number)]
+        return {url for page_number in range(1, stop_range) for url in self._scrape_urls_per_page_number(page_number)}
 
     def _get_last_page(self) -> int:
         soup = self.get_url_soup(self.query_url)
