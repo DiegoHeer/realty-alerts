@@ -53,12 +53,20 @@ def save_query_results(query_results: list[QueryResult]) -> None:
 
 def _save_query_result_to_db(query_result: QueryResult) -> None:
     if record := QueryResultsORM.get_or_none(QueryResultsORM.detail_url == query_result.detail_url):
-        for key, value in query_result.model_dump().items():
-            setattr(record, key, value)
-        record.status = QueryResultORMStatus.UPDATED
-        record.save()
+        if _is_query_result_changed(query_result, record):
+            for key, value in query_result.model_dump().items():
+                setattr(record, key, value)
+            record.status = QueryResultORMStatus.UPDATED
+            record.save()
     else:
         QueryResultsORM.create(**query_result.model_dump())
+
+
+def _is_query_result_changed(query_result: QueryResult, record: QueryResultsORM) -> bool:
+    for field in query_result.__class__.model_fields:
+        if getattr(record, field) != getattr(query_result, field):
+            return True
+    return False
 
 
 def get_new_query_results() -> list[QueryResult]:
