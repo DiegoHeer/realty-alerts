@@ -7,7 +7,12 @@ from notifications import _build_headers, _build_message, send_notifications
 
 @pytest.fixture
 def sample_query_result() -> QueryResult:
-    return QueryResult(title="Charming House in Amsterdam", url="https://example.com/listing/123")
+    return QueryResult(
+        title="Charming House in Amsterdam",
+        detail_url="https://example.com/listing/123",
+        price="€310000 k.k.",
+        image_url="https://example-image.com",
+    )
 
 
 def test_build_message(sample_query_result):

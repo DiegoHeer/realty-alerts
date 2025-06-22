@@ -16,7 +16,7 @@ def send_notifications(result_queries: list[QueryResult]) -> None:
 
 
 def _build_message(result_query: QueryResult) -> str:
-    return f"New house available: {result_query.title}"
+    return f"Price: {result_query.price}"
 
 
 # NTFY messaging options: https://docs.ntfy.sh/publish
@@ -24,8 +24,9 @@ def _build_headers(result_query: QueryResult) -> dict[str, str]:
     return {
         "Priority": "urgent",
         "Tags": "house, rotating_light",
-        "Title": result_query.title,
-        "Click": result_query.url,
+        "Title": f"New house for sale: {result_query.title}",
+        "Click": result_query.detail_url,
+        "Attach": result_query.image_url,
     }
 
 
