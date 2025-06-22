@@ -1,4 +1,5 @@
 import logging
+import textwrap
 from pathlib import Path
 
 from celery import Celery
@@ -25,7 +26,7 @@ setup_database()
 
 @app.task(pydantic=True)
 def main(realty_query: RealtyQuery) -> None:
-    LOGGER.info(f"The query url is: {realty_query.query_url}")
+    LOGGER.info(f"The query url is: {textwrap.shorten(realty_query.query_url, width=100, placeholder='...')}")
     LOGGER.info(f"The NTFY url to access Realty-Alerts notifications is: {SETTINGS.ntfy_url}")
 
     with sync_playwright() as playwright:
