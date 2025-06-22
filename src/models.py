@@ -40,5 +40,7 @@ class RealtyQuery(BaseModel):
 
 
 class QueryResult(BaseModel):
-    url: str
+    detail_url: str
     title: str
+    price: str
+    image_url: str
