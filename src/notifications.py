@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from models import QueryResult
+from models import QueryResult, RealtyQuery
 from settings import SETTINGS
 
 LOGGER = logging.getLogger(__name__)
@@ -42,3 +42,9 @@ def _send_to_ntfy(headers: dict, message: str) -> None:
         LOGGER.error(
             f"Failed to send notification '{message}' to {SETTINGS.ntfy_url}. Status code: {response.status_code}"
         )
+
+
+def notify_when_there_are_no_new_listings(query: RealtyQuery) -> None:
+    headers = {"Tags": "no_entry_sign", "Title": f"{query.website}: No new house listings", "Click": query.query_url}
+    message = f"There are no new house listings for your query on {query.website}"
+    _send_to_ntfy(headers, message)

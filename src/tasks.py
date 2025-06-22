@@ -6,7 +6,7 @@ from celery import Celery
 from playwright.sync_api import sync_playwright
 
 from models import RealtyQuery
-from notifications import send_notifications
+from notifications import notify_when_there_are_no_new_listings, send_notifications
 from queries import load_queries
 from scraper.funda import FundaScraper
 from settings import SETTINGS, CeleryConfig
@@ -37,3 +37,6 @@ def main(realty_query: RealtyQuery) -> None:
 
     new_query_results = get_new_query_results()
     send_notifications(new_query_results)
+
+    if not new_query_results and realty_query.notify_if_no_new_listing:
+        notify_when_there_are_no_new_listings(realty_query)
