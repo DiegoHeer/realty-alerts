@@ -1,7 +1,8 @@
+from typing import Annotated
 from urllib.parse import urlparse
 
 from cron_validator import CronValidator
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from enums import Websites
 
@@ -9,6 +10,7 @@ from enums import Websites
 class RealtyQuery(BaseModel):
     cron_schedule: str
     query_url: str
+    max_listing_page_number: Annotated[int, Field(strict=True, ge=0, le=5)] = 3  # TODO: explain why this limit
 
     @field_validator("cron_schedule")
     @classmethod
