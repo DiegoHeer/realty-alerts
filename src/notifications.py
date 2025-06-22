@@ -37,7 +37,7 @@ def _send_to_ntfy(headers: dict, message: str) -> None:
     response = requests.post(SETTINGS.ntfy_url, data=message.encode(), headers=headers)
 
     if response.ok:
-        LOGGER.info(f"Notification '{message}' has been successfully send to {SETTINGS.ntfy_url}")
+        LOGGER.info(f"Notification '{headers['Title']}' has been successfully send to {SETTINGS.ntfy_url}")
     else:
         LOGGER.error(
             f"Failed to send notification '{message}' to {SETTINGS.ntfy_url}. Status code: {response.status_code}"
