@@ -1,3 +1,31 @@
+<p align="center">
+  <br/>
+  <a href="https://www.python.org">
+    <img src="https://img.shields.io/badge/Python-FFD43B?style=for-the-badge&logo=python&logoColor=blue"
+    alt="Python"/>
+  </a>
+  <a href="https://docs.celeryq.dev/en/stable/getting-started/introduction.html">
+    <img src="https://img.shields.io/badge/celery-%23a9cc54.svg?style=for-the-badge&logo=celery&logoColor=ddf4a4"
+    alt="Celery"/>
+  </a>
+  <a href="https://docs.pydantic.dev/latest/">
+    <img src="https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=Pydantic&logoColor=white"
+    alt="Pydantic"/>
+  </a>
+  <a href="https://sqlite.org">
+    <img src="https://img.shields.io/badge/Sqlite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
+  </a>
+  <a href="https://playwright.dev/python/">
+    <img src="https://img.shields.io/badge/Playwright-45ba4b?style=for-the-badge&logo=Playwright&logoColor=white"
+    alt="Playwright"/>
+  </a>
+  <a href="https://docs.docker.com/compose/">
+    <img src="https://img.shields.io/badge/Docker%20Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose"/>
+  </a>
+  <br/>
+  <br/>
+</p>
+
 # Realty Alerts
 
 Realty Alerts is a simple alerting tool for notifying when new homes become available for purchase on Dutch real estate websites, such as Funda.nl.
