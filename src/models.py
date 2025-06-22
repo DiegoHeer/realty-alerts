@@ -8,9 +8,16 @@ from enums import Websites
 
 
 class RealtyQuery(BaseModel):
+    name: str
     cron_schedule: str
     query_url: str
-    max_listing_page_number: Annotated[int, Field(strict=True, ge=0, le=5)] = 3  # TODO: explain why this limit
+    max_listing_page_number: Annotated[int, Field(strict=True, ge=0, le=5)] = 3
+    notify_if_no_new_listing: bool = False
+
+    @property
+    def website(self) -> Websites:
+        parsed_url = urlparse(self.query_url)
+        return Websites(parsed_url.netloc)
 
     @field_validator("cron_schedule")
     @classmethod
@@ -41,6 +48,7 @@ class RealtyQuery(BaseModel):
 
 class QueryResult(BaseModel):
     detail_url: str
+    query_name: str
     title: str
     price: str
     image_url: str

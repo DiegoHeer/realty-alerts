@@ -1,5 +1,9 @@
 {
   "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
     "cron_schedule": {
       "title": "Cron Schedule",
       "type": "string"
@@ -14,9 +18,15 @@
       "minimum": 0,
       "title": "Max Listing Page Number",
       "type": "integer"
+    },
+    "notify_if_no_new_listing": {
+      "default": false,
+      "title": "Notify If No New Listing",
+      "type": "boolean"
     }
   },
   "required": [
+    "name",
     "cron_schedule",
     "query_url"
   ],

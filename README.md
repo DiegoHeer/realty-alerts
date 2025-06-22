@@ -7,10 +7,18 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 </div>
 
 ## Key Features
+
 - Queries for each website can be added with simple YAML files, including their scheduling.
 - Notifications can be received through NTFY (app available on Android/iOS)
 - Only new house offers will be notified. The ones that already have been notified won't repeat again.
 - Deployment of the whole tool can be easily done with a docker compose file.
+
+## Supported Websites
+
+- Funda: https://www.funda.nl
+
+> [!NOTE]
+> Only Funda website is currently available for scraping. Other websites (e.g. of real estate brokers) will be supported on request (Github issue).
 
 ## App setup
 
@@ -25,9 +33,11 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 4. Inside the `queries` folder, create a new yml file. It's contents should look like this:
 
 ```yml
-cron_schedule: "0 9,15 * * 1-5"  # A cron expression, for scheduling the query. Check https://crontab.guru for help
-query_url: https://www.funda.nl/zoeken/koop?selected_area=%5B%222521cc,10km%22%5D  # The query you're interested in
-max_listing_page_number: 3  # Optional. This is to avoid excessive scraping, which can result in website blocks
+name: "Funda: 2521CC 5km radius"  # Name of the query. Good to keep it concise.
+cron_schedule: "0 9,15 * * 1-5"  # A cron expression, for scheduling the query. Check https://crontab.guru for help.
+query_url: https://www.funda.nl/zoeken/koop?selected_area=%5B%222521cc,10km%22%5D  # The query you're interested in.
+max_listing_page_number: 3  # Optional. This is to avoid excessive scraping, which can result in website blocks.
+notify_if_no_new_listing: false  # Optional.
 ```
 
 5. If you want more queries, just create a new yml file and put it in the `queries` folder

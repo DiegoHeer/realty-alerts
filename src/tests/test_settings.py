@@ -9,10 +9,12 @@ from settings import SETTINGS, CeleryConfig
 def realty_queries() -> list[RealtyQuery]:
     return [
         RealtyQuery(
+            name="Query 1",
             cron_schedule="* * * * *",
             query_url="https://www.funda.nl/zoeken/koop",
         ),
         RealtyQuery(
+            name="Query 2",
             cron_schedule="*/2 4 6 * 1-5",
             query_url="https://www.funda.nl/zoeken/koop",
         ),

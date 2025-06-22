@@ -23,8 +23,20 @@ def setup_test_db():
 @pytest.fixture
 def query_results() -> list[QueryResult]:
     return [
-        QueryResult(detail_url="https://test_1.com", title="test 1", price="€777", image_url="https://image_1.com"),
-        QueryResult(detail_url="https://test_2.com", title="test 2", price="€865700", image_url="https://image_2.com"),
+        QueryResult(
+            detail_url="https://test_1.com",
+            query_name="Test Query 1",
+            title="test 1",
+            price="€777",
+            image_url="https://image_1.com",
+        ),
+        QueryResult(
+            detail_url="https://test_2.com",
+            query_name="Test Query 2",
+            title="test 2",
+            price="€865700",
+            image_url="https://image_2.com",
+        ),
     ]
 
 
@@ -32,6 +44,7 @@ def query_results() -> list[QueryResult]:
 def new_query_result() -> QueryResult:
     return QueryResult(
         detail_url="https://test_1.com",
+        query_name="New Query",
         title="new test",
         price="€1000000",
         image_url="https://new-image.com",

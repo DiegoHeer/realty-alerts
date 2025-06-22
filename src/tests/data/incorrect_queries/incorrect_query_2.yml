@@ -1,2 +1,3 @@
+name: Incorrect Query 2
 cron_schedule: "5 4 * * *"
 website: funda

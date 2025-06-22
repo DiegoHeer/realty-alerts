@@ -62,7 +62,13 @@ class FundaScraper(BaseScraper):
         price = self._get_detail_page_price(soup)
         image_url = self._get_detail_page_image_url(soup)
 
-        return QueryResult(detail_url=detail_url, title=title, price=price, image_url=image_url)
+        return QueryResult(
+            detail_url=detail_url,
+            query_name=self.query_name,
+            title=title,
+            price=price,
+            image_url=image_url,
+        )
 
     def _get_detail_page_title(self, soup: BeautifulSoup) -> str:
         title_element = soup.select_one("h1 span.block.text-2xl.font-bold")

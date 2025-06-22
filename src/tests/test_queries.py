@@ -36,11 +36,17 @@ def query_schema(query_schema_path) -> dict:
 def test_load_queries__success(correct_queries_dir):
     queries = load_queries(correct_queries_dir)
 
+    assert queries[0].name == "Correct Query 1"
     assert queries[0].cron_schedule == "5 4 * * *"
     assert queries[0].query_url == "https://www.funda.nl/zoeken/koop"
+    assert queries[0].max_listing_page_number == 3
+    assert queries[0].notify_if_no_new_listing is False
 
+    assert queries[1].name == "Correct Query 2"
     assert queries[1].cron_schedule == "0 22 * * 1-5"
     assert queries[1].query_url == "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D"
+    assert queries[1].max_listing_page_number == 5
+    assert queries[1].notify_if_no_new_listing is True
 
 
 def test_load_queries__incorrect_queries(incorrect_queries_dir):
