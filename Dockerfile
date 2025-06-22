@@ -7,6 +7,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 RUN uv sync --locked --no-dev --compile-bytecode
 
+# Install playwright dependencies
+RUN uv run playwright install --with-deps
+
 # Copy the project into the image
 ADD ./src ./
 

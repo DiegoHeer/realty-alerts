@@ -37,12 +37,10 @@ def test_load_queries__success(correct_queries_dir):
     queries = load_queries(correct_queries_dir)
 
     assert queries[0].cron_schedule == "5 4 * * *"
-    assert queries[0].website == "funda"
-    assert queries[0].filters.house_type == "Woonhuis"
+    assert queries[0].query_url == "https://www.funda.nl/zoeken/koop"
 
     assert queries[1].cron_schedule == "0 22 * * 1-5"
-    assert queries[1].website == "funda"
-    assert queries[1].filters.house_type == "Appartement"
+    assert queries[1].query_url == "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D"
 
 
 def test_load_queries__incorrect_queries(incorrect_queries_dir):
@@ -51,7 +49,7 @@ def test_load_queries__incorrect_queries(incorrect_queries_dir):
 
     assert "2 validation errors for RealtyQuery" in str(exc.value)
     assert "The cron schedule 0 test * * 1-5 is invalid. Please place a valid crontab." in str(exc.value)
-    assert "Input should be 'funda'" in str(exc.value)
+    assert "The query url https://incorrect-website.nl has an invalid domain" in str(exc.value)
 
 
 def test_load_queries__no_queries(no_queries_dir):

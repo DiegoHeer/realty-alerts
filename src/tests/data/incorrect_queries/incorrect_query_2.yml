@@ -1,4 +1,2 @@
 cron_schedule: "5 4 * * *"
 website: funda
-filters:
-  house_type: Street
