@@ -8,7 +8,8 @@ from notifications import _build_headers, _build_message, send_notifications
 @pytest.fixture
 def sample_query_result() -> QueryResult:
     return QueryResult(
-        title="Charming House in Amsterdam",
+        title="Charming House",
+        query_name="Houses in Amsterdam",
         detail_url="https://example.com/listing/123",
         price="€310000 k.k.",
         image_url="https://example-image.com",
@@ -18,7 +19,7 @@ def sample_query_result() -> QueryResult:
 def test_build_message(sample_query_result):
     message = _build_message(sample_query_result)
 
-    assert message == "Price: €310000 k.k."
+    assert message == "New house for sale. Price: €310000 k.k."
 
 
 def test_build_headers(sample_query_result):
@@ -26,7 +27,7 @@ def test_build_headers(sample_query_result):
 
     assert headers["Priority"] == "urgent"
     assert headers["Tags"] == "house, rotating_light"
-    assert headers["Title"] == "New house for sale: Charming House in Amsterdam"
+    assert headers["Title"] == "Houses in Amsterdam -> Charming House"
     assert headers["Click"] == "https://example.com/listing/123"
     assert headers["Attach"] == "https://example-image.com"
 
