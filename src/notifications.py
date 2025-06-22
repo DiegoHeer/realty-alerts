@@ -19,7 +19,7 @@ def send_notifications(result_queries: list[QueryResult]) -> None:
 
 
 def _build_message(result_query: QueryResult) -> str:
-    return f"Price: {result_query.price}"
+    return f"New house for sale. Price: {result_query.price}"
 
 
 # NTFY messaging options: https://docs.ntfy.sh/publish
@@ -27,7 +27,7 @@ def _build_headers(result_query: QueryResult) -> dict[str, str]:
     return {
         "Priority": "urgent",
         "Tags": "house, rotating_light",
-        "Title": f"New house for sale: {result_query.title}",
+        "Title": f"{result_query.query_name} -> {result_query.title}",
         "Click": result_query.detail_url,
         "Attach": result_query.image_url,
     }
@@ -45,6 +45,6 @@ def _send_to_ntfy(headers: dict, message: str) -> None:
 
 
 def notify_when_there_are_no_new_listings(query: RealtyQuery) -> None:
-    headers = {"Tags": "no_entry_sign", "Title": f"{query.website}: No new house listings", "Click": query.query_url}
+    headers = {"Tags": "no_entry_sign", "Title": f"{query.name} -> No new house listings", "Click": query.query_url}
     message = f"There are no new house listings for your query on {query.website}"
     _send_to_ntfy(headers, message)

@@ -1,5 +1,9 @@
 {
   "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
     "cron_schedule": {
       "title": "Cron Schedule",
       "type": "string"
@@ -22,6 +26,7 @@
     }
   },
   "required": [
+    "name",
     "cron_schedule",
     "query_url"
   ],

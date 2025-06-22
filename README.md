@@ -33,9 +33,10 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 4. Inside the `queries` folder, create a new yml file. It's contents should look like this:
 
 ```yml
-cron_schedule: "0 9,15 * * 1-5"  # A cron expression, for scheduling the query. Check https://crontab.guru for help
-query_url: https://www.funda.nl/zoeken/koop?selected_area=%5B%222521cc,10km%22%5D  # The query you're interested in
-max_listing_page_number: 3  # Optional. This is to avoid excessive scraping, which can result in website blocks
+name: "Funda: 2521CC 5km radius"  # Name of the query. Good to keep it concise.
+cron_schedule: "0 9,15 * * 1-5"  # A cron expression, for scheduling the query. Check https://crontab.guru for help.
+query_url: https://www.funda.nl/zoeken/koop?selected_area=%5B%222521cc,10km%22%5D  # The query you're interested in.
+max_listing_page_number: 3  # Optional. This is to avoid excessive scraping, which can result in website blocks.
 notify_if_no_new_listing: false  # Optional.
 ```
 

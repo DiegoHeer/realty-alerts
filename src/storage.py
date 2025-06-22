@@ -11,6 +11,7 @@ sqlite_db = SqliteDatabase(DATA_PATH / "sqlite.db", pragmas={"journal_mode": "wa
 
 class QueryResultsORM(Model):
     detail_url = CharField(unique=True)
+    query_name = CharField()
     title = CharField()
     price = CharField()
     image_url = CharField()

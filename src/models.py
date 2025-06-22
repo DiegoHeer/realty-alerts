@@ -8,6 +8,7 @@ from enums import Websites
 
 
 class RealtyQuery(BaseModel):
+    name: str
     cron_schedule: str
     query_url: str
     max_listing_page_number: Annotated[int, Field(strict=True, ge=0, le=5)] = 3
@@ -47,6 +48,7 @@ class RealtyQuery(BaseModel):
 
 class QueryResult(BaseModel):
     detail_url: str
+    query_name: str
     title: str
     price: str
     image_url: str
