@@ -5,12 +5,13 @@ from pathlib import Path
 from celery import Celery
 from playwright.sync_api import sync_playwright
 
+from enums import QueryResultORMStatus
 from models import RealtyQuery
 from notifications import notify_when_there_are_no_new_listings, send_notifications
 from queries import load_queries
 from scraper.funda import FundaScraper
 from settings import SETTINGS, CeleryConfig
-from storage import get_new_query_results, save_query_results, setup_database
+from storage import get_new_query_results, save_query_results, setup_database, update_query_results_status
 
 LOGGER = logging.getLogger(__name__)
 QUERIES_DIR = Path(__file__).resolve().parents[1] / "queries"
@@ -37,6 +38,8 @@ def main(realty_query: RealtyQuery) -> None:
 
     new_query_results = get_new_query_results()
     send_notifications(new_query_results)
+
+    update_query_results_status(new_query_results, status=QueryResultORMStatus.NOTIFIED)
 
     if not new_query_results and realty_query.notify_if_no_new_listing:
         notify_when_there_are_no_new_listings(realty_query)

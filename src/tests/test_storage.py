@@ -3,6 +3,7 @@ from time import sleep
 import pytest
 from peewee import SqliteDatabase
 
+from enums import QueryResultORMStatus
 from models import QueryResult
 from storage import QueryResultsORM, get_new_query_results, save_query_results
 
@@ -79,6 +80,7 @@ def test_save_query_result_to_db__duplicate(query_results: list[QueryResult], ne
     assert row.id == 1
     assert row.title == new_query_result.title
     assert row.updated_at > row.created_at
+    assert row.status == QueryResultORMStatus.UPDATED
 
 
 def test_get_new_query_results__success(query_results: list[QueryResult]):
