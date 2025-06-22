@@ -53,7 +53,7 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 1. Download the NTFY app from the [play store](https://play.google.com/store/apps/details?id=io.heckel.ntfy) (Android) or from the [app store](https://apps.apple.com/us/app/ntfy/id1625396347) (iOS)
 2. Click on the plus icon to add a new topic. The default topic is `realty-alerts`. Using your own or creating a new topic is also possible. Just make the name unique to avoid that other people push to your topic, since all topics on the `https://ntfy.sh` server are public. If you wish, you can also use your own NTFY server url. For more info about this, check [here](https://docs.ntfy.sh/install/).
 
-## How to Install
+## How to use
 
 1. Check if docker is installed. If not, follow the guidelines in the [official website](https://docs.docker.com/engine/install/)
 2. Copy the `docker-compose.yml` file from this repo
