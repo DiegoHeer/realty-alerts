@@ -14,6 +14,9 @@ def send_notifications(result_queries: list[QueryResult]) -> None:
         message = _build_message(result_query)
         _send_to_ntfy(headers, message)
 
+    if not result_queries:
+        LOGGER.info("No new notifications available")
+
 
 def _build_message(result_query: QueryResult) -> str:
     return f"Price: {result_query.price}"
