@@ -2,7 +2,7 @@ import pytest
 from pytest_mock import MockFixture
 
 from models import QueryResult
-from notifications import _build_headers, _build_message, send_notifications
+from notifications import _build_headers, _build_message, notify_about_new_results
 
 
 @pytest.fixture
@@ -16,13 +16,18 @@ def sample_query_result() -> QueryResult:
     )
 
 
-def test_build_message(sample_query_result):
+@pytest.fixture
+def ntfy_topic() -> str:
+    return "amsterdam-houses"
+
+
+def test_build_message(sample_query_result: QueryResult):
     message = _build_message(sample_query_result)
 
     assert message == "New house for sale. Price: €310000 k.k."
 
 
-def test_build_headers(sample_query_result):
+def test_build_headers(sample_query_result: QueryResult):
     headers = _build_headers(sample_query_result)
 
     assert headers["Priority"] == "urgent"
@@ -32,21 +37,21 @@ def test_build_headers(sample_query_result):
     assert headers["Attach"] == "https://example-image.com"
 
 
-def test_send_notifications__success(mocker: MockFixture, sample_query_result):
+def test_send_notifications__success(mocker: MockFixture, sample_query_result: QueryResult, ntfy_topic: str):
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=True))
     mock_logger = mocker.patch("notifications.LOGGER")
 
-    send_notifications([sample_query_result])
+    notify_about_new_results(ntfy_topic, query_results=[sample_query_result])
 
     assert mock_post.call_count == 1
     assert mock_logger.info.call_count == 1
 
 
-def test_send_notifications__failure(mocker: MockFixture, sample_query_result):
+def test_send_notifications__failure(mocker: MockFixture, sample_query_result: QueryResult, ntfy_topic: str):
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=False, status_code=500))
     mock_logger = mocker.patch("notifications.LOGGER")
 
-    send_notifications([sample_query_result])
+    notify_about_new_results(ntfy_topic, query_results=[sample_query_result])
 
     assert mock_post.call_count == 1
     assert mock_logger.error.call_count == 1

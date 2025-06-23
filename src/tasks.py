@@ -7,10 +7,14 @@ from playwright.sync_api import sync_playwright
 
 from enums import QueryResultORMStatus
 from models import RealtyQuery
-from notifications import notify_when_there_are_no_new_listings, send_notifications
+from notifications import (
+    notify_about_new_results,
+    notify_about_successful_startup,
+    notify_when_there_are_no_new_listings,
+)
 from queries import load_queries
+from scheduler import CeleryConfig
 from scraper.funda import FundaScraper
-from settings import SETTINGS, CeleryConfig
 from storage import get_new_query_results, save_query_results, setup_database, update_query_results_status
 
 LOGGER = logging.getLogger(__name__)
@@ -24,11 +28,13 @@ app.autodiscover_tasks()
 
 setup_database()
 
+notify_about_successful_startup(realty_queries)
+
 
 @app.task(pydantic=True)
 def main(realty_query: RealtyQuery) -> None:
     LOGGER.info(f"The query url is: {textwrap.shorten(realty_query.query_url, width=100, placeholder='...')}")
-    LOGGER.info(f"The NTFY url to access Realty-Alerts notifications is: {SETTINGS.ntfy_url}")
+    LOGGER.info(f"The url used to send Realty-Alerts notifications is: {realty_query.notification_url}")
 
     with sync_playwright() as playwright:
         funda_scraper = FundaScraper(playwright, realty_query)
@@ -37,7 +43,7 @@ def main(realty_query: RealtyQuery) -> None:
     save_query_results(query_results)
 
     new_query_results = get_new_query_results()
-    send_notifications(new_query_results)
+    notify_about_new_results(realty_query.notification_url, new_query_results)
 
     update_query_results_status(new_query_results, status=QueryResultORMStatus.NOTIFIED)
 
