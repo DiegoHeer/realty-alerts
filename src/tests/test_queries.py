@@ -53,7 +53,8 @@ def test_load_queries__incorrect_queries(incorrect_queries_dir):
     with pytest.raises(ValueError) as exc:
         load_queries(incorrect_queries_dir)
 
-    assert "2 validation errors for RealtyQuery" in str(exc.value)
+    assert "3 validation errors for RealtyQuery" in str(exc.value)
+    assert "Please correct the `ntfy_topic` in the query yml file (don't use spaces)" in str(exc.value)
     assert "The cron schedule 0 test * * 1-5 is invalid. Please place a valid crontab." in str(exc.value)
     assert "The query url https://incorrect-website.nl has an invalid domain" in str(exc.value)
 

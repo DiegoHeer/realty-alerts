@@ -4,6 +4,10 @@
       "title": "Name",
       "type": "string"
     },
+    "ntfy_topic": {
+      "title": "Ntfy Topic",
+      "type": "string"
+    },
     "cron_schedule": {
       "title": "Cron Schedule",
       "type": "string"
@@ -27,6 +31,7 @@
   },
   "required": [
     "name",
+    "ntfy_topic",
     "cron_schedule",
     "query_url"
   ],

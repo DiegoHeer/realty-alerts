@@ -35,6 +35,7 @@ def _load_html_file(file_name: str) -> str:
 def realty_query() -> RealtyQuery:
     return RealtyQuery(
         name="Funda: houses and apartments",
+        ntfy_topic="funda",
         cron_schedule="* * * * *",
         query_url="https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D",
         max_listing_page_number=2,
