@@ -7,7 +7,11 @@ from playwright.sync_api import sync_playwright
 
 from enums import QueryResultORMStatus
 from models import RealtyQuery
-from notifications import notify_when_there_are_no_new_listings, send_notifications
+from notifications import (
+    notify_about_new_results,
+    notify_about_successful_startup,
+    notify_when_there_are_no_new_listings,
+)
 from queries import load_queries
 from scheduler import CeleryConfig
 from scraper.funda import FundaScraper
@@ -24,6 +28,8 @@ app.autodiscover_tasks()
 
 setup_database()
 
+notify_about_successful_startup(realty_queries)
+
 
 @app.task(pydantic=True)
 def main(realty_query: RealtyQuery) -> None:
@@ -37,7 +43,7 @@ def main(realty_query: RealtyQuery) -> None:
     save_query_results(query_results)
 
     new_query_results = get_new_query_results()
-    send_notifications(realty_query.notification_url, new_query_results)
+    notify_about_new_results(realty_query.notification_url, new_query_results)
 
     update_query_results_status(new_query_results, status=QueryResultORMStatus.NOTIFIED)
 

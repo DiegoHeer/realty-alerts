@@ -2,7 +2,7 @@ import pytest
 from pytest_mock import MockFixture
 
 from models import QueryResult
-from notifications import _build_headers, _build_message, send_notifications
+from notifications import _build_headers, _build_message, notify_about_new_results
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def test_send_notifications__success(mocker: MockFixture, sample_query_result: Q
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=True))
     mock_logger = mocker.patch("notifications.LOGGER")
 
-    send_notifications(ntfy_topic, query_results=[sample_query_result])
+    notify_about_new_results(ntfy_topic, query_results=[sample_query_result])
 
     assert mock_post.call_count == 1
     assert mock_logger.info.call_count == 1
@@ -51,7 +51,7 @@ def test_send_notifications__failure(mocker: MockFixture, sample_query_result: Q
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=False, status_code=500))
     mock_logger = mocker.patch("notifications.LOGGER")
 
-    send_notifications(ntfy_topic, query_results=[sample_query_result])
+    notify_about_new_results(ntfy_topic, query_results=[sample_query_result])
 
     assert mock_post.call_count == 1
     assert mock_logger.error.call_count == 1

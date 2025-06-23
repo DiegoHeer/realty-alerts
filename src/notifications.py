@@ -8,7 +8,7 @@ from settings import SETTINGS
 LOGGER = logging.getLogger(__name__)
 
 
-def send_notifications(url: str, query_results: list[QueryResult]) -> None:
+def notify_about_new_results(url: str, query_results: list[QueryResult]) -> None:
     for result_query in query_results:
         headers = _build_headers(result_query)
         message = _build_message(result_query)
@@ -49,3 +49,10 @@ def notify_when_there_are_no_new_listings(query: RealtyQuery) -> None:
     headers = {"Tags": "no_entry_sign", "Title": f"{query.name} -> No new house listings", "Click": query.query_url}
     message = f"There are no new house listings for your query on {query.website}"
     _send_to_ntfy(query.notification_url, headers, message)
+
+
+def notify_about_successful_startup(queries: list[RealtyQuery]) -> None:
+    for query in queries:
+        headers = {"Tags": "", "Title": f"{query.name} -> Scheduling started"}
+        message = f"Query scheduling for {query.name} is successfully enabled"
+        _send_to_ntfy(query.notification_url, headers, message)
