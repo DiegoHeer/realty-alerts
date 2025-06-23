@@ -1,14 +1,18 @@
 from typing import Annotated
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
+import requests
 from cron_validator import CronValidator
 from pydantic import BaseModel, Field, field_validator
+from requests import HTTPError
 
 from enums import Websites
+from settings import SETTINGS
 
 
 class RealtyQuery(BaseModel):
     name: str
+    ntfy_topic: str
     cron_schedule: str
     query_url: str
     max_listing_page_number: Annotated[int, Field(strict=True, ge=0, le=5)] = 3
@@ -19,6 +23,10 @@ class RealtyQuery(BaseModel):
         parsed_url = urlparse(self.query_url)
         return Websites(parsed_url.netloc)
 
+    @property
+    def notification_url(self) -> str:
+        return urljoin(self.query_url, self.ntfy_topic)
+
     @field_validator("cron_schedule")
     @classmethod
     def validate_cron(cls, value: str) -> str:
@@ -26,6 +34,23 @@ class RealtyQuery(BaseModel):
             CronValidator.parse(value)
         except ValueError:
             msg = f"The cron schedule {value} is invalid. Please place a valid crontab."
+            raise ValueError(msg)
+
+        return value
+
+    @field_validator("ntfy_topic")
+    @classmethod
+    def validate_ntfy_topic(cls, value: str) -> str:
+        url = f"{SETTINGS.ntfy_url}/{value}"
+        try:
+            response = requests.post(url, data="This is a test message")
+            response.raise_for_status()
+        except HTTPError:
+            msg = (
+                f"The NTFY topic {value} or the base url {SETTINGS.ntfy_url} is invalid. "
+                "Please correct the `ntfy_topic` in the query yml file (don't use spaces) "
+                "or correct the environment variable NTFY_URL."
+            )
             raise ValueError(msg)
 
         return value
