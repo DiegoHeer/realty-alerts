@@ -25,7 +25,7 @@ class RealtyQuery(BaseModel):
 
     @property
     def notification_url(self) -> str:
-        return urljoin(self.query_url, self.ntfy_topic)
+        return urljoin(SETTINGS.ntfy_url, self.ntfy_topic)
 
     @field_validator("cron_schedule")
     @classmethod
@@ -43,7 +43,7 @@ class RealtyQuery(BaseModel):
     def validate_ntfy_topic(cls, value: str) -> str:
         url = urljoin(SETTINGS.ntfy_url, value)
         try:
-            response = requests.post(url, data="This is a test message")
+            response = requests.get(url)
             response.raise_for_status()
         except HTTPError:
             msg = (
