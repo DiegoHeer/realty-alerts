@@ -46,13 +46,22 @@ def _send_to_ntfy(url: str, headers: dict, message: str) -> None:
 
 
 def notify_when_there_are_no_new_listings(query: RealtyQuery) -> None:
-    headers = {"Tags": "no_entry_sign", "Title": f"{query.name} -> No new house listings", "Click": query.query_url}
+    headers = {
+        "Priority": "min",
+        "Tags": "no_entry_sign",
+        "Title": f"{query.name} -> No new house listings",
+        "Click": query.query_url,
+    }
     message = f"There are no new house listings for your query on {query.website}"
     _send_to_ntfy(query.notification_url, headers, message)
 
 
 def notify_about_successful_startup(queries: list[RealtyQuery]) -> None:
     for query in queries:
-        headers = {"Tags": "partying_face, heavy_check_mark", "Title": f"{query.name} -> Scheduling started"}
+        headers = {
+            "Priority": "min",
+            "Tags": "partying_face, heavy_check_mark",
+            "Title": f"{query.name} -> Scheduling started",
+        }
         message = f"Query scheduling for {query.name} is successfully enabled"
         _send_to_ntfy(query.notification_url, headers, message)
