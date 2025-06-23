@@ -41,7 +41,7 @@ class RealtyQuery(BaseModel):
     @field_validator("ntfy_topic")
     @classmethod
     def validate_ntfy_topic(cls, value: str) -> str:
-        url = f"{SETTINGS.ntfy_url}/{value}"
+        url = urljoin(SETTINGS.ntfy_url, value)
         try:
             response = requests.post(url, data="This is a test message")
             response.raise_for_status()
