@@ -44,9 +44,10 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 ## Supported Websites
 
 - Funda: https://www.funda.nl
+- Pararius: https://www.pararius.nl
 
 > [!NOTE]
-> Only Funda website is currently available for scraping. Other websites (e.g. of real estate brokers) will be supported on request (Github issue).
+> Only Funda and Pararius websites is currently available for scraping. Other websites (e.g. of real estate brokers) will be supported on request (Github issue).
 
 
 ## App setup

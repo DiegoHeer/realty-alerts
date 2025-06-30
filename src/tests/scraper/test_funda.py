@@ -7,28 +7,9 @@ from pytest_mock import MockerFixture
 from models import RealtyQuery
 from scraper.base import ScrapingException
 from scraper.funda import FundaScraper
+from tests.scraper.conftest import mock_get_url_content
 
 MOCK_DATA_DIR = Path(__file__).resolve().parent / "data"
-
-
-def mock_get_url_content(url: str) -> str:
-    url_to_file_name = {
-        "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D": "page_listing",
-        "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22%2C%22apartment%22%5D&search_result=1": "page_1",
-        "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22%2C%22apartment%22%5D&search_result=2": "page_2",
-        "https://www.funda.nl/detail/koop/blokker/huis-bangert-58/43063167/": "page_detail",
-        "https://www.funda.nl/scraper-detected": "scraper_detected",
-    }
-
-    try:
-        return _load_html_file(file_name=f"{url_to_file_name[url]}.html")
-    except KeyError:
-        raise KeyError(f"No mock defined for URL: {url}")
-
-
-def _load_html_file(file_name: str) -> str:
-    file_path = MOCK_DATA_DIR / file_name
-    return file_path.read_text(encoding="utf-8")
 
 
 @pytest.fixture

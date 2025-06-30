@@ -18,7 +18,6 @@
     },
     "max_listing_page_number": {
       "default": 3,
-      "maximum": 5,
       "minimum": 0,
       "title": "Max Listing Page Number",
       "type": "integer"
