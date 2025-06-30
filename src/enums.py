@@ -3,6 +3,7 @@ from enum import StrEnum
 
 class Websites(StrEnum):
     FUNDA = "www.funda.nl"
+    PARARIUS = "www.pararius.nl"
 
 
 class QueryResultORMStatus(StrEnum):
