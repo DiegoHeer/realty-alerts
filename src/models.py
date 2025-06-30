@@ -15,7 +15,7 @@ class RealtyQuery(BaseModel):
     ntfy_topic: str
     cron_schedule: str
     query_url: str
-    max_listing_page_number: Annotated[int, Field(strict=True, ge=0, le=5)] = 3
+    max_listing_page_number: Annotated[int, Field(strict=True, ge=0)] = 3
     notify_if_no_new_listing: bool = False
 
     @property
