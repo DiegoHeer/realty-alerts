@@ -14,7 +14,7 @@ from notifications import (
 )
 from queries import load_queries
 from scheduler import CeleryConfig
-from scraper.funda import FundaScraper
+from scraper.scrape_selector import get_scraper_class
 from storage import get_new_query_results, save_query_results, setup_database, update_query_results_status
 
 LOGGER = logging.getLogger(__name__)
@@ -36,9 +36,10 @@ def main(realty_query: RealtyQuery) -> None:
     LOGGER.info(f"The query url is: {textwrap.shorten(realty_query.query_url, width=100, placeholder='...')}")
     LOGGER.info(f"The url used to send Realty-Alerts notifications is: {realty_query.notification_url}")
 
+    scraper_class = get_scraper_class(website=realty_query.website)
     with sync_playwright() as playwright:
-        funda_scraper = FundaScraper(playwright, realty_query)
-        query_results = funda_scraper.get_query_results()
+        scraper = scraper_class(playwright, realty_query)
+        query_results = scraper.get_query_results()
 
     save_query_results(query_results)
 
