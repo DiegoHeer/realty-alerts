@@ -24,22 +24,13 @@ class BaseScraper(ABC):
     def _create_browser(playwright: Playwright) -> Browser:
         return playwright.firefox.launch()
 
+    @abstractmethod
     def get_query_results(self) -> list[QueryResult]:
-        detail_urls = self.scrape_detail_urls_of_listing_page()
-        return [self.scrape_detail_page(url) for url in detail_urls]
-
-    @abstractmethod
-    def scrape_detail_urls_of_listing_page(self) -> set[str]:
         pass
 
     @abstractmethod
-    def scrape_detail_page(self, detail_url: str) -> QueryResult:
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def is_scraping_detected(content) -> bool:
-        pass
+    def is_scraping_detected(self, content) -> bool:
+        return False
 
     def get_url_soup(self, url: str) -> BeautifulSoup:
         content = self._get_url_content(url)

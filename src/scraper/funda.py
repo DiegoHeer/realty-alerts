@@ -13,6 +13,10 @@ LOGGER = logging.getLogger(__name__)
 class FundaScraper(BaseScraper):
     website = Websites.FUNDA
 
+    def get_query_results(self) -> list[QueryResult]:
+        detail_urls = self.scrape_detail_urls_of_listing_page()
+        return [self.scrape_detail_page(url) for url in detail_urls]
+
     def scrape_detail_urls_of_listing_page(self) -> set[str]:
         stop_range = self._get_last_page() + 1
         return {url for page_number in range(1, stop_range) for url in self._scrape_urls_per_page_number(page_number)}
@@ -47,8 +51,7 @@ class FundaScraper(BaseScraper):
         new_query = urlencode(query_params, doseq=True, quote_via=quote)
         return urlunparse(parsed_url._replace(query=new_query))
 
-    @staticmethod
-    def is_scraping_detected(content: str) -> bool:
+    def is_scraping_detected(self, content: str) -> bool:
         return "Je bent bijna op de pagina die je zoekt" in content
 
     def _filter_and_build_detail_urls(self, hrefs: list[str]) -> list[str]:
