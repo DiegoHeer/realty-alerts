@@ -35,11 +35,6 @@ runs:
       run: uv sync --dev
       working-directory: ${{ inputs.working_directory }}
 
-    - name: Install playwright dependencies
-      shell: bash
-      run: uv run playwright install
-      working-directory: ${{ inputs.working_directory }}
-
     - name: Install pre-commit hooks
       shell: bash
       run: uv run pre-commit install-hooks
