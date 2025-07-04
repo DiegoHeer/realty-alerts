@@ -7,6 +7,7 @@ services:
       - ./data:/data # Mount here the folder where the sqlite and celery-beat database should be stored
     environment:
       - REDIS_URL=redis://realty-alerts-broker:6379/0
+      - BROWSER_URL=ws://realty-alerts-browser:3000
     depends_on:
       realty-alerts-browser:
         condition: service_healthy
