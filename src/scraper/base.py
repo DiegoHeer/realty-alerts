@@ -5,6 +5,7 @@ from playwright.sync_api import Browser, Playwright
 
 from enums import Websites
 from models import QueryResult, RealtyQuery
+from settings import SETTINGS
 
 
 class ScrapingException(Exception):
@@ -18,11 +19,11 @@ class BaseScraper(ABC):
         self.query_name = realty_query.name
         self.query_url = realty_query.query_url
         self.max_listing_page_number = realty_query.max_listing_page_number
-        self.browser = self._create_browser(playwright)
+        self.browser = self._connect_browser(playwright)
 
     @staticmethod
-    def _create_browser(playwright: Playwright) -> Browser:
-        return playwright.firefox.launch()
+    def _connect_browser(playwright: Playwright) -> Browser:
+        return playwright.firefox.connect(SETTINGS.browser_url)
 
     @abstractmethod
     def get_query_results(self) -> list[QueryResult]:

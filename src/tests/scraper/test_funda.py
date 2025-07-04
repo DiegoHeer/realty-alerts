@@ -34,6 +34,7 @@ def scraper_detected_url() -> str:
 
 
 def test_scrape_detail_urls_of_query_page(mocker: MockerFixture, realty_query: RealtyQuery):
+    mocker.patch.object(FundaScraper, "_connect_browser")
     mocker.patch.object(FundaScraper, "_get_url_content", side_effect=mock_get_url_content)
 
     with sync_playwright() as playwright:
@@ -44,6 +45,7 @@ def test_scrape_detail_urls_of_query_page(mocker: MockerFixture, realty_query: R
 
 
 def test_scrape_detail_page(mocker: MockerFixture, realty_query: RealtyQuery, detail_url: str):
+    mocker.patch.object(FundaScraper, "_connect_browser")
     mocker.patch.object(FundaScraper, "_get_url_content", side_effect=mock_get_url_content)
 
     with sync_playwright() as playwright:
@@ -57,6 +59,7 @@ def test_scrape_detail_page(mocker: MockerFixture, realty_query: RealtyQuery, de
 
 
 def test_scrape_detected(mocker: MockerFixture, realty_query: RealtyQuery, scraper_detected_url: str):
+    mocker.patch.object(FundaScraper, "_connect_browser")
     mocker.patch.object(FundaScraper, "_get_url_content", side_effect=mock_get_url_content)
 
     with pytest.raises(ScrapingException) as exc:

@@ -7,9 +7,24 @@ services:
       - ./data:/data # Mount here the folder where the sqlite and celery-beat database should be stored
     environment:
       - REDIS_URL=redis://realty-alerts-broker:6379/0
+      - BROWSER_URL=ws://realty-alerts-browser:3000
     depends_on:
+      realty-alerts-browser:
+        condition: service_healthy
       realty-alerts-broker:
         condition: service_healthy
+
+  realty-alerts-browser:
+    container_name: realty-alerts-browser
+    image: mcr.microsoft.com/playwright:v1.53.0-noble
+    command: /bin/sh -c "npx -y playwright@1.53.0 run-server --port 3000 --host 0.0.0.0"
+    ports:
+      - 3000:3000
+    user: pwuser
+    working_dir: /home/pwuser
+    init: true
+    healthcheck:
+      test: curl -f localhost:3000
 
   realty-alerts-broker:
     container_name: realty-alerts-broker
