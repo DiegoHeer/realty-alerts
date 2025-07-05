@@ -34,7 +34,7 @@ class QueryResultsORM(Model):
     class Meta:
         database = sqlite_db
         table_name = "query_results"
-        indexes = (("detail_url", "query_name"), True)
+        indexes = ((("detail_url", "query_name"), True),)
 
 
 def setup_database() -> None:
