@@ -3,7 +3,7 @@ from pathlib import Path
 MOCK_DATA_DIR = Path(__file__).resolve().parent / "data"
 
 
-def mock_get_url_content(url: str) -> str:
+def mock_scrape_url_content(url: str) -> str:
     url_to_file_name = {
         "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D": "funda_listing",
         "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22%2C%22apartment%22%5D&search_result=1": "funda_1",

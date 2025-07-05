@@ -35,13 +35,13 @@ class BaseScraper(ABC):
         return False
 
     def get_url_soup(self, url: str) -> BeautifulSoup:
-        content = self._get_url_content(url)
+        content = self._scrape_url_content(url)
         if self.is_scraping_detected(content):
             raise ScrapingException(f"Scraping was detected when trying to access url: {url}")
 
         return BeautifulSoup(content, features="html.parser")
 
-    def _get_url_content(self, url: str) -> str:
+    def _scrape_url_content(self, url: str) -> str:
         page = self.browser.new_page()
 
         try:
