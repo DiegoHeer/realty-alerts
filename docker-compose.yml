@@ -1,21 +1,21 @@
 services:
-  realty-alerts-scheduler:
-    container_name: realty-alerts-scheduler
+  realty-scheduler:
+    container_name: realty-scheduler
     image: ghcr.io/diegoheer/realty-alerts:latest
     volumes:
       - ./queries:/queries  # Mount here to the folder with your query configs
       - ./data:/data # Mount here the folder where the sqlite and celery-beat database should be stored
     environment:
-      - REDIS_URL=redis://realty-alerts-broker:6379/0
-      - BROWSER_URL=ws://realty-alerts-browser:3000
+      - REDIS_URL=redis://realty-broker:6379/0
+      - BROWSER_URL=ws://realty-browser:3000
     depends_on:
-      realty-alerts-browser:
+      realty-browser:
         condition: service_healthy
-      realty-alerts-broker:
+      realty-broker:
         condition: service_healthy
 
-  realty-alerts-browser:
-    container_name: realty-alerts-browser
+  realty-browser:
+    container_name: realty-browser
     image: mcr.microsoft.com/playwright:v1.53.0-noble
     command: /bin/sh -c "npx -y playwright@1.53.0 run-server --port 3000 --host 0.0.0.0"
     ports:
@@ -25,9 +25,13 @@ services:
     init: true
     healthcheck:
       test: curl -f localhost:3000
+      interval: 3s
+      timeout: 1s
+      retries: 5
+      start_period: 0s
 
-  realty-alerts-broker:
-    container_name: realty-alerts-broker
+  realty-broker:
+    container_name: realty-broker
     image: redis:8.0.2
     ports:
       - 6379:6379
