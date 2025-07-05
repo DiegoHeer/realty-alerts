@@ -35,7 +35,7 @@ class VastgoedNLScraper(BaseScraper):
 
     @staticmethod
     def _append_page_number_to_url(url: str, page_number: int) -> str:
-        parsed_url = urlparse(url)
+        parsed_url = urlparse(url=url)
         query_params = parse_qs(parsed_url.query)
 
         query_params["p"] = [str(page_number)]
