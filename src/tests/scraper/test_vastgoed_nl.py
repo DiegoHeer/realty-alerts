@@ -4,6 +4,7 @@ from pytest_mock import MockerFixture
 
 from models import RealtyQuery
 from scraper.vastgoed_nl import VastgoedNLScraper
+from tests.scraper.conftest import mock_get_url_content
 
 
 @pytest.fixture
@@ -23,8 +24,8 @@ def scraper_detected_url() -> str:
 
 
 def test_scrape_last_page_number(mocker: MockerFixture, realty_query: RealtyQuery):
-    # mocker.patch.object(VastgoedNLScraper, "_connect_browser")
-    # mocker.patch.object(VastgoedNLScraper, "_get_url_content", side_effect=mock_get_url_content)
+    mocker.patch.object(VastgoedNLScraper, "_connect_browser")
+    mocker.patch.object(VastgoedNLScraper, "_get_url_content", side_effect=mock_get_url_content)
 
     with sync_playwright() as playwright:
         vastgoed_nl_scraper = VastgoedNLScraper(playwright, realty_query)
@@ -34,8 +35,8 @@ def test_scrape_last_page_number(mocker: MockerFixture, realty_query: RealtyQuer
 
 
 def test_scrape_first_page(mocker: MockerFixture, realty_query: RealtyQuery):
-    # mocker.patch.object(VastgoedNLScraper, "_connect_browser")
-    # mocker.patch.object(VastgoedNLScraper, "_get_url_content", side_effect=mock_get_url_content)
+    mocker.patch.object(VastgoedNLScraper, "_connect_browser")
+    mocker.patch.object(VastgoedNLScraper, "_get_url_content", side_effect=mock_get_url_content)
 
     with sync_playwright() as playwright:
         vastgoed_nl_scraper = VastgoedNLScraper(playwright, realty_query)
