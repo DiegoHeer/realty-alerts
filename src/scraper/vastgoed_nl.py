@@ -1,15 +1,15 @@
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
-import requests
 from bs4 import BeautifulSoup, ResultSet, Tag
 
-from enums import Websites
+from enums import ScrapeStrategy, Websites
 from models import QueryResult
-from scraper.base import BaseScraper, ScrapingException
+from scraper.base import BaseScraper
 
 
 class VastgoedNLScraper(BaseScraper):
     website = Websites.VASTGOED_NL
+    scrape_strategy = ScrapeStrategy.REQUESTS
 
     def get_query_results(self) -> list[QueryResult]:
         range_stop = self._get_last_page() + 1

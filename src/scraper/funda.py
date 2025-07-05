@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 
-from enums import Websites
+from enums import ScrapeStrategy, Websites
 from models import QueryResult
 from scraper.base import BaseScraper
 
@@ -12,6 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 class FundaScraper(BaseScraper):
     website = Websites.FUNDA
+    scrape_strategy = ScrapeStrategy.PLAYWRIGHT
 
     def get_query_results(self) -> list[QueryResult]:
         detail_urls = self.scrape_detail_urls_of_listing_page()

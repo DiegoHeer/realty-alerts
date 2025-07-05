@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
 from playwright.sync_api import Browser, Playwright
 
-from enums import Websites
+from enums import ScrapeStrategy, Websites
 from models import QueryResult, RealtyQuery
 from settings import SETTINGS
 
@@ -14,6 +14,7 @@ class ScrapingException(Exception):
 
 class BaseScraper(ABC):
     website: Websites
+    scrape_strategy: ScrapeStrategy
 
     def __init__(self, playwright: Playwright, realty_query: RealtyQuery) -> None:
         self.query_name = realty_query.name

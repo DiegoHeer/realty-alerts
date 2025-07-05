@@ -5,15 +5,16 @@ from urllib.parse import urlparse, urlunparse
 import requests
 from bs4 import BeautifulSoup, ResultSet, Tag
 
-from enums import Websites
+from enums import ScrapeStrategy, Websites
 from models import QueryResult
-from scraper.base import BaseScraper, ScrapingException
+from scraper.base import BaseScraper
 
 LOGGER = logging.getLogger(__name__)
 
 
 class ParariusScraper(BaseScraper):
     website = Websites.PARARIUS
+    scrape_strategy = ScrapeStrategy.REQUESTS
 
     def get_query_results(self) -> list[QueryResult]:
         range_stop = self._get_last_page() + 1
