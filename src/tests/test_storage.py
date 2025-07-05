@@ -45,7 +45,7 @@ def query_results() -> list[QueryResult]:
 def new_query_result() -> QueryResult:
     return QueryResult(
         detail_url="https://test_1.com",
-        query_name="New Query",
+        query_name="Test Query 1",
         title="new test",
         price="€1000000",
         image_url="https://new-image.com",
@@ -82,6 +82,15 @@ def test_save_query_result_to_db__duplicate(query_results: list[QueryResult], ne
     assert row.title == new_query_result.title
     assert row.updated_at > row.created_at
     assert row.status == QueryResultORMStatus.UPDATED
+
+
+def test_save_query_result_to_db__duplicate_url(query_results: list[QueryResult], new_query_result: QueryResult):
+    save_query_results(query_results)
+    sleep(0.1)
+    new_query_result.query_name = "New Query"
+    save_query_results([new_query_result])
+
+    assert QueryResultsORM.select().count() == 3
 
 
 def test_get_new_query_results__success(query_results: list[QueryResult]):
