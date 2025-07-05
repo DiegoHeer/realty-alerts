@@ -2,7 +2,6 @@ import logging
 from pathlib import PurePosixPath
 from urllib.parse import urlparse, urlunparse
 
-import requests
 from bs4 import BeautifulSoup, ResultSet, Tag
 
 from enums import ScrapeStrategy, Websites
@@ -75,15 +74,6 @@ class ParariusScraper(BaseScraper):
         if image_element := listing_card.select_one("img.picture__image"):
             return str(image_element.get("src")) or ""
         return ""
-
-    def _get_url_content(self, url: str) -> str:
-        try:
-            response = requests.get(url)  # This is less resource intensive than Playwright
-            response.raise_for_status()
-        except requests.HTTPError as exc:
-            raise ScrapingException(f"Failed to scrape the following url: {url}. Exception: {exc}")
-
-        return response.text
 
     def is_scraping_detected(self, content) -> bool:
         # NOTE: Pararius doesn't have a scraping detection system in place
