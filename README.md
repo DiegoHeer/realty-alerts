@@ -45,9 +45,10 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 
 - Funda: https://www.funda.nl
 - Pararius: https://www.pararius.nl
+- Vastgoed Nederland: https://aanbod.vastgoednederland.nl
 
 > [!NOTE]
-> Only Funda and Pararius websites is currently available for scraping. Other websites (e.g. of real estate brokers) will be supported on request (Github issue).
+> Only the list of websites above is currently available for scraping. Other websites (e.g. of real estate brokers) will be supported on request (Github issue).
 
 
 ## App setup

@@ -13,6 +13,9 @@ def mock_get_url_content(url: str) -> str:
         "https://www.pararius.nl/koopwoningen/nederland/50m2": "pararius_listing",
         "https://www.pararius.nl/koopwoningen/nederland/50m2/page-1": "pararius_listing",
         "https://www.pararius.nl/scraper-detected": "pararius_scraper_detected",
+        "https://aanbod.vastgoednederland.nl/koopwoningen?q=den+haag": "vastgoed_nl_listing",
+        "https://aanbod.vastgoednederland.nl/koopwoningen?q=den%20haag&p=1": "vastgoed_nl_listing",
+        "https://aanbod.vastgoednederland.nl/scraper-detected": "vastgoed_nl_scraper_detected",
     }
 
     try:
