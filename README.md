@@ -48,7 +48,7 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 - Vastgoed Nederland: https://aanbod.vastgoednederland.nl
 
 > [!NOTE]
-> Only the list of websites above is currently available for scraping. Other websites (e.g. of real estate brokers) will be supported on request (Github issue).
+> Only the list of websites above is currently available for scraping. Other websites (e.g. real estate brokers) will be supported on request (Github issue).
 
 
 ## App setup

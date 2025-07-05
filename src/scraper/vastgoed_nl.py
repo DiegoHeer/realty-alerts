@@ -1,15 +1,15 @@
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
-import requests
 from bs4 import BeautifulSoup, ResultSet, Tag
 
-from enums import Websites
+from enums import ScrapeStrategy, Websites
 from models import QueryResult
-from scraper.base import BaseScraper, ScrapingException
+from scraper.base import BaseScraper
 
 
 class VastgoedNLScraper(BaseScraper):
     website = Websites.VASTGOED_NL
+    scrape_strategy = ScrapeStrategy.REQUESTS
 
     def get_query_results(self) -> list[QueryResult]:
         range_stop = self._get_last_page() + 1
@@ -35,7 +35,7 @@ class VastgoedNLScraper(BaseScraper):
 
     @staticmethod
     def _append_page_number_to_url(url: str, page_number: int) -> str:
-        parsed_url = urlparse(url)
+        parsed_url = urlparse(url=url)
         query_params = parse_qs(parsed_url.query)
 
         query_params["p"] = [str(page_number)]
@@ -74,15 +74,6 @@ class VastgoedNLScraper(BaseScraper):
         if image_element := listing_card.select_one("img"):
             return str(image_element.get("src")) or ""
         return ""
-
-    def _get_url_content(self, url: str) -> str:
-        try:
-            response = requests.get(url)  # This is less resource intensive than Playwright
-            response.raise_for_status()
-        except requests.HTTPError as exc:
-            raise ScrapingException(f"Failed to scrape the following url: {url}. Exception: {exc}")
-
-        return response.text
 
     def is_scraping_detected(self, content) -> bool:
         # NOTE: Vastgoed NL doesn't have a scraping detection system in place

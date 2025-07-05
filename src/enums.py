@@ -7,6 +7,11 @@ class Websites(StrEnum):
     VASTGOED_NL = "aanbod.vastgoednederland.nl"
 
 
+class ScrapeStrategy(StrEnum):
+    REQUESTS = "requests"
+    PLAYWRIGHT = "playwright"
+
+
 class QueryResultORMStatus(StrEnum):
     NEW = "new"
     UPDATED = "updated"

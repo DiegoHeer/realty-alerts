@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from models import RealtyQuery
 from scraper.base import ScrapingException
 from scraper.funda import FundaScraper
-from tests.scraper.conftest import mock_get_url_content
+from tests.scraper.conftest import mock_scrape_url_content
 
 MOCK_DATA_DIR = Path(__file__).resolve().parent / "data"
 
@@ -35,7 +35,7 @@ def scraper_detected_url() -> str:
 
 def test_scrape_detail_urls_of_query_page(mocker: MockerFixture, realty_query: RealtyQuery):
     mocker.patch.object(FundaScraper, "_connect_browser")
-    mocker.patch.object(FundaScraper, "_get_url_content", side_effect=mock_get_url_content)
+    mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
         funda_scraper = FundaScraper(playwright, realty_query)
@@ -46,7 +46,7 @@ def test_scrape_detail_urls_of_query_page(mocker: MockerFixture, realty_query: R
 
 def test_scrape_detail_page(mocker: MockerFixture, realty_query: RealtyQuery, detail_url: str):
     mocker.patch.object(FundaScraper, "_connect_browser")
-    mocker.patch.object(FundaScraper, "_get_url_content", side_effect=mock_get_url_content)
+    mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
         funda_scraper = FundaScraper(playwright, realty_query)
@@ -60,7 +60,7 @@ def test_scrape_detail_page(mocker: MockerFixture, realty_query: RealtyQuery, de
 
 def test_scrape_detected(mocker: MockerFixture, realty_query: RealtyQuery, scraper_detected_url: str):
     mocker.patch.object(FundaScraper, "_connect_browser")
-    mocker.patch.object(FundaScraper, "_get_url_content", side_effect=mock_get_url_content)
+    mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with pytest.raises(ScrapingException) as exc:
         with sync_playwright() as playwright:

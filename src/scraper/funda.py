@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 
-from enums import Websites
+from enums import ScrapeStrategy, Websites
 from models import QueryResult
 from scraper.base import BaseScraper
 
@@ -12,6 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 class FundaScraper(BaseScraper):
     website = Websites.FUNDA
+    scrape_strategy = ScrapeStrategy.PLAYWRIGHT
 
     def get_query_results(self) -> list[QueryResult]:
         detail_urls = self.scrape_detail_urls_of_listing_page()
@@ -43,7 +44,7 @@ class FundaScraper(BaseScraper):
 
     @staticmethod
     def _append_page_number_to_url(url: str, page_number: int) -> str:
-        parsed_url = urlparse(url)
+        parsed_url = urlparse(url=url)
         query_params = parse_qs(parsed_url.query)
 
         query_params["search_result"] = [str(page_number)]
