@@ -13,7 +13,7 @@ sqlite_db = SqliteDatabase(DATA_PATH / "sqlite.db", pragmas={"journal_mode": "wa
 
 
 class QueryResultsORM(Model):
-    detail_url = CharField(unique=True)
+    detail_url = CharField()
     query_name = CharField()
     title = CharField()
     price = CharField()
@@ -34,6 +34,7 @@ class QueryResultsORM(Model):
     class Meta:
         database = sqlite_db
         table_name = "query_results"
+        indexes = (("detail_url", "query_name"), True)
 
 
 def setup_database() -> None:
@@ -52,7 +53,10 @@ def save_query_results(query_results: list[QueryResult]) -> None:
 
 
 def _save_query_result_to_db(query_result: QueryResult) -> None:
-    if record := QueryResultsORM.get_or_none(QueryResultsORM.detail_url == query_result.detail_url):
+    if record := QueryResultsORM.get_or_none(
+        QueryResultsORM.detail_url == query_result.detail_url,
+        QueryResultsORM.query_name == query_result.query_name,
+    ):
         if _is_query_result_changed(query_result, record):
             for key, value in query_result.model_dump().items():
                 setattr(record, key, value)
@@ -75,7 +79,10 @@ def get_new_query_results() -> list[QueryResult]:
 
 def update_query_results_status(query_results: list[QueryResult], status: QueryResultORMStatus) -> None:
     for query_result in query_results:
-        if record := QueryResultsORM.get_or_none(QueryResultsORM.detail_url == query_result.detail_url):
+        if record := QueryResultsORM.get_or_none(
+            QueryResultsORM.detail_url == query_result.detail_url,
+            QueryResultsORM.query_name == query_result.query_name,
+        ):
             record.status = status
             record.save()
             LOGGER.info(f"Query result '{query_result.title}' has been updated to status '{status.value}'")
