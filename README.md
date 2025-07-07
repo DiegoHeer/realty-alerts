@@ -70,6 +70,7 @@ ntfy_topic: realty-alerts  # Use the same topic as used in the app.
 cron_schedule: "0 9,15 * * 1-5"  # A cron expression, for scheduling the query. Check https://crontab.guru for help.
 query_url: https://www.funda.nl/zoeken/koop?selected_area=%5B%222521cc,10km%22%5D  # The query you're interested in.
 max_listing_page_number: 3  # Optional. This is to avoid excessive scraping, which can result in website blocks.
+notify_startup_of_app: true # Optional. Sends a notification message when starting up the scheduler application.
 notify_if_no_new_listing: false  # Optional. Alerts when there are no new query results.
 ```
 

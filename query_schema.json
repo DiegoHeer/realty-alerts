@@ -22,6 +22,11 @@
       "title": "Max Listing Page Number",
       "type": "integer"
     },
+    "notify_startup_of_app": {
+      "default": true,
+      "title": "Notify Startup Of App",
+      "type": "boolean"
+    },
     "notify_if_no_new_listing": {
       "default": false,
       "title": "Notify If No New Listing",

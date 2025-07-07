@@ -58,10 +58,16 @@ def notify_when_there_are_no_new_listings(query: RealtyQuery) -> None:
 
 def notify_about_successful_startup(queries: list[RealtyQuery]) -> None:
     for query in queries:
+        message = f"Query scheduling for {query.name} is successfully enabled"
+        LOGGER.info(message)
+
+        if not query.notify_startup_of_app:
+            LOGGER.info(f"Not sending startup notification message of query '{query.name}' to topic {query.ntfy_topic}")
+            return
+
         headers = {
             "Priority": "min",
             "Tags": "partying_face, heavy_check_mark",
             "Title": f"{query.name} -> Scheduling started",
         }
-        message = f"Query scheduling for {query.name} is successfully enabled"
         _send_to_ntfy(query.notification_url, headers, message)
