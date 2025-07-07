@@ -1,4 +1,3 @@
-import logging
 from pathlib import PurePosixPath
 from urllib.parse import urlparse, urlunparse
 
@@ -7,8 +6,6 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 from enums import ScrapeStrategy, Websites
 from models import QueryResult
 from scraper.base import BaseScraper
-
-LOGGER = logging.getLogger(__name__)
 
 
 class ParariusScraper(BaseScraper):

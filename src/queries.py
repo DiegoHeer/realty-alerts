@@ -1,11 +1,9 @@
-import logging
 from pathlib import Path
 
 import yaml
+from loguru import logger
 
 from models import RealtyQuery
-
-LOGGER = logging.getLogger(__name__)
 
 
 def load_queries(queries_dir: Path) -> list[RealtyQuery]:
@@ -15,7 +13,7 @@ def load_queries(queries_dir: Path) -> list[RealtyQuery]:
     try:
         queries = [_get_query_from_file(file_path) for file_path in file_paths]
     except ValueError as exc:
-        LOGGER.error(exc)
+        logger.error(exc)
         raise
 
     if not queries:

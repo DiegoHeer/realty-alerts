@@ -49,7 +49,7 @@ def test_build_headers(sample_query_result: QueryResult):
 
 def test_send_notifications__success(mocker: MockFixture, sample_query_result: QueryResult, ntfy_url: str):
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=True))
-    mock_logger = mocker.patch("notifications.LOGGER")
+    mock_logger = mocker.patch("notifications.logger")
 
     notify_about_new_results(ntfy_url, query_results=[sample_query_result])
 
@@ -59,7 +59,7 @@ def test_send_notifications__success(mocker: MockFixture, sample_query_result: Q
 
 def test_send_notifications__failure(mocker: MockFixture, sample_query_result: QueryResult, ntfy_url: str):
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=False, status_code=500))
-    mock_logger = mocker.patch("notifications.LOGGER")
+    mock_logger = mocker.patch("notifications.logger")
 
     notify_about_new_results(ntfy_url, query_results=[sample_query_result])
 
@@ -71,7 +71,7 @@ def test_send_notifications__failure(mocker: MockFixture, sample_query_result: Q
 
 def test_notify_about_successful_startup(mocker: MockFixture, sample_realty_query: RealtyQuery):
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=True))
-    mock_logger = mocker.patch("notifications.LOGGER")
+    mock_logger = mocker.patch("notifications.logger")
 
     notify_about_successful_startup([sample_realty_query])
 
@@ -81,7 +81,7 @@ def test_notify_about_successful_startup(mocker: MockFixture, sample_realty_quer
 
 def test_notify_about_successful_startup__no_notification(mocker: MockFixture, sample_realty_query: RealtyQuery):
     mock_post = mocker.patch("notifications.requests.post", return_value=mocker.MagicMock(ok=True))
-    mock_logger = mocker.patch("notifications.LOGGER")
+    mock_logger = mocker.patch("notifications.logger")
 
     sample_realty_query.notify_startup_of_app = False
     notify_about_successful_startup([sample_realty_query])
