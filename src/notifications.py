@@ -63,7 +63,7 @@ def notify_about_successful_startup(queries: list[RealtyQuery]) -> None:
 
         if not query.notify_startup_of_app:
             LOGGER.info(f"Not sending startup notification message of query '{query.name}' to topic {query.ntfy_topic}")
-            return
+            continue
 
         headers = {
             "Priority": "min",
