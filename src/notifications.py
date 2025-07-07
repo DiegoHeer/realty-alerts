@@ -1,11 +1,8 @@
-import logging
-
 import requests
+from loguru import logger
 
 from models import QueryResult, RealtyQuery
 from settings import SETTINGS
-
-LOGGER = logging.getLogger(__name__)
 
 
 def notify_about_new_results(url: str, query_results: list[QueryResult]) -> None:
@@ -15,7 +12,7 @@ def notify_about_new_results(url: str, query_results: list[QueryResult]) -> None
         _send_to_ntfy(url, headers, message)
 
     if not query_results:
-        LOGGER.info("No new notifications available")
+        logger.info("No new notifications available")
 
 
 def _build_message(query_result: QueryResult) -> str:
@@ -37,9 +34,9 @@ def _send_to_ntfy(url: str, headers: dict, message: str) -> None:
     response = requests.post(url, data=message.encode(), headers=headers)
 
     if response.ok:
-        LOGGER.info(f"Notification '{headers['Title']}' has been successfully send to {SETTINGS.ntfy_url}")
+        logger.info(f"Notification '{headers['Title']}' has been successfully send to {SETTINGS.ntfy_url}")
     else:
-        LOGGER.error(
+        logger.error(
             f"Failed to send notification '{message}' to {SETTINGS.ntfy_url}. Status code: {response.status_code}"
         )
         response.raise_for_status()
@@ -59,11 +56,11 @@ def notify_when_there_are_no_new_listings(query: RealtyQuery) -> None:
 def notify_about_successful_startup(queries: list[RealtyQuery]) -> None:
     for query in queries:
         message = f"Query scheduling for {query.name} is successfully enabled"
-        LOGGER.info(message)
+        logger.info(message)
 
         if not query.notify_startup_of_app:
-            LOGGER.info(f"Not sending startup notification message of query '{query.name}' to topic {query.ntfy_topic}")
-            return
+            logger.info(f"Not sending startup notification message of query '{query.name}' to topic {query.ntfy_topic}")
+            continue
 
         headers = {
             "Priority": "min",

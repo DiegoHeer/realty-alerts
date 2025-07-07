@@ -1,4 +1,3 @@
-import logging
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
@@ -6,8 +5,6 @@ from bs4 import BeautifulSoup
 from enums import ScrapeStrategy, Websites
 from models import QueryResult
 from scraper.base import BaseScraper
-
-LOGGER = logging.getLogger(__name__)
 
 
 class FundaScraper(BaseScraper):

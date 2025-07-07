@@ -12,6 +12,7 @@ class CeleryConfig:
     timezone = SETTINGS.timezone
     enable_utc = True
     beat_schedule_filename = str(DATA_PATH / "celerybeat-schedule")
+    worker_hijack_root_logger = False
 
     def __init__(self, realty_queries: list[RealtyQuery]) -> None:
         self.beat_schedule = get_beat_schedule(realty_queries)

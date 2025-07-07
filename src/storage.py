@@ -1,13 +1,11 @@
-import logging
 from datetime import datetime
 
+from loguru import logger
 from peewee import CharField, Check, DateTimeField, Model, SqliteDatabase
 
 from enums import QueryResultORMStatus
 from models import QueryResult
 from settings import DATA_PATH
-
-LOGGER = logging.getLogger(__name__)
 
 sqlite_db = SqliteDatabase(DATA_PATH / "sqlite.db", pragmas={"journal_mode": "wal"})
 
@@ -85,4 +83,4 @@ def update_query_results_status(query_results: list[QueryResult], status: QueryR
         ):
             record.status = status
             record.save()
-            LOGGER.info(f"Query result '{query_result.title}' has been updated to status '{status.value}'")
+            logger.info(f"Query result '{query_result.title}' has been updated to status '{status.value}'")
