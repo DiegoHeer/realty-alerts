@@ -19,7 +19,7 @@ def realty_query() -> RealtyQuery:
         ntfy_topic="funda",
         cron_schedule="* * * * *",
         query_url="https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D",
-        max_listing_page_number=2,
+        max_listing_page_number=999,
     )
 
 
@@ -33,15 +33,26 @@ def scraper_detected_url() -> str:
     return "https://www.funda.nl/scraper-detected"
 
 
+def test_scrape_last_page_number(mocker: MockerFixture, realty_query: RealtyQuery):
+    mocker.patch.object(FundaScraper, "_connect_browser")
+    mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
+
+    with sync_playwright() as playwright:
+        funda_scraper = FundaScraper(playwright, realty_query)
+        last_page_number = funda_scraper._get_last_page()
+
+    assert last_page_number == 666
+
+
 def test_scrape_detail_urls_of_query_page(mocker: MockerFixture, realty_query: RealtyQuery):
     mocker.patch.object(FundaScraper, "_connect_browser")
     mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
         funda_scraper = FundaScraper(playwright, realty_query)
-        detail_urls = funda_scraper.scrape_detail_urls_of_listing_page()
+        detail_urls = funda_scraper._scrape_urls_per_page_number(page_number=1)
 
-    assert len(detail_urls) > 0
+    assert len(detail_urls) == 30
 
 
 def test_scrape_detail_page(mocker: MockerFixture, realty_query: RealtyQuery, detail_url: str):
