@@ -54,7 +54,7 @@ class BaseScraper(ABC):
         page = self.browser.new_page()
 
         try:
-            page.goto(url)
+            page.goto(url, wait_until="networkidle")
         except TimeoutError:
             raise ScrapingException(f"A timeout has occured while trying to scrape the following url: {url}")
 
