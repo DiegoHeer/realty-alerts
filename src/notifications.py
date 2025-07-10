@@ -2,7 +2,6 @@ import requests
 from loguru import logger
 
 from models import QueryResult, RealtyQuery
-from settings import SETTINGS
 
 
 def notify_about_new_results(url: str, query_results: list[QueryResult]) -> None:
@@ -34,11 +33,9 @@ def _send_to_ntfy(url: str, headers: dict, message: str) -> None:
     response = requests.post(url, data=message.encode(), headers=headers)
 
     if response.ok:
-        logger.info(f"Notification '{headers['Title']}' has been successfully send to {SETTINGS.ntfy_url}")
+        logger.info(f"Notification '{headers['Title']}' has been successfully send to {url}")
     else:
-        logger.error(
-            f"Failed to send notification '{message}' to {SETTINGS.ntfy_url}. Status code: {response.status_code}"
-        )
+        logger.error(f"Failed to send notification '{message}' to {url}. Status code: {response.status_code}")
         response.raise_for_status()
 
 
