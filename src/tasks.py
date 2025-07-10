@@ -1,4 +1,3 @@
-import textwrap
 from pathlib import Path
 
 from celery import Celery
@@ -32,8 +31,7 @@ notify_about_successful_startup(realty_queries)
 
 @app.task(pydantic=True)
 def main(realty_query: RealtyQuery) -> None:
-    logger.info(f"The query url is: {textwrap.shorten(realty_query.query_url, width=100, placeholder='...')}")
-    logger.info(f"The url used to send Realty-Alerts notifications is: {realty_query.notification_url}")
+    logger.info(f"Start scraping for query: '{realty_query.name} ({realty_query.notification_url})'")
 
     scraper_class = get_scraper_class(website=realty_query.website)
     with sync_playwright() as playwright:
