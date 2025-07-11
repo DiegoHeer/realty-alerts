@@ -1,5 +1,7 @@
+import backoff
 import requests
 from loguru import logger
+from requests.exceptions import ConnectionError, RequestException
 
 from models import QueryResult, RealtyQuery
 
@@ -29,6 +31,7 @@ def _build_headers(query_result: QueryResult) -> dict[str, str]:
     }
 
 
+@backoff.on_exception(backoff.expo, (ConnectionError, RequestException), max_tries=3)
 def _send_to_ntfy(url: str, headers: dict, message: str) -> None:
     response = requests.post(url, data=message.encode(), headers=headers)
 
