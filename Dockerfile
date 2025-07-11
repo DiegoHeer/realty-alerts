@@ -14,4 +14,4 @@ ADD ./src ./
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Run the application
-CMD ["celery", "-A", "tasks", "worker", "-B", "--loglevel=info"]
+CMD ["celery", "-A", "tasks", "worker", "-B", "--loglevel=info", "--pidfile=/tmp/celery-beat.pid"]
