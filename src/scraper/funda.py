@@ -78,6 +78,6 @@ class FundaScraper(BaseScraper):
         return "" if price_element is None else price_element.get_text()
 
     def _get_detail_page_image_url(self, soup: BeautifulSoup) -> str:
-        if img_element := soup.select_one("div.lg\\:block.col-span-2.row-span-2.bg-neutral-20.xl\\:block img"):
+        if img_element := soup.select_one("img.size-full.object-cover"):
             return str(img_element.get("src")) or ""
         return ""
