@@ -59,6 +59,7 @@ Realty Alerts is a simple alerting tool for notifying when new homes become avai
 
 ## How to use
 
+<!-- TODO: update to explain query setup through Django UI -->
 1. Check if docker is installed. If not, follow the guidelines in the [official website](https://docs.docker.com/engine/install/).
 2. Copy the `docker-compose.yml` file from this repo.
 3. Create a `queries` folder. This will contain all the yml files with your preffered queries.
@@ -93,4 +94,5 @@ Realty Alerts can be run as is, without any additional configuration. But in cas
 | ------------ | ----------------------------- |
 | NTFY_URL     | https://ntfy.sh               |
 | REDIS_URL    | redis://localhost:6379/0      |
+| BROWSER_URL  | ws://localhost:3000           |
 | TIMEZONE     | Europe/Amsterdam              |
