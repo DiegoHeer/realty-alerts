@@ -19,9 +19,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR.parent / "data"
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
+# Other critical settings
 SECRET_KEY = secret_key_generator.generate()
 
 ALLOWED_HOSTS = []
