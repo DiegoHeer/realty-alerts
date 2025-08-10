@@ -1,7 +1,27 @@
 services:
+  realty-ui:
+    container_name: realty-ui
+    image: ghcr.io/diegoheer/realty-alerts:latest
+    entrypoint: ./django_setup.sh
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - 8000:8000
+    volumes:
+      - ./data:/data
+    depends_on:
+      realty-scheduler:
+        condition: service_healthy
+    healthcheck:
+      test: curl -f localhost:8000
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
   realty-scheduler:
     container_name: realty-scheduler
     image: ghcr.io/diegoheer/realty-alerts:latest
+    command: celery -A tasks worker -B --pidfile=/tmp/celery-beat.pid
     volumes:
       - ./queries:/queries  # Mount here to the folder with your query configs
       - ./data:/data # Mount here the folder where the sqlite and celery-beat database should be stored
