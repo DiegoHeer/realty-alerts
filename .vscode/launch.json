@@ -13,9 +13,18 @@
                 "-B",
                 "--loglevel=info"
             ],
-            "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src",
             "justMyCode": false
+        },
+        {
+            "name": "Python: Realty Alerts - UI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/manage.py",
+            "args": ["runserver"],
+            "cwd": "${workspaceFolder}/src",
+            "justMyCode": false,
+            "django": true
         }
     ]
 }

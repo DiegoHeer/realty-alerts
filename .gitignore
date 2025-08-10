@@ -8,11 +8,13 @@ __pycache__/
 
 # Database
 sqlite.db*
+db.sqlite3
 celerybeat-schedule*
 
 # Environments
 .env
 .venv
+.secret.txt
 
 # mypy
 .mypy_cache/
