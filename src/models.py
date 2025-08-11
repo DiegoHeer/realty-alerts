@@ -10,6 +10,7 @@ from enums import Websites
 from settings import SETTINGS
 
 
+# TODO: when the Django UI is working, this model should be deleted
 class RealtyQuery(BaseModel):
     name: str
     ntfy_topic: str
@@ -72,6 +73,7 @@ class RealtyQuery(BaseModel):
         return value
 
 
+# TODO: when the Django UI is working, this model should be deleted
 class QueryResult(BaseModel):
     detail_url: str
     query_name: str
