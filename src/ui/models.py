@@ -45,6 +45,8 @@ def _validate_query_url(value: str) -> None:
 
 
 class RealtyQuery(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=255, unique=True)
     ntfy_topic = models.CharField(max_length=255, validators=[_validate_ntfy_topic])
     cron_schedule = models.CharField(max_length=100, validators=[_validate_cron_schedule])
@@ -68,6 +70,8 @@ class RealtyQuery(models.Model):
 
 
 class RealtyResult(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(choices=QueryResultStatus.choices(), default=QueryResultStatus.NEW)
     detail_url = models.URLField()
     query = models.ForeignKey(RealtyQuery, on_delete=models.CASCADE, related_name="results")

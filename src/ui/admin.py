@@ -7,6 +7,7 @@ from ui.models import RealtyQuery, RealtyResult
 class RealtyQueryAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "created_at",
         "cron_schedule",
         "website",
         "notify_startup_of_app",
@@ -49,6 +50,8 @@ class RealtyResultAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "status",
+        "created_at",
+        "updated_at",
         "price",
         "query",
     )
