@@ -42,7 +42,7 @@ class RealtyQuery(models.Model):
     name = models.CharField(max_length=255, unique=True)
     ntfy_topic = models.CharField(max_length=255, validators=[_validate_ntfy_topic])
     cron_schedule = models.ForeignKey(CrontabSchedule, on_delete=models.CASCADE, related_name="queries")
-    query_url = models.URLField(validators=[_validate_query_url])
+    query_url = models.URLField(max_length=500, validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
     notify_startup_of_app = models.BooleanField(default=True)  # TODO: allow for notify testing of query in the form
     notify_if_no_new_listing = models.BooleanField(default=False)  # TODO: remove this in the future
