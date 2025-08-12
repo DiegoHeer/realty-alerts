@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from requests import HTTPError
 
-from enums import Websites
+from enums import QueryResultStatus, Websites
 from settings import SETTINGS
 
 
@@ -45,13 +45,18 @@ def _validate_query_url(value: str) -> None:
 
 
 class RealtyQuery(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=255, unique=True)
     ntfy_topic = models.CharField(max_length=255, validators=[_validate_ntfy_topic])
     cron_schedule = models.CharField(max_length=100, validators=[_validate_cron_schedule])
     query_url = models.URLField(validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
-    notify_startup_of_app = models.BooleanField(default=True)
-    notify_if_no_new_listing = models.BooleanField(default=False)
+    notify_startup_of_app = models.BooleanField(default=True)  # TODO: allow for notify testing of query in the form
+    notify_if_no_new_listing = models.BooleanField(default=False)  # TODO: remove this in the future
+
+    class Meta:
+        verbose_name_plural = "realty queries"
 
     @property
     def website(self) -> Websites:
@@ -68,6 +73,9 @@ class RealtyQuery(models.Model):
 
 
 class RealtyResult(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(choices=QueryResultStatus.choices(), default=QueryResultStatus.NEW)
     detail_url = models.URLField()
     query = models.ForeignKey(RealtyQuery, on_delete=models.CASCADE, related_name="results")
     title = models.CharField(max_length=500)

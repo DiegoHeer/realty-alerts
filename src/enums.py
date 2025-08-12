@@ -12,7 +12,7 @@ class ScrapeStrategy(StrEnum):
     PLAYWRIGHT = "playwright"
 
 
-class QueryResultORMStatus(StrEnum):
+class QueryResultStatus(StrEnum):
     NEW = "new"
     UPDATED = "updated"
     NOTIFIED = "notified"

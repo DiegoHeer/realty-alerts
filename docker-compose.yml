@@ -3,9 +3,9 @@ services:
     container_name: realty-ui
     image: ghcr.io/diegoheer/realty-alerts:latest
     entrypoint: ./django_setup.sh
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:9000
     ports:
-      - 8000:8000
+      - 9000:9000
     volumes:
       - ./data:/data
     depends_on:

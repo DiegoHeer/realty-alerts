@@ -7,6 +7,7 @@ from ui.models import RealtyQuery, RealtyResult
 class RealtyQueryAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "created_at",
         "cron_schedule",
         "website",
         "notify_startup_of_app",
@@ -48,9 +49,15 @@ class RealtyQueryAdmin(admin.ModelAdmin):
 class RealtyResultAdmin(admin.ModelAdmin):
     list_display = (
         "title",
+        "status",
+        "created_at",
+        "updated_at",
         "price",
         "query",
     )
-    list_filter = ("query",)
+    list_filter = (
+        "query",
+        "status",
+    )
     search_fields = ("title", "price", "query__name")
     list_select_related = ("query",)

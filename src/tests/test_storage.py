@@ -3,7 +3,7 @@ from time import sleep
 import pytest
 from peewee import SqliteDatabase
 
-from enums import QueryResultORMStatus
+from enums import QueryResultStatus
 from models import QueryResult
 from storage import QueryResultsORM, get_new_query_results, save_query_results, update_query_results_status
 
@@ -66,7 +66,7 @@ def test_save_query_result_to_db__success(query_results: list[QueryResult]):
     assert row.image_url == query_result_1.image_url
     assert row.created_at is not None
     assert row.updated_at is not None
-    assert row.status == QueryResultORMStatus.NEW.value
+    assert row.status == QueryResultStatus.NEW.value
 
 
 def test_save_query_result_to_db__duplicate(query_results: list[QueryResult], new_query_result: QueryResult):
@@ -81,7 +81,7 @@ def test_save_query_result_to_db__duplicate(query_results: list[QueryResult], ne
     assert row.id == 1
     assert row.title == new_query_result.title
     assert row.updated_at > row.created_at
-    assert row.status == QueryResultORMStatus.UPDATED
+    assert row.status == QueryResultStatus.UPDATED
 
 
 def test_save_query_result_to_db__duplicate_url(query_results: list[QueryResult], new_query_result: QueryResult):
@@ -103,7 +103,7 @@ def test_get_new_query_results__success(query_results: list[QueryResult]):
 
 def test_get_new_query_results__duplicate(query_results: list[QueryResult]):
     save_query_results(query_results)
-    update_query_results_status(query_results, status=QueryResultORMStatus.NOTIFIED)
+    update_query_results_status(query_results, status=QueryResultStatus.NOTIFIED)
     save_query_results(query_results)
 
     new_query_results = get_new_query_results()
