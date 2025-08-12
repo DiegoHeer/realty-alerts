@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from requests import HTTPError
 
-from enums import Websites
+from enums import QueryResultStatus, Websites
 from settings import SETTINGS
 
 
@@ -68,6 +68,7 @@ class RealtyQuery(models.Model):
 
 
 class RealtyResult(models.Model):
+    status = models.CharField(choices=QueryResultStatus.choices(), default=QueryResultStatus.NEW)
     detail_url = models.URLField()
     query = models.ForeignKey(RealtyQuery, on_delete=models.CASCADE, related_name="results")
     title = models.CharField(max_length=500)

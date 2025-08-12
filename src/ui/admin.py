@@ -48,9 +48,13 @@ class RealtyQueryAdmin(admin.ModelAdmin):
 class RealtyResultAdmin(admin.ModelAdmin):
     list_display = (
         "title",
+        "status",
         "price",
         "query",
     )
-    list_filter = ("query",)
+    list_filter = (
+        "query",
+        "status",
+    )
     search_fields = ("title", "price", "query__name")
     list_select_related = ("query",)
