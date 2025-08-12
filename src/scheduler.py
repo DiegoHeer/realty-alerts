@@ -10,7 +10,6 @@ class CeleryConfig:
     broker_url = SETTINGS.redis_url
     result_backend = SETTINGS.redis_url
     timezone = SETTINGS.timezone
-    enable_utc = True
     beat_schedule_filename = str(DATA_PATH / "celerybeat-schedule")
     worker_hijack_root_logger = False
 
