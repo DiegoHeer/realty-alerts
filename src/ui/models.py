@@ -55,6 +55,9 @@ class RealtyQuery(models.Model):
     notify_startup_of_app = models.BooleanField(default=True)  # TODO: allow for notify testing of query in the form
     notify_if_no_new_listing = models.BooleanField(default=False)  # TODO: remove this in the future
 
+    class Meta:
+        verbose_name_plural = "realty queries"
+
     @property
     def website(self) -> Websites:
         parsed_url = urlparse(self.query_url)
