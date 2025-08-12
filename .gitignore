@@ -8,7 +8,7 @@ __pycache__/
 
 # Database
 sqlite.db*
-db.sqlite3
+*.sqlite3
 celerybeat-schedule*
 
 # Environments
