@@ -3,7 +3,7 @@ from datetime import datetime
 from loguru import logger
 from peewee import CharField, Check, DateTimeField, Model, SqliteDatabase
 
-from enums import QueryResultORMStatus
+from enums import QueryResultStatus
 from models import QueryResult
 from settings import DATA_PATH
 
@@ -20,9 +20,9 @@ class QueryResultsORM(Model):
     created_at = DateTimeField(default=datetime.now)
     updated_at = DateTimeField(null=True)
     status = CharField(
-        choices=QueryResultORMStatus.choices(),
-        default=QueryResultORMStatus.NEW,
-        constraints=[Check(f"status IN {tuple(QueryResultORMStatus.values())}")],
+        choices=QueryResultStatus.choices(),
+        default=QueryResultStatus.NEW,
+        constraints=[Check(f"status IN {tuple(QueryResultStatus.values())}")],
     )
 
     def save(self, *args, **kwargs):
@@ -58,7 +58,7 @@ def _save_query_result_to_db(query_result: QueryResult) -> None:
         if _is_query_result_changed(query_result, record):
             for key, value in query_result.model_dump().items():
                 setattr(record, key, value)
-            record.status = QueryResultORMStatus.UPDATED
+            record.status = QueryResultStatus.UPDATED
             record.save()
     else:
         QueryResultsORM.create(**query_result.model_dump())
@@ -72,10 +72,10 @@ def _is_query_result_changed(query_result: QueryResult, record: QueryResultsORM)
 
 
 def get_new_query_results() -> list[QueryResult]:
-    return list(QueryResultsORM.select().where(QueryResultsORM.status == QueryResultORMStatus.NEW))
+    return list(QueryResultsORM.select().where(QueryResultsORM.status == QueryResultStatus.NEW))
 
 
-def update_query_results_status(query_results: list[QueryResult], status: QueryResultORMStatus) -> None:
+def update_query_results_status(query_results: list[QueryResult], status: QueryResultStatus) -> None:
     for query_result in query_results:
         if record := QueryResultsORM.get_or_none(
             QueryResultsORM.detail_url == query_result.detail_url,

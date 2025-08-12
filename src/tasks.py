@@ -4,7 +4,7 @@ from celery import Celery
 from loguru import logger
 from playwright.sync_api import sync_playwright
 
-from enums import QueryResultORMStatus
+from enums import QueryResultStatus
 from models import RealtyQuery
 from notifications import (
     notify_about_new_results,
@@ -43,7 +43,7 @@ def main(realty_query: RealtyQuery) -> None:
     new_query_results = get_new_query_results()
     notify_about_new_results(realty_query.notification_url, new_query_results)
 
-    update_query_results_status(new_query_results, status=QueryResultORMStatus.NOTIFIED)
+    update_query_results_status(new_query_results, status=QueryResultStatus.NOTIFIED)
 
     if not new_query_results and realty_query.notify_if_no_new_listing:
         notify_when_there_are_no_new_listings(realty_query)
