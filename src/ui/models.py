@@ -52,8 +52,8 @@ class RealtyQuery(models.Model):
     cron_schedule = models.CharField(max_length=100, validators=[_validate_cron_schedule])
     query_url = models.URLField(validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
-    notify_startup_of_app = models.BooleanField(default=True)
-    notify_if_no_new_listing = models.BooleanField(default=False)
+    notify_startup_of_app = models.BooleanField(default=True)  # TODO: allow for notify testing of query in the form
+    notify_if_no_new_listing = models.BooleanField(default=False)  # TODO: remove this in the future
 
     @property
     def website(self) -> Websites:
