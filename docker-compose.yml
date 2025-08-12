@@ -12,7 +12,7 @@ services:
       realty-scheduler:
         condition: service_healthy
     healthcheck:
-      test: curl -f localhost:8000
+      test: curl -f localhost:9000
       interval: 20s
       timeout: 10s
       retries: 5
