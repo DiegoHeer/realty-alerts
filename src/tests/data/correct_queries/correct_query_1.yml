@@ -1,4 +1,0 @@
-name: Correct Query 1
-ntfy_topic: correct-query-1
-cron_schedule: "5 4 * * *"
-query_url: https://www.funda.nl/zoeken/koop

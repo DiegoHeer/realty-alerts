@@ -1,6 +1,0 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/DiegoHeer/realty-alerts/main/query_schema.json
-
-name: Funda Query
-ntfy_topic: realty-alerts
-cron_schedule: "0 22 * * 1-5" # Use https://crontab.guru as reference to get the desired schedule
-query_url: https://www.funda.nl/zoeken/koop
