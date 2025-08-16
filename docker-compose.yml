@@ -22,6 +22,8 @@ services:
     container_name: realty-scheduler
     image: ghcr.io/diegoheer/realty-alerts:latest
     command: celery -A core worker -B --pidfile=/tmp/celery-beat.pid
+    volumes:
+      - ./data:/data
     environment:
       - REDIS_URL=redis://realty-broker:6379/1
       - BROWSER_URL=ws://realty-browser:3000
