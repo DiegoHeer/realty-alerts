@@ -44,8 +44,6 @@ class RealtyQuery(models.Model):
     cron_schedule = models.ForeignKey(CrontabSchedule, on_delete=models.CASCADE, related_name="queries")
     query_url = models.URLField(max_length=500, validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
-    notify_startup_of_app = models.BooleanField(default=True)  # TODO: allow for notify testing of query in the form
-    notify_if_no_new_listing = models.BooleanField(default=False)  # TODO: remove this in the future
 
     class Meta:
         verbose_name_plural = "realty queries"
@@ -71,8 +69,8 @@ class RealtyResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(choices=QueryResultStatus.choices(), default=QueryResultStatus.NEW)
-    detail_url = models.URLField()
     query = models.ForeignKey(RealtyQuery, on_delete=models.CASCADE, related_name="results")
+    detail_url = models.URLField()
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
     image_url = models.URLField()

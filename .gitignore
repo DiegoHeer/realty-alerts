@@ -7,9 +7,7 @@ __pycache__/
 .pytest_cache/
 
 # Database
-sqlite.db*
 *.sqlite3
-celerybeat-schedule*
 
 # Environments
 .env
@@ -21,6 +19,3 @@ celerybeat-schedule*
 
 # Ruff:
 .ruff_cache/
-
-# Queries
-queries/*.yml

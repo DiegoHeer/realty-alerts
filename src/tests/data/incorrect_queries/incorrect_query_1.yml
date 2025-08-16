@@ -1,4 +1,0 @@
-name: Incorrect Query 1
-ntfy_topic: incorrect topic
-cron_schedule: "0 test * * 1-5"
-query_url: https://incorrect-website.nl

@@ -208,19 +208,6 @@ wheels = [
 ]
 
 [[package]]
-name = "cron-validator"
-version = "1.0.8"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dateutil" },
-    { name = "pytz" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/31/55/d3d8e7acad9dc3f54133df0972c79d38f2c6fc4be41f281a396c3afe4411/cron-validator-1.0.8.tar.gz", hash = "sha256:dd485257adb6f590b3e9433f641440c801d307015259c1ee3eb6e21c964c8026", size = 9657, upload-time = "2023-06-19T10:09:48.434Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/0c/d6bf9d572fb2ce3404fe37b794cf10dd44566368f7084c71b6028d3818ff/cron_validator-1.0.8-py3-none-any.whl", hash = "sha256:6477fcc3d60bfbd1ec00a708f0b8b5136c1fef8140c10effea1f45b79d778653", size = 7830, upload-time = "2023-06-19T10:09:44.881Z" },
-]
-
-[[package]]
 name = "distlib"
 version = "0.3.9"
 source = { registry = "https://pypi.org/simple" }
@@ -440,12 +427,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/a1/d4/1fc4078c65507b51b
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484", size = 66469, upload-time = "2025-04-19T11:48:57.875Z" },
 ]
-
-[[package]]
-name = "peewee"
-version = "3.18.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1e/ce/c2bb58d00cb12d19dea28d5a98d05a14350197a3d03eba60be9bae708bac/peewee-3.18.1.tar.gz", hash = "sha256:a76a694b3b3012ce22f00d51fd83e55bf80b595275a90ed62cd36eb45496cf1d", size = 3026130, upload-time = "2025-04-30T15:40:35.06Z" }
 
 [[package]]
 name = "platformdirs"
@@ -675,15 +656,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pytz"
-version = "2025.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f8/bf/abbd3cdfb8fbc7fb3d4d38d320f2441b1e7cbe29be4f23797b4a2b5d8aac/pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3", size = 320884, upload-time = "2025-03-25T02:25:00.538Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/c4/34e93fe5f5429d7570ec1fa436f1986fb1f00c3e0f43a589fe2bbcd22c3f/pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00", size = 509225, upload-time = "2025-03-25T02:24:58.468Z" },
-]
-
-[[package]]
 name = "pyyaml"
 version = "6.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -717,17 +689,14 @@ dependencies = [
     { name = "backoff" },
     { name = "beautifulsoup4" },
     { name = "celery", extra = ["redis"] },
-    { name = "cron-validator" },
     { name = "django" },
     { name = "django-celery-beat" },
     { name = "django-celery-results" },
     { name = "gunicorn" },
     { name = "loguru" },
-    { name = "peewee" },
     { name = "playwright" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
-    { name = "pyyaml" },
     { name = "requests" },
     { name = "secret-key-generator" },
     { name = "whitenoise" },
@@ -748,17 +717,14 @@ requires-dist = [
     { name = "backoff", specifier = ">=2.2.1" },
     { name = "beautifulsoup4", specifier = ">=4.13.4" },
     { name = "celery", extras = ["redis"], specifier = ">=5.5.3" },
-    { name = "cron-validator", specifier = ">=1.0.8" },
     { name = "django", specifier = ">=5.2.4" },
     { name = "django-celery-beat", specifier = ">=2.8.1" },
     { name = "django-celery-results", specifier = ">=2.6.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "peewee", specifier = ">=3.18.1" },
     { name = "playwright", specifier = ">=1.53.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-settings", specifier = ">=2.9.1" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = ">=2.32.4" },
     { name = "secret-key-generator", specifier = ">=0.0.8" },
     { name = "whitenoise", specifier = ">=6.9.0" },
