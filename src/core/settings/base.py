@@ -123,6 +123,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Celery
 
 CELERY_BROKER_URL = SETTINGS.redis_url
+CELERY_RESULT_EXTENDED = True
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TIMEZONE = TIME_ZONE
