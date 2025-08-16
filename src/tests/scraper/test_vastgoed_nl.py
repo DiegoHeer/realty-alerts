@@ -28,7 +28,12 @@ def test_scrape_last_page_number(mocker: MockerFixture, realty_query: RealtyQuer
     mocker.patch.object(VastgoedNLScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
-        vastgoed_nl_scraper = VastgoedNLScraper(playwright, realty_query)
+        vastgoed_nl_scraper = VastgoedNLScraper(
+            playwright,
+            query_name=realty_query.name,
+            query_url=realty_query.query_url,
+            max_listing_page_number=realty_query.max_listing_page_number,
+        )
         last_page_number = vastgoed_nl_scraper._get_last_page()
 
     assert last_page_number == 67
@@ -39,7 +44,12 @@ def test_scrape_first_page(mocker: MockerFixture, realty_query: RealtyQuery):
     mocker.patch.object(VastgoedNLScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
-        vastgoed_nl_scraper = VastgoedNLScraper(playwright, realty_query)
+        vastgoed_nl_scraper = VastgoedNLScraper(
+            playwright,
+            query_name=realty_query.name,
+            query_url=realty_query.query_url,
+            max_listing_page_number=realty_query.max_listing_page_number,
+        )
         results = vastgoed_nl_scraper.get_page_results(page_number=1)
 
     assert len(results) == 8

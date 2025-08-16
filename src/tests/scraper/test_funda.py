@@ -38,7 +38,12 @@ def test_scrape_last_page_number(mocker: MockerFixture, realty_query: RealtyQuer
     mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
-        funda_scraper = FundaScraper(playwright, realty_query)
+        funda_scraper = FundaScraper(
+            playwright,
+            query_name=realty_query.name,
+            query_url=realty_query.query_url,
+            max_listing_page_number=realty_query.max_listing_page_number,
+        )
         last_page_number = funda_scraper._get_last_page()
 
     assert last_page_number == 666
@@ -49,7 +54,12 @@ def test_scrape_detail_urls_of_query_page(mocker: MockerFixture, realty_query: R
     mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
-        funda_scraper = FundaScraper(playwright, realty_query)
+        funda_scraper = FundaScraper(
+            playwright,
+            query_name=realty_query.name,
+            query_url=realty_query.query_url,
+            max_listing_page_number=realty_query.max_listing_page_number,
+        )
         detail_urls = funda_scraper._scrape_urls_per_page_number(page_number=1)
 
     assert len(detail_urls) == 30
@@ -60,7 +70,12 @@ def test_scrape_detail_page(mocker: MockerFixture, realty_query: RealtyQuery, de
     mocker.patch.object(FundaScraper, "_scrape_url_content", side_effect=mock_scrape_url_content)
 
     with sync_playwright() as playwright:
-        funda_scraper = FundaScraper(playwright, realty_query)
+        funda_scraper = FundaScraper(
+            playwright,
+            query_name=realty_query.name,
+            query_url=realty_query.query_url,
+            max_listing_page_number=realty_query.max_listing_page_number,
+        )
         query_result = funda_scraper.scrape_detail_page(detail_url)
 
     assert query_result.detail_url == "https://www.funda.nl/detail/koop/blokker/huis-bangert-58/43063167/"
@@ -75,7 +90,12 @@ def test_scrape_detected(mocker: MockerFixture, realty_query: RealtyQuery, scrap
 
     with pytest.raises(ScrapingException) as exc:
         with sync_playwright() as playwright:
-            funda_scraper = FundaScraper(playwright, realty_query)
+            funda_scraper = FundaScraper(
+                playwright,
+                query_name=realty_query.name,
+                query_url=realty_query.query_url,
+                max_listing_page_number=realty_query.max_listing_page_number,
+            )
             funda_scraper.scrape_detail_page(scraper_detected_url)
 
     assert exc.value.args[0] == "Scraping was detected when trying to access url: https://www.funda.nl/scraper-detected"
