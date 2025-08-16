@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     browser_url: str = "ws://localhost:3000"
     timezone: str = "Europe/Amsterdam"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 SETTINGS = Settings()
