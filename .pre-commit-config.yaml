@@ -14,14 +14,14 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.8
+    rev: v0.12.9
     hooks:
-      - id: ruff
+      - id: ruff-check
         name: Lint python files
         args: [--config, ./pyproject.toml, --fix, --exit-non-zero-on-fix]
       - id: ruff-format
         name: Format python files
-        args: [--config, ./pyproject.toml, --diff]
+        args: [--config, ./pyproject.toml]
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.7.13
