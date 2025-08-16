@@ -9,7 +9,6 @@ from notifications import _build_headers, _build_message, notify_about_new_resul
 def sample_query_result() -> QueryResult:
     return QueryResult(
         title="Charming House",
-        query_name="Houses in Amsterdam",
         detail_url="https://www.funda.nl/listing/123",
         price="€310000 k.k.",
         image_url="https://example-image.com",
@@ -32,7 +31,7 @@ def test_build_headers(sample_query_result: QueryResult):
 
     assert headers["Priority"] == "urgent"
     assert headers["Tags"] == "house, rotating_light"
-    assert headers["Title"] == "Houses in Amsterdam -> Charming House"
+    assert headers["Title"] == "Charming House"
     assert headers["Click"] == "https://www.funda.nl/listing/123"
     assert headers["Attach"] == "https://example-image.com"
 

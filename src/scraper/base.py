@@ -17,8 +17,7 @@ class BaseScraper(ABC):
     website: Websites
     scrape_strategy: ScrapeStrategy
 
-    def __init__(self, playwright: Playwright, query_name: str, query_url: str, max_listing_page_number: int) -> None:
-        self.query_name = query_name
+    def __init__(self, playwright: Playwright, query_url: str, max_listing_page_number: int) -> None:
         self.query_url = query_url
         self.max_listing_page_number = max_listing_page_number
         self.playwright = playwright

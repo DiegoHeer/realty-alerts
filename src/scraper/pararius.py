@@ -46,7 +46,6 @@ class ParariusScraper(BaseScraper):
     def _get_query_result_per_listing_card(self, listing_card) -> QueryResult:
         return QueryResult(
             detail_url=self._get_detail_url_from_card(listing_card),
-            query_name=self.query_name,
             title=self._get_title_from_card(listing_card),
             price=self._get_price_from_card(listing_card),
             image_url=self._get_image_url_from_card(listing_card),

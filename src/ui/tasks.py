@@ -28,7 +28,6 @@ def _scrape_query(realty_query: RealtyQuery) -> list[QueryResult]:
     with sync_playwright() as playwright:
         scraper = scraper_class(
             playwright,
-            query_name=realty_query.name,
             query_url=realty_query.query_url,
             max_listing_page_number=realty_query.max_listing_page_number,
         )
@@ -76,7 +75,7 @@ def _get_new_query_results(query_name: str) -> list[QueryResult]:
     db_records = RealtyResult.objects.filter(query__name=query_name, status=QueryResultStatus.NEW)
     dict_records = serializers.serialize("python", db_records)
 
-    return [QueryResult.model_validate({**record["fields"], "query_name": query_name}) for record in dict_records]
+    return [QueryResult.model_validate(record["fields"]) for record in dict_records]
 
 
 def _update_query_results_status(query_name: str, query_results: list[QueryResult], status: QueryResultStatus) -> None:
