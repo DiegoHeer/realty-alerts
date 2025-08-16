@@ -6,7 +6,9 @@ from requests.exceptions import ConnectionError, RequestException
 from models import QueryResult
 
 
-def notify_about_new_results(url: str, query_results: list[QueryResult]) -> None:
+def notify_about_new_results(query_name: str, url: str, query_results: list[QueryResult]) -> list[QueryResult]:
+    query_results = _limit_max_amount_of_notifications(query_results)
+
     for result_query in query_results:
         headers = _build_headers(result_query)
         message = _build_message(result_query)
@@ -14,6 +16,15 @@ def notify_about_new_results(url: str, query_results: list[QueryResult]) -> None
 
     if not query_results:
         logger.info(f"No new notifications available for query: {query_name}")
+
+    return query_results
+
+
+def _limit_max_amount_of_notifications(query_results: list[QueryResult]) -> list[QueryResult]:
+    """THis is to avoid 429 status code errors when sending too many notifications in one go"""
+    MAX_AMOUNT_OF_NOTIFICATIONS = 50
+
+    return query_results[:MAX_AMOUNT_OF_NOTIFICATIONS]
 
 
 def _build_message(query_result: QueryResult) -> str:
