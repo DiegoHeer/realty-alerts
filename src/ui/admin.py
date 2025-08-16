@@ -10,13 +10,8 @@ class RealtyQueryAdmin(admin.ModelAdmin):
         "created_at",
         "cron_schedule",
         "website",
-        "notify_startup_of_app",
-        "notify_if_no_new_listing",
     )
-    list_filter = (
-        "notify_startup_of_app",
-        "notify_if_no_new_listing",
-    )
+
     search_fields = ("name", "ntfy_topic", "query_url")
     readonly_fields = ("website", "notification_url")
 
@@ -30,8 +25,6 @@ class RealtyQueryAdmin(admin.ModelAdmin):
                     "cron_schedule",
                     "query_url",
                     "max_listing_page_number",
-                    "notify_startup_of_app",
-                    "notify_if_no_new_listing",
                 )
             },
         ),
