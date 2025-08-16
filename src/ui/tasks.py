@@ -18,9 +18,11 @@ def scrape_and_notify(query_name: str) -> None:
     _save_query_results(realty_query, query_results)
 
     new_query_results = _get_new_query_results(query_name=realty_query.name)
-    notify_about_new_results(url=realty_query.notification_url, query_results=new_query_results)
+    notified_query_results = notify_about_new_results(
+        query_name=realty_query.name, url=realty_query.notification_url, query_results=new_query_results
+    )
 
-    _update_query_results_status(realty_query.name, new_query_results, status=QueryResultStatus.NOTIFIED)
+    _update_query_results_status(realty_query.name, notified_query_results, status=QueryResultStatus.NOTIFIED)
 
 
 def _scrape_query(realty_query: RealtyQuery) -> list[QueryResult]:

@@ -19,7 +19,7 @@ class QueryResultStatus(StrEnum):
 
     @classmethod
     def choices(cls) -> list[tuple[str, str]]:
-        return [(item.name, item.value) for item in list(cls)]
+        return [(item.value, item.value) for item in list(cls)]
 
     @classmethod
     def values(cls) -> list[str]:
