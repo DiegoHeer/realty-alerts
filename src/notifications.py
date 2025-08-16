@@ -13,7 +13,7 @@ def notify_about_new_results(url: str, query_results: list[QueryResult]) -> None
         _send_to_ntfy(url, headers, message)
 
     if not query_results:
-        logger.info("No new notifications available")
+        logger.info(f"No new notifications available for query: {query_name}")
 
 
 def _build_message(query_result: QueryResult) -> str:
