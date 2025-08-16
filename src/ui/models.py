@@ -63,6 +63,9 @@ class RealtyQuery(models.Model):
         self.full_clean()
         return super().save(*args, **kwargs)
 
+    def __str__(self) -> str:
+        return f"{self.name}"
+
 
 class RealtyResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -73,6 +76,9 @@ class RealtyResult(models.Model):
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
     image_url = models.URLField()
+
+    class Meta:
+        unique_together = ["query", "detail_url"]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.query.name})"
