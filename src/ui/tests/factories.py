@@ -1,12 +1,24 @@
 import factory
+from django_celery_beat.models import CrontabSchedule
 
 from ui.models import RealtyQuery, RealtyResult
+
+
+class CrontabScheduleFactory(factory.django.DjangoModelFactory):
+    minute = "0"
+    hour = "0"
+    day_of_month = "*"
+    month_of_year = "*"
+    day_of_week = "*"
+
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        model = CrontabSchedule
 
 
 class RealtyQueryFactory(factory.django.DjangoModelFactory):
     name = factory.declarations.Sequence(lambda n: f"Query {n}")
     ntfy_topic = "test-topic"
-    cron_schedule = "* * * * *"
+    cron_schedule = factory.declarations.SubFactory(CrontabScheduleFactory)
     query_url = factory.declarations.Sequence(lambda n: f"https://www.funda.nl/{n}")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]

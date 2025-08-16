@@ -1,9 +1,9 @@
 from urllib.parse import urljoin, urlparse
 
 import requests
-from cron_validator import CronValidator
 from django.core.exceptions import ValidationError
 from django.db import models
+from django_celery_beat.models import CrontabSchedule
 from requests import HTTPError
 
 from enums import QueryResultStatus, Websites
@@ -24,14 +24,6 @@ def _validate_ntfy_topic(value: str) -> None:
         raise ValidationError(msg)
 
 
-def _validate_cron_schedule(value: str) -> None:
-    try:
-        CronValidator.parse(value)
-    except ValueError:
-        msg = f"The cron schedule {value} is invalid. Please place a valid crontab."
-        raise ValidationError(msg)
-
-
 def _validate_query_url(value: str) -> None:
     parsed = urlparse(value)
 
@@ -49,8 +41,8 @@ class RealtyQuery(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=255, unique=True)
     ntfy_topic = models.CharField(max_length=255, validators=[_validate_ntfy_topic])
-    cron_schedule = models.CharField(max_length=100, validators=[_validate_cron_schedule])
-    query_url = models.URLField(validators=[_validate_query_url])
+    cron_schedule = models.ForeignKey(CrontabSchedule, on_delete=models.CASCADE, related_name="queries")
+    query_url = models.URLField(max_length=500, validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
     notify_startup_of_app = models.BooleanField(default=True)  # TODO: allow for notify testing of query in the form
     notify_if_no_new_listing = models.BooleanField(default=False)  # TODO: remove this in the future
@@ -71,6 +63,9 @@ class RealtyQuery(models.Model):
         self.full_clean()
         return super().save(*args, **kwargs)
 
+    def __str__(self) -> str:
+        return f"{self.name}"
+
 
 class RealtyResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -81,6 +76,9 @@ class RealtyResult(models.Model):
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
     image_url = models.URLField()
+
+    class Meta:
+        unique_together = ["query", "detail_url"]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.query.name})"

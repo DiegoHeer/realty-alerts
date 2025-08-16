@@ -35,7 +35,12 @@ def main(realty_query: RealtyQuery) -> None:
 
     scraper_class = get_scraper_class(website=realty_query.website)
     with sync_playwright() as playwright:
-        scraper = scraper_class(playwright, realty_query)
+        scraper = scraper_class(
+            playwright,
+            query_name=realty_query.name,
+            query_url=realty_query.query_url,
+            max_listing_page_number=realty_query.max_listing_page_number,
+        )
         query_results = scraper.get_query_results()
 
     save_query_results(query_results)

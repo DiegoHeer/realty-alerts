@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import Browser, Playwright
 
 from enums import ScrapeStrategy, Websites
-from models import QueryResult, RealtyQuery
+from models import QueryResult
 from settings import SETTINGS
 
 
@@ -17,10 +17,10 @@ class BaseScraper(ABC):
     website: Websites
     scrape_strategy: ScrapeStrategy
 
-    def __init__(self, playwright: Playwright, realty_query: RealtyQuery) -> None:
-        self.query_name = realty_query.name
-        self.query_url = realty_query.query_url
-        self.max_listing_page_number = realty_query.max_listing_page_number
+    def __init__(self, playwright: Playwright, query_name: str, query_url: str, max_listing_page_number: int) -> None:
+        self.query_name = query_name
+        self.query_url = query_url
+        self.max_listing_page_number = max_listing_page_number
         self.playwright = playwright
 
     @abstractmethod

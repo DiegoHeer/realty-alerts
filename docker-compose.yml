@@ -12,7 +12,7 @@ services:
       realty-scheduler:
         condition: service_healthy
     healthcheck:
-      test: curl -f localhost:8000
+      test: curl -f localhost:9000
       interval: 20s
       timeout: 10s
       retries: 5
@@ -21,10 +21,7 @@ services:
   realty-scheduler:
     container_name: realty-scheduler
     image: ghcr.io/diegoheer/realty-alerts:latest
-    command: celery -A tasks worker -B --pidfile=/tmp/celery-beat.pid
-    volumes:
-      - ./queries:/queries  # Mount here to the folder with your query configs
-      - ./data:/data # Mount here the folder where the sqlite and celery-beat database should be stored
+    command: celery -A core worker -B --pidfile=/tmp/celery-beat.pid
     environment:
       - REDIS_URL=redis://realty-broker:6379/1
       - BROWSER_URL=ws://realty-browser:3000
