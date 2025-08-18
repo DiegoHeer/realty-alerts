@@ -1,5 +1,5 @@
 from core.settings.base import *  # noqa: F403, F401
-from core.settings.base import DATA_DIR
+import dj_database_url
 
 DEBUG = False
 ALLOWED_HOSTS = ["*"]
@@ -15,9 +15,4 @@ STATIC_ROOT = "/tmp/staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Databases
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": DATA_DIR / "prod.sqlite3",
-    }
-}
+DATABASES = {"default": dj_database_url.config(conn_max_age=600, conn_health_checks=True)}
