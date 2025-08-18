@@ -6,8 +6,6 @@ services:
     command: gunicorn core.wsgi:application --bind 0.0.0.0:9000
     ports:
       - 9000:9000
-    volumes:
-      - ./data:/data
     env_file:
       - .prod.env
     depends_on:
@@ -24,8 +22,6 @@ services:
     container_name: realty-scheduler
     image: ghcr.io/diegoheer/realty-alerts:latest
     command: celery -A core worker -B --pidfile=/tmp/celery-beat.pid
-    volumes:
-      - ./data:/data
     env_file:
       - .prod.env
     depends_on:

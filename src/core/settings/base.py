@@ -18,8 +18,6 @@ from settings import SETTINGS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = BASE_DIR.parent / "data"
-
 
 # Other critical settings
 SECRET_KEY = secret_key_generator.generate()
@@ -78,7 +76,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": DATA_DIR / "local.sqlite3",
+        "NAME": BASE_DIR / ".local.sqlite3",
     }
 }
 
