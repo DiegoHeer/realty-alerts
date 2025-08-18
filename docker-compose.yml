@@ -8,8 +8,10 @@ services:
       - 9000:9000
     volumes:
       - ./data:/data
+    env_file:
+      - .prod.env
     depends_on:
-      realty-scheduler:
+      realty-database:
         condition: service_healthy
     healthcheck:
       test: curl -f localhost:9000
@@ -24,10 +26,11 @@ services:
     command: celery -A core worker -B --pidfile=/tmp/celery-beat.pid
     volumes:
       - ./data:/data
-    environment:
-      - REDIS_URL=redis://realty-broker:6379/1
-      - BROWSER_URL=ws://realty-browser:3000
+    env_file:
+      - .prod.env
     depends_on:
+      realty-database:
+        condition: service_healthy
       realty-browser:
         condition: service_healthy
       realty-broker:
@@ -38,6 +41,20 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
+
+  realty-database:
+    container_name: realty-database
+    image: postgres:17.6
+    env_file:
+      - .prod.env
+    volumes:
+      - realty-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U postgres -d postgres
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
 
   realty-browser:
     container_name: realty-browser
@@ -62,3 +79,6 @@ services:
       timeout: 1s
       retries: 5
       start_period: 0s
+
+volumes:
+  realty-database-data:

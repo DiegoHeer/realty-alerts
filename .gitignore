@@ -11,6 +11,7 @@ __pycache__/
 
 # Environments
 .env
+*.env
 .venv
 .secret.txt
 
