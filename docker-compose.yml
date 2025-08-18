@@ -43,8 +43,6 @@ services:
     container_name: realty-browser
     image: mcr.microsoft.com/playwright:v1.53.0-noble
     command: /bin/sh -c "npx -y playwright@1.53.0 run-server --port 3000 --host 0.0.0.0"
-    ports:
-      - 3000:3000
     user: pwuser
     working_dir: /home/pwuser
     init: true
@@ -58,8 +56,6 @@ services:
   realty-broker:
     container_name: realty-broker
     image: redis:8.0.2
-    ports:
-      - 6379:6379
     healthcheck:
       test: redis-cli ping || exit 1
       interval: 3s
