@@ -12,6 +12,7 @@ dependencies = [
     "django>=5.2.4",
     "django-celery-beat>=2.8.1",
     "django-celery-results>=2.6.0",
+    "django-tailwind-cli>=4.3.0",
     "gunicorn>=23.0.0",
     "loguru>=0.7.3",
     "playwright>=1.53.0",

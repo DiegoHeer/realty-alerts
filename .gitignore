@@ -20,3 +20,6 @@ __pycache__/
 
 # Ruff:
 .ruff_cache/
+
+# Tailwind
+.django_tailwind_cli/

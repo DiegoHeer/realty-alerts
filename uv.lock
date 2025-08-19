@@ -273,6 +273,21 @@ wheels = [
 ]
 
 [[package]]
+name = "django-tailwind-cli"
+version = "4.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-typer" },
+    { name = "requests" },
+    { name = "semver" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/14/319efb2f43b635382cee74e80da7ab383c69e98cf6ef35c00a754454931e/django_tailwind_cli-4.3.0.tar.gz", hash = "sha256:20da555409eccaeb3c38837b33186b6523f44cb88c80136de3bac3b593253331", size = 101182, upload-time = "2025-07-12T20:33:02.061Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/1a/1c15852b3002929ed08992aeaaea703c43a43345dc19a09fd457593f52a6/django_tailwind_cli-4.3.0-py3-none-any.whl", hash = "sha256:0ff7d7374a390e63cba77894a13de2bf8721320a5bad97361cb14e160cc824b5", size = 29704, upload-time = "2025-07-12T20:33:00.242Z" },
+]
+
+[[package]]
 name = "django-timezone-field"
 version = "7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -282,6 +297,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ba/5b/0dbe271fef3c2274b83dbcb1b19fa3dacf1f7e542382819294644e78ea8b/django_timezone_field-7.1.tar.gz", hash = "sha256:b3ef409d88a2718b566fabe10ea996f2838bc72b22d3a2900c0aa905c761380c", size = 13727, upload-time = "2025-01-11T17:49:54.486Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/09/7a808392a751a24ffa62bec00e3085a9c1a151d728c323a5bab229ea0e58/django_timezone_field-7.1-py3-none-any.whl", hash = "sha256:93914713ed882f5bccda080eda388f7006349f25930b6122e9b07bf8db49c4b4", size = 13177, upload-time = "2025-01-11T17:49:52.142Z" },
+]
+
+[[package]]
+name = "django-typer"
+version = "3.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "django" },
+    { name = "shellingham" },
+    { name = "typer-slim" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ce/0a/414eb536edef37e78a80be1f382955a0aa70c29d1a30d4d311a5fa2fd8ec/django_typer-3.2.2.tar.gz", hash = "sha256:0d1a9faf67fec82e2607d06656d0b3d7eefadb187440ae3d007fed3ae1b1835f", size = 2913865, upload-time = "2025-07-17T22:57:17.116Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/18/b6/6cdf17830ba65836e370158028163b0e826d5c744df8288db5e4b20b6afc/django_typer-3.2.2-py3-none-any.whl", hash = "sha256:a97d0e5e5582d4648f372c688c2aec132540caa04e2578329b13a55588477e11", size = 295649, upload-time = "2025-07-17T22:57:14.996Z" },
 ]
 
 [[package]]
@@ -736,6 +766,7 @@ dependencies = [
     { name = "django" },
     { name = "django-celery-beat" },
     { name = "django-celery-results" },
+    { name = "django-tailwind-cli" },
     { name = "gunicorn" },
     { name = "loguru" },
     { name = "playwright" },
@@ -766,6 +797,7 @@ requires-dist = [
     { name = "django", specifier = ">=5.2.4" },
     { name = "django-celery-beat", specifier = ">=2.8.1" },
     { name = "django-celery-results", specifier = ">=2.6.0" },
+    { name = "django-tailwind-cli", specifier = ">=4.3.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "playwright", specifier = ">=1.53.0" },
@@ -846,6 +878,24 @@ wheels = [
 ]
 
 [[package]]
+name = "semver"
+version = "3.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/d1/d3159231aec234a59dd7d601e9dd9fe96f3afff15efd33c1070019b26132/semver-3.0.4.tar.gz", hash = "sha256:afc7d8c584a5ed0a11033af086e8af226a9c0b206f313e0301f8dd7b6b589602", size = 269730, upload-time = "2025-01-24T13:19:27.617Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/24/4d91e05817e92e3a61c8a21e08fd0f390f5301f1c448b137c57c4bc6e543/semver-3.0.4-py3-none-any.whl", hash = "sha256:9c824d87ba7f7ab4a1890799cec8596f15c1241cb473404ea1cb0c55e4b04746", size = 17912, upload-time = "2025-01-24T13:19:24.949Z" },
+]
+
+[[package]]
+name = "shellingham"
+version = "1.5.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/15/8b3609fd3830ef7b27b655beb4b4e9c62313a4e8da8c676e142cc210d58e/shellingham-1.5.4.tar.gz", hash = "sha256:8dbca0739d487e5bd35ab3ca4b36e11c4078f3a234bfce294b0a0291363404de", size = 10310, upload-time = "2023-10-24T04:13:40.426Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/f9/0595336914c5619e5f28a1fb793285925a8cd4b432c9da0a987836c7f822/shellingham-1.5.4-py2.py3-none-any.whl", hash = "sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686", size = 9755, upload-time = "2023-10-24T04:13:38.866Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -870,6 +920,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e5/40/edede8dd6977b0d3da179a342c198ed100dd2aba4be081861ee5911e4da4/sqlparse-0.5.3.tar.gz", hash = "sha256:09f67787f56a0b16ecdbde1bfc7f5d9c3371ca683cfeaa8e6ff60b4807ec9272", size = 84999, upload-time = "2024-12-10T12:05:30.728Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a9/5c/bfd6bd0bf979426d405cc6e71eceb8701b148b16c21d2dc3c261efc61c7b/sqlparse-0.5.3-py3-none-any.whl", hash = "sha256:cf2196ed3418f3ba5de6af7e82c694a9fbdbfecccdfc72e281548517081f16ca", size = 44415, upload-time = "2024-12-10T12:05:27.824Z" },
+]
+
+[[package]]
+name = "typer-slim"
+version = "0.16.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ae/96/5749d5b6920fab0db15ce39d850b86dfee21518cd1c81b7a5fe5a495a92a/typer_slim-0.16.0.tar.gz", hash = "sha256:d6483c367f98529884a5d45a028f5d2686ae93cd9d33d518661069f382c08546", size = 102664, upload-time = "2025-05-26T14:30:33.966Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/41/2d/dc1f0c872615aef018783408ac993be7832726a4b30032e317e9f2858267/typer_slim-0.16.0-py3-none-any.whl", hash = "sha256:8aa94eef73b876506b9d239cd70cfedefac95541be8f060688aabfc800f53d67", size = 46377, upload-time = "2025-05-26T14:30:32.268Z" },
 ]
 
 [[package]]
