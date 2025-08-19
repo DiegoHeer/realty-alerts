@@ -19,5 +19,6 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600, conn_health_che
 
 # Tailwind/CSS
 TAILWIND_CLI_VERSION = "4.1.12"
+TAILWIND_CLI_PATH = "/usr/local/bin/tailwindcss"
 TAILWIND_CLI_AUTOMATIC_DOWNLOAD = False
 TAILWIND_CLI_DIST_CSS = "css/tailwind.min.css"
