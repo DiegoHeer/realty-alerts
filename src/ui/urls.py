@@ -1,7 +1,7 @@
 from django.urls import path
 
-from ui.views import index
+from ui.views import RealtyQueryListView
 
 urlpatterns = [
-    path("", index, name="index"),
+    path("", RealtyQueryListView.as_view(), name="realty-query-list"),
 ]

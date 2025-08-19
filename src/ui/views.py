@@ -1,5 +1,9 @@
-from django.http import HttpResponse
+from django.views.generic import ListView
+
+from ui.models import RealtyQuery
 
 
-def index(request):
-    return HttpResponse("Hello World")
+class RealtyQueryListView(ListView):
+    model = RealtyQuery
+    ordering = "updated_at"
+    paginate_by = 25
