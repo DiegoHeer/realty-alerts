@@ -17,7 +17,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # Databases
 DATABASES = {"default": dj_database_url.config(conn_max_age=600, conn_health_checks=True)}
 
-# Tailwind/CSS
+# Tailwind/CSS (https://django-tailwind-cli.readthedocs.io/latest)
 TAILWIND_CLI_VERSION = "4.1.12"
 TAILWIND_CLI_PATH = "/usr/local/bin/tailwindcss"
 TAILWIND_CLI_AUTOMATIC_DOWNLOAD = False
