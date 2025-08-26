@@ -7,6 +7,7 @@ from ui.models import RealtyQuery, RealtyResult
 class RealtyQueryAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "enabled",
         "created_at",
         "cron_schedule",
         "website",
@@ -25,6 +26,7 @@ class RealtyQueryAdmin(admin.ModelAdmin):
                     "cron_schedule",
                     "query_url",
                     "max_listing_page_number",
+                    "enabled",
                 )
             },
         ),
