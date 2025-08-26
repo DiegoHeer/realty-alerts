@@ -21,7 +21,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/manage.py",
-            "args": ["runserver"],
+            "args": ["tailwind", "runserver"],
             "cwd": "${workspaceFolder}/src",
             "justMyCode": false,
             "django": true
