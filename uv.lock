@@ -777,6 +777,7 @@ dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "dj-database-url" },
     { name = "django" },
+    { name = "django-browser-reload" },
     { name = "django-celery-beat" },
     { name = "django-celery-results" },
     { name = "django-tailwind-cli" },
@@ -793,7 +794,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "django-browser-reload" },
     { name = "factory-boy" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -809,6 +809,7 @@ requires-dist = [
     { name = "celery", extras = ["redis"], specifier = ">=5.5.3" },
     { name = "dj-database-url", specifier = ">=3.0.1" },
     { name = "django", specifier = ">=5.2.4" },
+    { name = "django-browser-reload", specifier = ">=1.18.0" },
     { name = "django-celery-beat", specifier = ">=2.8.1" },
     { name = "django-celery-results", specifier = ">=2.6.0" },
     { name = "django-tailwind-cli", specifier = ">=4.3.0" },
@@ -825,7 +826,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "django-browser-reload", specifier = ">=1.18.0" },
     { name = "factory-boy", specifier = ">=3.3.3" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pytest", specifier = ">=8.4.1" },
