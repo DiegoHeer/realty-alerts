@@ -13,6 +13,7 @@ from django.http import HttpRequest
 class RealtyQueryListView(ListView):
     model = RealtyQuery
     context_object_name = "queries"
+    ordering = "updated_at"
     paginate_by = 10
 
     def get_queryset(self) -> QuerySet[RealtyQuery]:
