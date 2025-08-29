@@ -8,6 +8,7 @@ from requests import HTTPError
 
 from enums import QueryResultStatus, Websites
 from settings import SETTINGS
+from django_celery_beat.models import PeriodicTask
 
 
 def _validate_ntfy_topic(value: str) -> None:
@@ -44,6 +45,7 @@ class RealtyQuery(models.Model):
     cron_schedule = models.ForeignKey(CrontabSchedule, on_delete=models.CASCADE, related_name="queries")
     query_url = models.URLField(max_length=500, validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
+    enabled = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = "realty queries"
@@ -56,6 +58,13 @@ class RealtyQuery(models.Model):
     @property
     def notification_url(self) -> str:
         return urljoin(SETTINGS.ntfy_url, self.ntfy_topic)
+
+    @property
+    def periodic_task(self) -> PeriodicTask | None:
+        try:
+            return PeriodicTask.objects.get(name=self.name)
+        except PeriodicTask.DoesNotExist:
+            return None
 
     def save(self, *args, **kwargs) -> None:
         self.full_clean()

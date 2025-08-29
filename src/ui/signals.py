@@ -7,8 +7,8 @@ from ui.models import RealtyQuery
 
 
 @receiver([post_save], sender=RealtyQuery)
-def create_periodic_task(instance: RealtyQuery, **kwargs) -> None:
-    _, created = PeriodicTask.objects.get_or_create(
+def create_and_toggle_periodic_task(instance: RealtyQuery, **kwargs) -> None:
+    periodic_task, created = PeriodicTask.objects.get_or_create(
         name=instance.name,
         defaults={
             "task": "ui.tasks.scrape_and_notify",
@@ -19,6 +19,13 @@ def create_periodic_task(instance: RealtyQuery, **kwargs) -> None:
 
     if created:
         logger.info(f"Created periodic task for query '{instance.name}'")
+
+    _toggle_periodic_task(periodic_task, enable=instance.enabled)
+
+
+def _toggle_periodic_task(periodic_task: PeriodicTask, enable: bool) -> None:
+    periodic_task.enabled = enable
+    periodic_task.save()
 
 
 @receiver([post_delete], sender=RealtyQuery)

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "django_celery_results",
     "django_tailwind_cli",
+    "django_browser_reload",
 ]
 
 MIDDLEWARE = [
@@ -49,6 +50,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -128,3 +130,6 @@ CELERY_RESULT_BACKEND = "django-db"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
+
+# Tailwind/CSS (https://django-tailwind-cli.readthedocs.io/latest)
+TAILWIND_CLI_SRC_CSS = "ui/static/css/theme.css"
