@@ -29,7 +29,7 @@
         <div class="flex flex-col">
           <span class="text-md">{{ query.name }}</span>
           <div class="text-gray-400 text-xs">
-            {% if query.last_executed_at %}
+            {% if query.periodic_task.last_run_at %}
               <span>Last executed: {{ query.periodic_task.last_run_at }}</span>
             {% else %}
               <span>Created: {{ query.created_at }}</span>
