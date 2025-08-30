@@ -70,10 +70,10 @@ class RealtyResult(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(choices=QueryResultStatus.choices(), default=QueryResultStatus.NEW)
     query = models.ForeignKey(RealtyQuery, on_delete=models.CASCADE, related_name="results")
-    detail_url = models.URLField()
+    detail_url = models.URLField(max_length=500)
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
-    image_url = models.URLField()
+    image_url = models.URLField(max_length=500)
 
     class Meta:
         unique_together = ["query", "detail_url"]
