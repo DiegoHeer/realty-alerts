@@ -11,7 +11,6 @@ from django.http import HttpRequest
 from django.utils import timezone
 
 
-
 class RealtyQueryListView(ListView):
     model = RealtyQuery
     context_object_name = "queries"
