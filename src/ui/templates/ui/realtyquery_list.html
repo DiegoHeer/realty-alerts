@@ -26,14 +26,23 @@
     <div class="flex flex-col gap-2 lg:w-4xl infinite-container">
       {% for query in queries %}
       <div class="text-white bg-gray-900 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 infinite-item">
-        <div class="flex flex-col">
+        <div class="flex flex-col gap-0.5">
           <span class="text-md">{{ query.name }}</span>
-          <div class="text-gray-400 text-xs">
+          <div class="flex flex-col lg:flex-row lg:items-center gap-2">
             {% if query.periodic_task.last_run_at %}
-              <span>Last executed: {{ query.periodic_task.last_run_at }}</span>
+              <span class="text-gray-400 text-xs">Last executed: {{ query.periodic_task.last_run_at }}</span>
             {% else %}
-              <span>Created: {{ query.created_at }}</span>
+              <span class="text-gray-400 text-xs">Created: {{ query.created_at|date }}</span>
             {% endif %}
+
+            <div>
+              {% if query.new_results_count %}
+                <span class="inline-flex items-center rounded-md bg-red-600/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-red-400/30">{{ query.new_results_count }} new</span>
+              {% endif %}
+              {% if query.results.count %}
+                <span class="inline-flex items-center rounded-md bg-blue-400/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-blue-400/30">{{ query.results.count }} total</span>
+              {% endif %}
+            </div>
           </div>
         </div>
 
@@ -59,6 +68,8 @@
         </div>
 
       </div>
+      {% empty %}
+        <span class="text-gray-600">No queries available. Please create one.</span>
       {% endfor %}
     </div>
     {% if page_obj.has_next %}

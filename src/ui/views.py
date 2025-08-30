@@ -8,6 +8,7 @@ from ui.forms import ToggleQueryForm
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from django.http import HttpRequest
+from django.utils import timezone
 
 
 class RealtyQueryListView(ListView):
@@ -23,6 +24,19 @@ class RealtyQueryListView(ListView):
             queryset = queryset.filter(Q(name__icontains=search_query))
 
         return queryset
+
+    def get_context_data(self, **kwargs) -> dict:
+        context_data = super().get_context_data(**kwargs)
+
+        for query in context_data["queries"]:
+            self._annotate_result_counts(query)
+
+        return context_data
+
+    def _annotate_result_counts(self, query: RealtyQuery) -> None:
+        today = timezone.now().date()
+
+        query.new_results_count = query.results.filter(created_at__date__gte=today).count()
 
     def post(self, request: HttpRequest, *args, **kwargs):
         query_id = request.POST.get("query_id")
