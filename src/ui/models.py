@@ -41,7 +41,7 @@ class RealtyQuery(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=255, unique=True)
     ntfy_topic = models.CharField(max_length=255, validators=[_validate_ntfy_topic])
-    periodic_task = models.OneToOneField(PeriodicTask, on_delete=models.CASCADE, related_name="queries", null=True)
+    periodic_task = models.OneToOneField(PeriodicTask, on_delete=models.CASCADE, related_name="queries")
     query_url = models.URLField(max_length=500, validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
 
