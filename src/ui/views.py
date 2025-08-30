@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
 from ui.models import RealtyQuery
-from ui.forms import ToggleQueryForm
+from ui.forms import TogglePeriodicTaskForm
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from django.http import HttpRequest
@@ -14,7 +14,7 @@ from django.utils import timezone
 class RealtyQueryListView(ListView):
     model = RealtyQuery
     context_object_name = "queries"
-    ordering = "updated_at"
+    ordering = "periodic_task__last_run_at"
     paginate_by = 10
 
     def get_queryset(self) -> QuerySet[RealtyQuery]:
@@ -41,7 +41,7 @@ class RealtyQueryListView(ListView):
     def post(self, request: HttpRequest, *args, **kwargs):
         query_id = request.POST.get("query_id")
         query = get_object_or_404(RealtyQuery, id=query_id)
-        form = ToggleQueryForm(request.POST, instance=query)
+        form = TogglePeriodicTaskForm(request.POST, instance=query.periodic_task)
         if form.is_valid():
             form.save()
 

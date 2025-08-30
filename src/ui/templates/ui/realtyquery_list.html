@@ -51,7 +51,7 @@
             {% csrf_token %}
             <label class="inline-flex items-center cursor-pointer">
               <input type="hidden" name="query_id" value="{{ query.id }}">
-              <input type="checkbox" name="enabled" value="true" class="sr-only peer" {% if query.enabled %} checked {% endif %} onchange="this.form.submit()">
+              <input type="checkbox" name="enabled" value="true" class="sr-only peer" {% if query.periodic_task.enabled %} checked {% endif %} onchange="this.form.submit()">
               <span class="ml-3 text-sm text-gray-200 hidden peer-checked:inline mr-2">
                 Active
               </span>

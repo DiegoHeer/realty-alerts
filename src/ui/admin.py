@@ -7,9 +7,9 @@ from ui.models import RealtyQuery, RealtyResult
 class RealtyQueryAdmin(admin.ModelAdmin):
     list_display = (
         "name",
-        "enabled",
+        "periodic_task_enabled",
         "created_at",
-        "cron_schedule",
+        "periodic_task",
         "website",
     )
 
@@ -23,10 +23,9 @@ class RealtyQueryAdmin(admin.ModelAdmin):
                 "fields": (
                     "name",
                     "ntfy_topic",
-                    "cron_schedule",
+                    "periodic_task",
                     "query_url",
                     "max_listing_page_number",
-                    "enabled",
                 )
             },
         ),
@@ -38,6 +37,12 @@ class RealtyQueryAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    @admin.display(boolean=True, description="Task enabled")
+    def periodic_task_enabled(self, object: RealtyQuery):
+        return object.periodic_task.enabled
+
+    periodic_task_enabled.admin_order_field = "periodic_task__enabled"
 
 
 @admin.register(RealtyResult)

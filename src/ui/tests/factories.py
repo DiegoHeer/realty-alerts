@@ -1,5 +1,5 @@
 import factory
-from django_celery_beat.models import CrontabSchedule
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 from ui.models import RealtyQuery, RealtyResult
 
@@ -15,10 +15,20 @@ class CrontabScheduleFactory(factory.django.DjangoModelFactory):
         model = CrontabSchedule
 
 
+class PeriodicTaskFactory(factory.django.DjangoModelFactory):
+    name = factory.declarations.Sequence(lambda n: f"Periodic Task {n}")
+    task = "ui.tasks.scrape_and_notify"
+    crontab = factory.declarations.SubFactory(CrontabScheduleFactory)
+    args = factory.declarations.Sequence(lambda n: f"['Query {n}']")
+
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        model = PeriodicTask
+
+
 class RealtyQueryFactory(factory.django.DjangoModelFactory):
     name = factory.declarations.Sequence(lambda n: f"Query {n}")
     ntfy_topic = "test-topic"
-    cron_schedule = factory.declarations.SubFactory(CrontabScheduleFactory)
+    periodic_task = factory.declarations.SubFactory(PeriodicTaskFactory)
     query_url = factory.declarations.Sequence(lambda n: f"https://www.funda.nl/{n}")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]

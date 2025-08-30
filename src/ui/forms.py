@@ -1,9 +1,9 @@
 from django import forms
-from ui.models import RealtyQuery
+from django_celery_beat.models import PeriodicTask
 
 
-class ToggleQueryForm(forms.ModelForm):
+class TogglePeriodicTaskForm(forms.ModelForm):
     class Meta:
-        model = RealtyQuery
+        model = PeriodicTask
         fields = ["enabled"]
         widgets = {"enabled": forms.CheckboxInput}

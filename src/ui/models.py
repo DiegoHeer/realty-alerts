@@ -3,7 +3,6 @@ from urllib.parse import urljoin, urlparse
 import requests
 from django.core.exceptions import ValidationError
 from django.db import models
-from django_celery_beat.models import CrontabSchedule
 from requests import HTTPError
 
 from enums import QueryResultStatus, Websites
@@ -42,10 +41,9 @@ class RealtyQuery(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=255, unique=True)
     ntfy_topic = models.CharField(max_length=255, validators=[_validate_ntfy_topic])
-    cron_schedule = models.ForeignKey(CrontabSchedule, on_delete=models.CASCADE, related_name="queries")
+    periodic_task = models.OneToOneField(PeriodicTask, on_delete=models.CASCADE, related_name="queries", null=True)
     query_url = models.URLField(max_length=500, validators=[_validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
-    enabled = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = "realty queries"
@@ -58,13 +56,6 @@ class RealtyQuery(models.Model):
     @property
     def notification_url(self) -> str:
         return urljoin(SETTINGS.ntfy_url, self.ntfy_topic)
-
-    @property
-    def periodic_task(self) -> PeriodicTask | None:
-        try:
-            return PeriodicTask.objects.get(name=self.name)
-        except PeriodicTask.DoesNotExist:
-            return None
 
     def save(self, *args, **kwargs) -> None:
         self.full_clean()
