@@ -14,7 +14,7 @@ from django.utils import timezone
 class RealtyQueryListView(ListView):
     model = RealtyQuery
     context_object_name = "queries"
-    ordering = "updated_at"
+    ordering = "periodic_task__last_run_at"
     paginate_by = 10
 
     def get_queryset(self) -> QuerySet[RealtyQuery]:
