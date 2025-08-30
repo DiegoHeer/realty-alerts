@@ -3,12 +3,14 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+
 def link_or_create_periodic_tasks(apps, schema_editor):
     RealtyQueryModel = apps.get_model("ui", "RealtyQuery")
 
     queries = RealtyQueryModel.objects.all()
     for query in queries:
         _get_or_create_periodic_task(apps, query)
+
 
 def _get_or_create_periodic_task(apps, query) -> None:
     PeriodicTaskModel = apps.get_model("django_celery_beat", "PeriodicTask")
@@ -17,10 +19,7 @@ def _get_or_create_periodic_task(apps, query) -> None:
         periodic_task = PeriodicTaskModel.objects.get(name=query.name)
     except PeriodicTaskModel.DoesNotExist:
         periodic_task = PeriodicTaskModel.objects.create(
-            name=query.name,
-            task="ui.tasks.scrape_and_notify",
-            crontab=query.cron_schedule,
-            args=f"[{query.name}]"
+            name=query.name, task="ui.tasks.scrape_and_notify", crontab=query.cron_schedule, args=f"[{query.name}]"
         )
 
     query.periodic_task = periodic_task
@@ -28,25 +27,29 @@ def _get_or_create_periodic_task(apps, query) -> None:
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_celery_beat', '0019_alter_periodictasks_options'),
-        ('ui', '0002_realtyquery_enabled'),
+        ("django_celery_beat", "0019_alter_periodictasks_options"),
+        ("ui", "0002_realtyquery_enabled"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='realtyquery',
-            name='periodic_task',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='queries', to='django_celery_beat.periodictask', null=True),
+            model_name="realtyquery",
+            name="periodic_task",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="queries",
+                to="django_celery_beat.periodictask",
+                null=True,
+            ),
         ),
         migrations.RunPython(link_or_create_periodic_tasks, reverse_code=migrations.RunPython.noop),
         migrations.RemoveField(
-            model_name='realtyquery',
-            name='cron_schedule',
+            model_name="realtyquery",
+            name="cron_schedule",
         ),
         migrations.RemoveField(
-            model_name='realtyquery',
-            name='enabled',
+            model_name="realtyquery",
+            name="enabled",
         ),
     ]
