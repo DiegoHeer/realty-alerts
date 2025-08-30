@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ui', '0001_initial'),
+        ("ui", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='realtyresult',
-            name='detail_url',
+            model_name="realtyresult",
+            name="detail_url",
             field=models.URLField(max_length=500),
         ),
         migrations.AlterField(
-            model_name='realtyresult',
-            name='image_url',
+            model_name="realtyresult",
+            name="image_url",
             field=models.URLField(max_length=500),
         ),
     ]
