@@ -56,6 +56,10 @@ class RealtyQueryDetailView(BreadcrumbMixin, MultipleObjectMixin, DetailView):
     def _get_results_queryset(self) -> QuerySet[RealtyResult]:
         query = self.get_object()
         queryset = query.results.all()
+
+        if search_query := self.request.GET.get("q", ""):
+            queryset = queryset.filter(Q(title__icontains=search_query) | Q(price__icontains=search_query))
+
         return queryset
 
     def get_context_data(self, **kwargs):
