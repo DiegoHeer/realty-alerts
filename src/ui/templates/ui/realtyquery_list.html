@@ -25,9 +25,13 @@
   <main>
     <div class="flex flex-col gap-2 lg:w-4xl infinite-container">
       {% for query in queries %}
-      <div class="text-white bg-gray-900 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 infinite-item">
+        <div
+          class="bg-gray-900 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 infinite-item"
+          onclick="followLink(this)"
+          data-href="{% url 'realty-query-detail' query.pk %}"
+          >
         <div class="flex flex-col gap-0.5">
-          <span class="text-md">{{ query.name }}</span>
+            <span class="text-white text-md">{{ query.name }}</span>
           <div class="flex flex-col lg:flex-row lg:items-center gap-2">
             {% if query.periodic_task.last_run_at %}
               <span class="text-gray-400 text-xs">Last executed: {{ query.periodic_task.last_run_at }}</span>
@@ -69,7 +73,7 @@
 
       </div>
       {% empty %}
-        <span class="text-gray-600">No queries available. Please create one.</span>
+        <span class="text-gray-600 text-center">No queries available. Please create one.</span>
       {% endfor %}
     </div>
     {% if page_obj.has_next %}
@@ -103,6 +107,11 @@
     }
 
     });
+  </script>
+  <script>
+    function followLink(element) {
+      element.click(window.location = element.getAttribute('data-href'));
+    }
   </script>
 
 {% endblock %}
