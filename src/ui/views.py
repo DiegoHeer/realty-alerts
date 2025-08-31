@@ -1,9 +1,9 @@
 from django.db.models.query import QuerySet
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
-from ui.models import RealtyQuery
+from ui.models import RealtyQuery, RealtyResult
 from ui.forms import TogglePeriodicTaskForm
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
@@ -46,3 +46,22 @@ class RealtyQueryListView(ListView):
             form.save()
 
         return redirect(reverse_lazy("realty-query-list"))
+
+
+class RealtyQueryDetailView(BreadcrumbMixin, MultipleObjectMixin, DetailView):
+    model = RealtyQuery
+    context_object_name = "query"
+    paginate_by = 5
+
+    def _get_results_queryset(self) -> QuerySet[RealtyResult]:
+        query = self.get_object()
+        queryset = query.results.all()
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        results_queryset = self._get_results_queryset()
+
+        context_data = super().get_context_data(object_list=results_queryset, **kwargs)
+        context_data["results"] = context_data["object_list"]
+
+        return context_data
