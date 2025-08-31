@@ -1,28 +1,15 @@
 {% extends 'common/base.html' %}
 
 {% block extra_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module"></script>
 {% endblock %}
 
 {% block content %}
 
-<div>
-  <header class="sticky top-0 z-10 lg:flex flex-row justify-between items-baseline bg-gray-950 py-6">
-    <form method="get">
-      {% include 'ui/searchbar.html' %}
-    </form>
+<div id="query-list-page">
+  {% include 'ui/sticky_header.html' %}
 
-    <button class="text-white text-sm px-4 py-2 pb-2.5 rounded-md bg-gray-900 hover:bg-blue-800 cursor-pointer hidden lg:inline">
-      <i class="fa-solid fa-plus"></i>
-      <span class="ml-1">Create new query</span>
-    </button>
-
-    <button class="fixed bottom-8 right-4 rounded-full px-4 py-3 bg-blue-800 hover:bg-blue-600 text-gray-200 hover:text-white cursor-pointer lg:hidden">
-      <i class="fa-solid fa-plus scale-140"></i>
-    </button>
-  </header>
-
-  <main>
+  <main id="query-list">
     <div class="flex flex-col gap-2 lg:w-4xl infinite-container">
       {% for query in queries %}
         <div
@@ -30,48 +17,48 @@
           onclick="followLink(this)"
           data-href="{% url 'realty-query-detail' query.pk %}"
           >
-        <div class="flex flex-col gap-0.5">
+          <div class="flex flex-col gap-0.5">
             <span class="text-white text-md">{{ query.name }}</span>
-          <div class="flex flex-col lg:flex-row lg:items-center gap-2">
-            {% if query.periodic_task.last_run_at %}
-              <span class="text-gray-400 text-xs">Last executed: {{ query.periodic_task.last_run_at }}</span>
-            {% else %}
-              <span class="text-gray-400 text-xs">Created: {{ query.created_at|date }}</span>
-            {% endif %}
+            <div class="flex flex-col lg:flex-row lg:items-center gap-2">
+              {% if query.periodic_task.last_run_at %}
+                <span class="text-gray-400 text-xs">Last executed: {{ query.periodic_task.last_run_at }}</span>
+              {% else %}
+                <span class="text-gray-400 text-xs">Created: {{ query.created_at|date }}</span>
+              {% endif %}
 
-            <div>
-              {% if query.new_results_count %}
-                <span class="inline-flex items-center rounded-md bg-red-600/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-red-400/30">{{ query.new_results_count }} new</span>
-              {% endif %}
-              {% if query.results.count %}
-                <span class="inline-flex items-center rounded-md bg-blue-400/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-blue-400/30">{{ query.results.count }} total</span>
-              {% endif %}
+              <div>
+                {% if query.new_results_count %}
+                  <span class="inline-flex items-center rounded-md bg-red-600/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-red-400/30">{{ query.new_results_count }} new</span>
+                {% endif %}
+                {% if query.results.count %}
+                  <span class="inline-flex items-center rounded-md bg-blue-400/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-blue-400/30">{{ query.results.count }} total</span>
+                {% endif %}
+              </div>
             </div>
           </div>
+
+          <div class="flex flex-row items-center gap-4">
+            <form method="post">
+              {% csrf_token %}
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="hidden" name="query_id" value="{{ query.id }}">
+                <input type="checkbox" name="enabled" value="true" class="sr-only peer" {% if query.periodic_task.enabled %} checked {% endif %} onchange="this.form.submit()">
+                <span class="ml-3 text-sm text-gray-200 hidden peer-checked:inline mr-2">
+                  Active
+                </span>
+                <span class="ml-3 text-sm text-gray-200 peer-checked:hidden mr-2">
+                  Inactive
+                </span>
+                <div
+                  class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                </div>
+              </label>
+            </form>
+
+            {% include 'ui/dropdown_menu.html' %}
+          </div>
+
         </div>
-
-        <div class="flex flex-row items-center gap-4">
-          <form method="post">
-            {% csrf_token %}
-            <label class="inline-flex items-center cursor-pointer">
-              <input type="hidden" name="query_id" value="{{ query.id }}">
-              <input type="checkbox" name="enabled" value="true" class="sr-only peer" {% if query.periodic_task.enabled %} checked {% endif %} onchange="this.form.submit()">
-              <span class="ml-3 text-sm text-gray-200 hidden peer-checked:inline mr-2">
-                Active
-              </span>
-              <span class="ml-3 text-sm text-gray-200 peer-checked:hidden mr-2">
-                Inactive
-              </span>
-              <div
-                class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
-              </div>
-            </label>
-          </form>
-
-          {% include 'ui/dropdown_menu.html' %}
-        </div>
-
-      </div>
       {% empty %}
         <span class="text-gray-600 text-center">No queries available. Please create one.</span>
       {% endfor %}

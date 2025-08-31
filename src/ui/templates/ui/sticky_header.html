@@ -1,0 +1,22 @@
+<header class="sticky top-0 z-10 flex flex-col gap-2 bg-gray-950 pt-6 pb-4">
+  <div class="lg:flex flex-row justify-between items-baseline">
+    <form method="get">
+      {% include 'ui/searchbar.html' %}
+    </form>
+
+    <button
+      class="text-white text-sm px-4 py-2 pb-2.5 rounded-md bg-gray-900 hover:bg-blue-800 cursor-pointer hidden lg:inline">
+      <i class="fa-solid fa-plus"></i>
+      <span class="ml-1">Create new query</span>
+    </button>
+  </div>
+
+  <div>
+      {% include 'ui/breadcrumbs.html' %}
+  </div>
+
+  <button
+    class="fixed bottom-8 right-4 rounded-full px-4 py-3 bg-blue-800 hover:bg-blue-600 text-gray-200 hover:text-white cursor-pointer lg:hidden">
+    <i class="fa-solid fa-plus scale-140"></i>
+  </button>
+</header>
