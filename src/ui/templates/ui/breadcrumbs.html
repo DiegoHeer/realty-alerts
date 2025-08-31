@@ -1,0 +1,18 @@
+{% if breadcrumbs %}
+  <nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+      {% for crumb in breadcrumbs %}
+      <li class="inline-flex items-center">
+        <a href="{{ crumb.url }}" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white">
+          {% if forloop.first %}
+            <i class="fa-solid fa-house scale-90"></i>
+          {% else %}
+            <i class="fa-solid fa-angle-right text-gray-400 scale-75"></i>
+          {% endif %}
+          <span class="ml-1">{{ crumb.title }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+  </nav>
+{% endif %}

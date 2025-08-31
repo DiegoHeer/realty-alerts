@@ -1,5 +1,6 @@
 from django.db.models.query import QuerySet
 from django.views.generic import ListView, DetailView
+from django.views.generic.list import MultipleObjectMixin
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
@@ -9,9 +10,10 @@ from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from django.http import HttpRequest
 from django.utils import timezone
+from ui.mixins import BreadcrumbMixin, Breadcrumb
 
 
-class RealtyQueryListView(ListView):
+class RealtyQueryListView(BreadcrumbMixin, ListView):
     model = RealtyQuery
     context_object_name = "queries"
     ordering = "name"
@@ -52,6 +54,13 @@ class RealtyQueryDetailView(BreadcrumbMixin, MultipleObjectMixin, DetailView):
     model = RealtyQuery
     context_object_name = "query"
     paginate_by = 5
+
+    def get_breadcrumbs(self):
+        query = self.get_object()
+        return [
+            Breadcrumb(title="Home", url=reverse_lazy("realty-query-list")),
+            Breadcrumb(title=query.name, url=reverse_lazy("realty-query-detail", kwargs={"pk": query.pk})),
+        ]
 
     def _get_results_queryset(self) -> QuerySet[RealtyResult]:
         query = self.get_object()
