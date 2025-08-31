@@ -46,6 +46,7 @@ class RealtyQuery(models.Model):
     max_listing_page_number = models.PositiveIntegerField(default=3)
 
     class Meta:
+        ordering = ["name"]
         verbose_name_plural = "realty queries"
 
     @property
@@ -76,6 +77,7 @@ class RealtyResult(models.Model):
     image_url = models.URLField(max_length=500)
 
     class Meta:
+        ordering = ["status"]
         unique_together = ["query", "detail_url"]
 
     def __str__(self) -> str:

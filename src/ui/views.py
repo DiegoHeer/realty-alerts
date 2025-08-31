@@ -16,7 +16,6 @@ from ui.mixins import BreadcrumbMixin, Breadcrumb
 class RealtyQueryListView(BreadcrumbMixin, ListView):
     model = RealtyQuery
     context_object_name = "queries"
-    ordering = "name"
     paginate_by = 10
 
     def get_queryset(self) -> QuerySet[RealtyQuery]:
@@ -52,7 +51,6 @@ class RealtyQueryListView(BreadcrumbMixin, ListView):
 
 class RealtyQueryDetailView(BreadcrumbMixin, MultipleObjectMixin, DetailView):
     model = RealtyQuery
-    context_object_name = "query"
     paginate_by = 5
 
     def get_breadcrumbs(self):
