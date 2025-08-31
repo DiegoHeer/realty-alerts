@@ -4,18 +4,17 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ui', '0002_alter_realtyresult_detail_url_and_more'),
+        ("ui", "0002_alter_realtyresult_detail_url_and_more"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='realtyquery',
-            options={'ordering': ['name'], 'verbose_name_plural': 'realty queries'},
+            name="realtyquery",
+            options={"ordering": ["name"], "verbose_name_plural": "realty queries"},
         ),
         migrations.AlterModelOptions(
-            name='realtyresult',
-            options={'ordering': ['status']},
+            name="realtyresult",
+            options={"ordering": ["status"]},
         ),
     ]
