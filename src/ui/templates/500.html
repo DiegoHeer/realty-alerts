@@ -1,0 +1,17 @@
+{% extends 'common/base.html' %}
+
+{% block content %}
+
+<div class="flex items-center justify-center h-screen">
+    <div class="flex flex-col items-center gap-2 scale-150">
+        <h1 class="text-white text-2xl font-medium">500</h1>
+        <div class="text-gray-500">Unexpected error</div>
+        <a href="{% url 'realty-query-list' %}" class="text-xs text-white hover:text-blue-600">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="ml-1">Back home</span>
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}
