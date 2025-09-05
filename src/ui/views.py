@@ -11,6 +11,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 from ui.mixins import BreadcrumbMixin, Breadcrumb
 
+
 class HomeView(BreadcrumbMixin, TemplateView):
     template_name = "ui/home.html"
 
@@ -79,6 +80,7 @@ class RealtyQueryDetailView(BreadcrumbMixin, DetailView):
         context_data.update(result_list_response.context_data)
 
         return context_data
+
 
 class RealtyResultsListView(ListView):
     model = RealtyResult
