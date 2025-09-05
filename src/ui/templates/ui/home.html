@@ -1,0 +1,12 @@
+{% extends 'common/base.html' %}
+
+{% block content %}
+
+<div>
+  {% url 'realty-query-list' as search_url %}
+  {% include 'ui/components/sticky_header.html' with search_url=search_url search_target='query-list' %}
+  {% include 'ui/partials/query-list.html' %}
+</div>
+
+{% endblock %}
+

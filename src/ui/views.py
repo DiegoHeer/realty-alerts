@@ -1,5 +1,5 @@
 from django.db.models.query import QuerySet
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.list import MultipleObjectMixin
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -12,10 +12,22 @@ from django.http import HttpRequest
 from django.utils import timezone
 from ui.mixins import BreadcrumbMixin, Breadcrumb
 
+class HomeView(TemplateView):
+    template_name = "ui/home.html"
+
+    def get_context_data(self, **kwargs) -> dict:
+        context = super().get_context_data(**kwargs)
+
+        query_list_response = RealtyQueryListView.as_view()(self.request)
+        context.update(query_list_response.context_data)
+
+        return context
+
 
 class RealtyQueryListView(BreadcrumbMixin, ListView):
     model = RealtyQuery
     context_object_name = "queries"
+    template_name = "ui/partials/query-list.html"
     paginate_by = 10
 
     def get_queryset(self) -> QuerySet[RealtyQuery]:
