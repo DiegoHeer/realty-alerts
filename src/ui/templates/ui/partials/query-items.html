@@ -8,6 +8,7 @@
   hx-get="{% url 'realty-query-list' %}?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
   hx-trigger="revealed"
   hx-swap="afterend"
+  hx-indicator="#spinner"
 >
 {% else %}
 <div

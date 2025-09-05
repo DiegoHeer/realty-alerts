@@ -6,6 +6,8 @@
   {% url 'realty-result-list' query.pk as search_url %}
   {% include 'ui/components/sticky_header.html' with search_url=search_url search_target='result-list' %}
   {% include 'ui/partials/result-list.html' %}
+
+  {% include 'ui/components/spinner.html' %}
 </div>
 
 {% endblock %}

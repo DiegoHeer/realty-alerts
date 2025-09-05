@@ -6,6 +6,7 @@
   hx-get="{% url 'realty-result-list' view.kwargs.pk %}?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
   hx-trigger="revealed"
   hx-swap="afterend"
+  hx-indicator="#spinner"
 >
 {% else %}
 <div class="bg-gray-900 rounded-md hover:bg-gray-800 p-4 flex flex-row">
