@@ -71,10 +71,10 @@ class TestRealtyQueryDetailView:
     def test_get_breadcrumbs_in_context(self, client, detail_url, query):
         response = client.get(detail_url)
 
-        breadcrumbs = response.context_data["view"].get_breadcrumbs()
-        assert breadcrumbs[0].title == "Home"
-        assert breadcrumbs[1].title == query.name
-        assert breadcrumbs[1].url.endswith(str(query.pk))
+        breadcrumbs = response.context_data["breadcrumbs"]
+        assert breadcrumbs[0]["title"] == "Home"
+        assert breadcrumbs[1]["title"] == query.name
+        assert breadcrumbs[1]["url"].endswith(str(query.pk))
 
     def test_results_queryset_is_attached_to_context(self, client, detail_url, results):
         response = client.get(detail_url)
