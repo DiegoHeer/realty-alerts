@@ -9,13 +9,13 @@
             id="simple-search"
             name="q"
             value="{{ request.GET.q }}"
-            class="bg-gray-700 text-white text-sm rounded-2xl focus:ring-blue-500 focus:border-blue-500 block w-full lg:w-80 ps-10 p-1.5 peer" 
+            class="bg-gray-700 text-white text-sm rounded-2xl focus:ring-blue-500 focus:border-blue-500 block w-full lg:w-80 ps-10 p-1.5 peer"
             placeholder="Type to search..."
             hx-get="{{ search_url }}"
-            hx-trigger="keyup delay:500ms"
+            hx-trigger="keyup delay:200ms"
             hx-target="#{{ search_target }}"
         />
-        <div class="absolute inset-y-0 start-11/12 flex items-center text-white hover:text-gray-400 cursor-pointer peer-placeholder-shown:hidden" onclick="clearSearch()">
+        <div class="absolute inset-y-0 end-3 flex items-center text-white hover:text-gray-400 cursor-pointer peer-placeholder-shown:hidden" onclick="clearSearch()">
             <i class="fa-solid fa-xmark"></i>
         </div>
     </div>
