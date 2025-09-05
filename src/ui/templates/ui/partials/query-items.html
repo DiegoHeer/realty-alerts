@@ -1,0 +1,72 @@
+{% for query in queries %}
+
+{% if page_obj.has_next and forloop.last %}
+<div
+  class="bg-gray-900 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 my-1 cursor-pointer"
+  onclick="followLink(this)"
+  data-href="{% url 'realty-query-detail' query.pk %}"
+  hx-get="{% url 'realty-query-list' %}?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+  hx-trigger="revealed"
+  hx-swap="afterend"
+>
+{% else %}
+<div
+  class="bg-gray-900 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 my-1 cursor-pointer"
+  onclick="followLink(this)"
+  data-href="{% url 'realty-query-detail' query.pk %}"
+>
+{% endif %}
+  <div class="flex flex-col gap-0.5">
+    <span class="text-white text-md">{{ query.name }}</span>
+    <div class="flex flex-col lg:flex-row lg:items-center gap-2">
+      {% if query.periodic_task.last_run_at %}
+      <span class="text-gray-400 text-xs">Last executed: {{ query.periodic_task.last_run_at }}</span>
+      {% else %}
+      <span class="text-gray-400 text-xs">Created: {{ query.created_at|date }}</span>
+      {% endif %}
+
+      <div>
+        {% if query.new_results_count %}
+        <span
+          class="inline-flex items-center rounded-md bg-red-600/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-red-400/30">
+          {{ query.new_results_count }} new
+        </span>
+        {% endif %}
+        {% if query.results.count %}
+        <span
+          class="inline-flex items-center rounded-md bg-blue-400/10 px-1.5 py-1 text-xs font-medium text-gray-400 inset-ring inset-ring-blue-400/30">
+          {{ query.results.count }} total
+        </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-row items-center gap-4">
+    <form method="post">
+      {% csrf_token %}
+      <label class="inline-flex items-center cursor-pointer">
+        <input type="hidden" name="query_id" value="{{ query.id }}">
+        <input type="checkbox" name="enabled" value="true" class="sr-only peer" {% if query.periodic_task.enabled %}
+          checked {% endif %} onchange="this.form.submit()">
+        <span class="ml-3 text-sm text-gray-200 hidden peer-checked:inline mr-2">
+          Active
+        </span>
+        <span class="ml-3 text-sm text-gray-200 peer-checked:hidden mr-2">
+          Inactive
+        </span>
+        <div
+          class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+        </div>
+      </label>
+    </form>
+
+    {% include 'ui/components/dropdown_menu.html' %}
+  </div>
+
+</div>
+
+{% empty %}
+<span class="text-gray-600 text-center">No queries available.</span>
+{% endfor %}
+
