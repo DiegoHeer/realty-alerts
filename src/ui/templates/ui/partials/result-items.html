@@ -1,0 +1,40 @@
+{% for result in results %}
+
+{% if page_obj.has_next and forloop.last %}
+<div
+  class="bg-gray-900 rounded-md hover:bg-gray-800 p-4 flex flex-row"
+  hx-get="{% url 'realty-result-list' view.kwargs.pk %}?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+  hx-trigger="revealed"
+  hx-swap="afterend"
+>
+{% else %}
+<div class="bg-gray-900 rounded-md hover:bg-gray-800 p-4 flex flex-row">
+{% endif %}
+  <div id="result-image" class="cursor-pointer flex-none w-32 h-24 lg:w-96 lg:h-auto" onclick="followLink(this)"
+    data-href="{{ result.detail_url }}">
+    {% if result.image_url %}
+    <img src="{{ result.image_url }}" alt="Result Image">
+    {% else %}
+    <div class="w-full h-24 lg:h-64 flex flex-col items-center justify-center bg-gray-400/20 text-gray-500">
+      <i class="fa-solid fa-image scale-150 lg:scale-300"></i>
+      <span class="mt-2 lg:mt-6 text-sm font-medium lg:text-base">No Image</span>
+    </div>
+    {% endif %}
+  </div>
+  <div id="result-description" class="flex flex-col grow text-white ml-4 lg:ml-8 lg:gap-2">
+    <span class="font-medium lg:text-2xl">{{ result.title }}</span>
+    <span class="lg:text-lg font-medium text-gray-500">{{ result.price }}</span>
+  </div>
+  <div class="hidden lg:inline">
+    <a href="#" class="block z-10 px-2 py-2 text-sm text-gray-300/20 hover:text-red-500 focus:outline-hidden">
+      <i class="fa-solid fa-trash"></i>
+    </a>
+  </div>
+  <!-- TODO: figure out to create an option that when it's hovered over, shows a button like sanfone -->
+  <div class="w-20 h-max bg-red-500 hidden hover:block">
+    <i class="fa-solid fa-trash text-white"></i>
+  </div>
+</div>
+{% empty %}
+<span class="text-gray-500 font-medium text-center mt-6">No results available. Enable the query to get results.</span>
+{% endfor %}

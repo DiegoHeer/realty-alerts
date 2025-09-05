@@ -1,6 +1,5 @@
 from django.db.models.query import QuerySet
 from django.views.generic import ListView, DetailView, TemplateView
-from django.views.generic.list import MultipleObjectMixin
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
@@ -61,30 +60,37 @@ class RealtyQueryListView(ListView):
         return redirect(reverse_lazy("realty-query-list"))
 
 
-class RealtyQueryDetailView(BreadcrumbMixin, MultipleObjectMixin, DetailView):
+class RealtyQueryDetailView(BreadcrumbMixin, DetailView):
     model = RealtyQuery
-    paginate_by = 5
+    context_object_name = "query"
+    template_name = "ui/detail.html"
 
     def get_breadcrumbs(self):
         query = self.get_object()
         return [
-            Breadcrumb(title="Home", url=reverse_lazy("realty-query-list")),
+            Breadcrumb(title="Home", url=reverse_lazy("home")),
             Breadcrumb(title=query.name, url=reverse_lazy("realty-query-detail", kwargs={"pk": query.pk})),
         ]
 
-    def _get_results_queryset(self) -> QuerySet[RealtyResult]:
-        query = self.get_object()
-        queryset = query.results.all()
+    def get_context_data(self, **kwargs) -> dict:
+        context_data = super().get_context_data(**kwargs)
+
+        result_list_response = RealtyResultsListView.as_view()(self.request, pk=self.object.pk)
+        context_data.update(result_list_response.context_data)
+
+        return context_data
+
+class RealtyResultsListView(ListView):
+    model = RealtyResult
+    context_object_name = "results"
+    template_name = "ui/partials/result-list.html"
+    paginate_by = 5
+
+    def get_queryset(self) -> QuerySet[RealtyQuery]:
+        queryset = super().get_queryset()
+        queryset = queryset.filter(query_id=self.kwargs["pk"])
 
         if search_query := self.request.GET.get("q", ""):
             queryset = queryset.filter(Q(title__icontains=search_query) | Q(price__icontains=search_query))
 
         return queryset
-
-    def get_context_data(self, **kwargs):
-        results_queryset = self._get_results_queryset()
-
-        context_data = super().get_context_data(object_list=results_queryset, **kwargs)
-        context_data["results"] = context_data["object_list"]
-
-        return context_data
