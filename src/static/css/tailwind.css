@@ -264,8 +264,8 @@
   .start-0 {
     inset-inline-start: calc(var(--spacing) * 0);
   }
-  .start-11\/12 {
-    inset-inline-start: calc(11/12 * 100%);
+  .end-3 {
+    inset-inline-end: calc(var(--spacing) * 3);
   }
   .-top-2 {
     top: calc(var(--spacing) * -2);
