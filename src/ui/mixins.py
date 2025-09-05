@@ -12,7 +12,7 @@ class Breadcrumb:
 
 
 class BreadcrumbMixin:
-    breadcrumbs: list[Breadcrumb] = [Breadcrumb(title="Home", url=reverse_lazy("realty-query-list"))]
+    breadcrumbs: list[Breadcrumb] = [Breadcrumb(title="Home", url=reverse_lazy("home"))]
 
     def get_breadcrumbs(self) -> list[Breadcrumb]:
         return self.breadcrumbs

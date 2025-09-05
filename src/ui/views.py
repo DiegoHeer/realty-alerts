@@ -12,19 +12,19 @@ from django.http import HttpRequest
 from django.utils import timezone
 from ui.mixins import BreadcrumbMixin, Breadcrumb
 
-class HomeView(TemplateView):
+class HomeView(BreadcrumbMixin, TemplateView):
     template_name = "ui/home.html"
 
     def get_context_data(self, **kwargs) -> dict:
-        context = super().get_context_data(**kwargs)
+        context_data = super().get_context_data(**kwargs)
 
         query_list_response = RealtyQueryListView.as_view()(self.request)
-        context.update(query_list_response.context_data)
+        context_data.update(query_list_response.context_data)
 
-        return context
+        return context_data
 
 
-class RealtyQueryListView(BreadcrumbMixin, ListView):
+class RealtyQueryListView(ListView):
     model = RealtyQuery
     context_object_name = "queries"
     template_name = "ui/partials/query-list.html"
