@@ -1,7 +1,7 @@
 <header class="sticky top-0 z-10 flex flex-col gap-2 bg-gray-950 pt-6 pb-4">
   <div class="lg:flex flex-row justify-between items-baseline">
     <form method="get">
-      {% include 'ui/components/searchbar.html' %}
+      {% include 'ui/components/searchbar.html' with search_url=search_url search_target=search_target %}
     </form>
 
     <button
