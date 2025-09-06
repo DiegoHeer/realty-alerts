@@ -1,7 +1,6 @@
 from http import HTTPStatus
 import pytest
 from django.urls import reverse
-from django.shortcuts import resolve_url
 
 from ui.tests.factories import RealtyQueryFactory, RealtyResultFactory
 
@@ -24,6 +23,11 @@ def results(db, query):
 @pytest.fixture
 def realty_query_list_url():
     return reverse("realty-query-list")
+
+
+@pytest.fixture
+def realty_query_toggle_url(query):
+    return reverse("realty-query-toggle", kwargs={"pk": query.pk})
 
 
 @pytest.fixture
@@ -51,11 +55,12 @@ class TestRealtyQueryListView:
         assert page_obj.paginator.num_pages == 2
         assert len(response.context_data["queries"]) == 10
 
-    def test_post_toggles_periodic_task(self, client, realty_query_list_url, query):
-        response = client.post(realty_query_list_url, {"query_id": query.id})
+    def test_post_toggles_periodic_task(self, client, realty_query_toggle_url, query):
+        response = client.post(realty_query_toggle_url)
 
-        assert response.status_code == HTTPStatus.FOUND
-        assert response.url == resolve_url("realty-query-list")
+        assert response.status_code == HTTPStatus.OK
+        assert len(response.templates) == 1
+        assert response.templates[0].name == "ui/partials/query-toggle.html"
 
         query.refresh_from_db()
         assert query.periodic_task.enabled is False
@@ -71,10 +76,10 @@ class TestRealtyQueryDetailView:
     def test_get_breadcrumbs_in_context(self, client, detail_url, query):
         response = client.get(detail_url)
 
-        breadcrumbs = response.context_data["view"].get_breadcrumbs()
-        assert breadcrumbs[0].title == "Home"
-        assert breadcrumbs[1].title == query.name
-        assert breadcrumbs[1].url.endswith(str(query.pk))
+        breadcrumbs = response.context_data["breadcrumbs"]
+        assert breadcrumbs[0]["title"] == "Home"
+        assert breadcrumbs[1]["title"] == query.name
+        assert breadcrumbs[1]["url"].endswith(str(query.pk))
 
     def test_results_queryset_is_attached_to_context(self, client, detail_url, results):
         response = client.get(detail_url)

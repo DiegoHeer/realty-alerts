@@ -8,12 +8,13 @@
     <title>Realty Alerts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.png' %}"/>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.js" crossorigin="anonymous"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
     {% tailwind_css %}
 
     {% block extra_scripts %}{% endblock %}
 </head>
-<body class="bg-gray-950">
-    {% csrf_token %}
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="bg-gray-950">
     <div class="px-4 lg:flex lg:flex-col lg:items-center h-screen">
         {% block content %}{% endblock %}
     </div>
