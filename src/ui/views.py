@@ -9,6 +9,7 @@ from django.urls import reverse_lazy
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from ui.mixins import BreadcrumbMixin, Breadcrumb
+from django.views.decorators.http import require_POST
 
 
 class HomeView(BreadcrumbMixin, TemplateView):
@@ -51,6 +52,7 @@ class RealtyQueryListView(ListView):
         query.new_results_count = query.results.filter(created_at__date__gte=today).count()
 
 
+@require_POST
 def query_toggle(request: HttpRequest, pk: int) -> HttpResponse:
     query = get_object_or_404(RealtyQuery, pk=pk)
     form = TogglePeriodicTaskForm(request.POST, instance=query.periodic_task)
