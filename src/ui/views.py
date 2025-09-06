@@ -1,13 +1,12 @@
 from django.db.models.query import QuerySet
 from django.views.generic import ListView, DetailView, TemplateView
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
 
 from ui.models import RealtyQuery, RealtyResult
 from ui.forms import TogglePeriodicTaskForm
 from django.urls import reverse_lazy
-from django.shortcuts import redirect
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from ui.mixins import BreadcrumbMixin, Breadcrumb
 
@@ -51,14 +50,14 @@ class RealtyQueryListView(ListView):
 
         query.new_results_count = query.results.filter(created_at__date__gte=today).count()
 
-    def post(self, request: HttpRequest, *args, **kwargs):
-        query_id = request.POST.get("query_id")
-        query = get_object_or_404(RealtyQuery, id=query_id)
-        form = TogglePeriodicTaskForm(request.POST, instance=query.periodic_task)
-        if form.is_valid():
-            form.save()
 
-        return redirect(reverse_lazy("realty-query-list"))
+def query_toggle(request: HttpRequest, pk: int) -> HttpResponse:
+    query = get_object_or_404(RealtyQuery, pk=pk)
+    form = TogglePeriodicTaskForm(request.POST, instance=query.periodic_task)
+    if form.is_valid():
+        form.save()
+
+    return render(request, "ui/partials/query-toggle.html", {"query": query})
 
 
 class RealtyQueryDetailView(BreadcrumbMixin, DetailView):

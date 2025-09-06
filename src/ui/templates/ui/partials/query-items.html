@@ -43,24 +43,8 @@
     </div>
   </div>
 
-  <div class="flex flex-row items-center gap-4">
-    <form method="post">
-      {% csrf_token %}
-      <label class="inline-flex items-center cursor-pointer">
-        <input type="hidden" name="query_id" value="{{ query.id }}">
-        <input type="checkbox" name="enabled" value="true" class="sr-only peer" {% if query.periodic_task.enabled %}
-          checked {% endif %} onchange="this.form.submit()">
-        <span class="ml-3 text-sm text-gray-200 hidden peer-checked:inline mr-2">
-          Active
-        </span>
-        <span class="ml-3 text-sm text-gray-200 peer-checked:hidden mr-2">
-          Inactive
-        </span>
-        <div
-          class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
-        </div>
-      </label>
-    </form>
+  <div class="flex flex-row items-center gap-4" hx-on:click="event.stopPropagation()">
+    {% include 'ui/partials/query-toggle.html' with query=query %}
 
     {% include 'ui/components/dropdown_menu.html' %}
   </div>
