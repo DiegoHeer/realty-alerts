@@ -2,7 +2,7 @@
 
 {% if page_obj.has_next and forloop.last %}
 <div
-  class="bg-gray-900 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 my-1 cursor-pointer"
+  class="bg-base-200 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 my-1 cursor-pointer"
   onclick="followLink(this)"
   data-href="{% url 'realty-query-detail' query.pk %}"
   hx-get="{% url 'realty-query-list' %}?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
@@ -12,7 +12,7 @@
 >
 {% else %}
 <div
-  class="bg-gray-900 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 my-1 cursor-pointer"
+  class="bg-base-200 rounded-md hover:bg-gray-800 flex flex-row justify-between items-center p-4 my-1 cursor-pointer"
   onclick="followLink(this)"
   data-href="{% url 'realty-query-detail' query.pk %}"
 >
