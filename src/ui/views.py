@@ -85,6 +85,12 @@ class RealtyQueryDetailView(BreadcrumbMixin, DetailView):
         return context_data
 
 
+# TODO: finish this
+@require_POST
+def create_query(request: HttpRequest) -> HttpResponse:
+    form = RealtyQueryForm(request.POST)
+    pass
+
 class RealtyResultsListView(ListView):
     model = RealtyResult
     context_object_name = "results"
