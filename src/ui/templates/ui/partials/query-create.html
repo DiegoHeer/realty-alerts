@@ -1,0 +1,80 @@
+{% load widget_tweaks %}
+
+<dialog id="query_form" class="modal">
+  <div
+    class="modal-box bg-base-200 flex flex-col items-center w-full h-full max-w-none sm:w-[500px] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+    </form>
+    <div>
+      <h1 class="text-2xl font-medium">Create new query</h1>
+      <form hx-post="{% url 'realty-query-create' %}">
+        {% csrf_token %}
+
+        <fieldset class="mt-4 fieldset sm:grid sm:grid-cols-4 gap-3 mb-2">
+          {% render_field form.name placeholder="Name" class="input sm:col-span-3 w-auto" %}
+
+          {% render_field form.query_url placeholder="URL with filters" type="text" class="input sm:col-span-3 w-auto" %}
+
+          <div class="flex flex-row items-center gap-1 sm:col-span-4">
+            {% render_field form.ntfy_topic placeholder="NTFY topic" class="input" %}
+
+            <button type="button" class="btn btn-sm bg-gray-800 hover:bg-gray-700 flex justify-between items-center"
+              hx-post="{% url 'validate-ntfy-topic' %}" hx-target="#icon-placeholder" hx-swap="outerHTML"
+              hx-indicator="#small-spinner" hx-on::before-request="hideElement('icon')">
+              {% include 'ui/partials/success-failure-icon.html' %}
+              <span class="ml-1">test topic</span>
+            </button>
+          </div>
+        </fieldset>
+
+        <span class="text-gray-400 text-xs">Schedule</span>
+        <div class="flex flex-row gap-2 justify-between mt-2 mb-4">
+          {% for item in form.day_interval %}
+          <label for="{{ item.id_for_label }}">
+            <input class="btn bg-base-300 checked:bg-primary" name="{{ item.data.name }}" value="{{ item.data.value }}"
+              {% if item.data.selected %} checked {% endif %} type="checkbox" id="{{ item.id_for_label }}"
+              aria-label="{{ item.choice_label|slice:'2' }}" />
+          </label>
+          {% endfor %}
+        </div>
+
+        <fieldset class="grid grid-cols-2 gap-1 mt-1 w-full">
+          <label class="input">
+            <span class="label">from</span>
+            {% render_field form.hour_start placeholder="Time" type="time" class="input focus:border-none" %}
+          </label>
+
+          <label class="input">
+            <span class="label">to</span>
+            {% render_field form.hour_end placeholder="Time" type="time" class="input focus:border-none" %}
+          </label>
+
+          <label class="select mt-2">
+            <span class="label">every</span>
+            {% render_field form.hour_interval placeholder="Time" class="select focus:border-none" %}
+          </label>
+        </fieldset>
+
+        <div class="modal-action absolute bottom-3 sm:relative">
+          <button type="button" class="btn btn-neutral hidden sm:inline" onclick="query_form.close()">Cancel</button>
+          <button type="submit" class="btn btn-primary min-w-100 sm:min-w-auto">Create</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+{% block extra_post_scripts %}
+<script>
+  function hideElement(element_id) {
+    const element = document.getElementById(element_id);
+    element.classList.add("hidden");
+  }
+
+</script>
+{% endblock %}

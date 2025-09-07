@@ -35,3 +35,13 @@
   --depth: 0;
   --noise: 0;
 }
+
+.input:focus {
+  outline: 0;
+}
+.input:focus-within {
+  outline: 0;
+}
+.select:focus-within {
+  outline: 0;
+}
