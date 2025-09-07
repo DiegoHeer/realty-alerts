@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
 
 from ui.models import RealtyQuery, RealtyResult
-from ui.forms import TogglePeriodicTaskForm
+from ui.forms import RealtyQueryForm, TogglePeriodicTaskForm
 from django.urls import reverse_lazy
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
@@ -20,6 +20,8 @@ class HomeView(BreadcrumbMixin, TemplateView):
 
         query_list_response = RealtyQueryListView.as_view()(self.request)
         context_data.update(query_list_response.context_data)
+
+        context_data["form"] = RealtyQueryForm()
 
         return context_data
 
