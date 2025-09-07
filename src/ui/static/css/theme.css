@@ -1,1 +1,37 @@
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes: dyna --default;
+}
+@plugin "daisyui/theme" {
+  name: "dyna";
+  default: true;
+  color-scheme: "dark";
+  --color-base-100: oklch(13% 0.028 261.692);
+  --color-base-200: oklch(21% 0.034 264.665);
+  --color-base-300: oklch(37.3% 0.034 259.733);
+  --color-base-content: oklch(96% 0.007 247.896);
+  --color-primary: oklch(54% 0.245 262.881);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(79% 0.184 86.047);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(59% 0.293 322.896);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(44% 0.043 257.281);
+  --color-neutral-content: oklch(98% 0.003 247.858);
+  --color-info: oklch(68% 0.169 237.323);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(44% 0.119 151.328);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(82% 0.189 84.429);
+  --color-warning-content: oklch(100% 0 0);
+  --color-error: oklch(57% 0.245 27.325);
+  --color-error-content: oklch(100% 0 0);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 0.5px;
+  --depth: 0;
+  --noise: 0;
+}

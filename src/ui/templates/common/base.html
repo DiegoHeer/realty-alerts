@@ -14,8 +14,8 @@
 
     {% block extra_scripts %}{% endblock %}
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="bg-gray-950">
-    <div class="px-4 lg:flex lg:flex-col lg:items-center h-screen">
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="min-h-screen bg-base">
+    <div class="px-4 flex flex-col lg:items-center">
         {% block content %}{% endblock %}
     </div>
 </body>
