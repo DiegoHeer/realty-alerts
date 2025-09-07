@@ -22,6 +22,7 @@ class Days(IntegerChoices):
     FRIDAY = 5
     SATURDAY = 6
 
+
 WORKDAYS = [Days.MONDAY, Days.TUESDAY, Days.WEDNESDAY, Days.THURSDAY, Days.FRIDAY]
 
 
@@ -36,6 +37,7 @@ def _get_hour_choices() -> tuple[tuple[str, int]]:
         (12, "12 hours"),
         (24, "24 hours"),
     )
+
 
 # TODO: write test
 class RealtyQueryForm(forms.ModelForm):

@@ -91,6 +91,7 @@ def create_query(request: HttpRequest) -> HttpResponse:
     form = RealtyQueryForm(request.POST)
     pass
 
+
 # TODO: finish this
 @require_POST
 def validate_ntfy_topic(request: HttpRequest) -> HttpResponse:
