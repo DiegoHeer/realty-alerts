@@ -132,4 +132,5 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 
 # Tailwind/CSS (https://django-tailwind-cli.readthedocs.io/latest)
+TAILWIND_CLI_USE_DAISY_UI = True
 TAILWIND_CLI_SRC_CSS = "ui/static/css/theme.css"
