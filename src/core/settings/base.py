@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django_celery_results",
     "django_tailwind_cli",
     "django_browser_reload",
+    "widget_tweaks",
 ]
 
 MIDDLEWARE = [
