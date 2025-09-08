@@ -1,0 +1,16 @@
+<div id="icon-placeholder" class="icon-placeholder w-3 flex flex-row items-center">
+    {% if success is True %}
+        <div id="icon">
+            <i class="fa-solid fa-check scale-150 text-success"></i>
+        </div>
+    {% elif success is False %}
+        <div id="icon">
+            <i class="fa-solid fa-xmark scale-150 text-error"></i>
+        </div>
+    {% else %}
+        <div id="icon">
+            <i class="fa-solid fa-vial"></i>
+        </div>
+    {% endif %}
+    <span id="small-spinner" class="htmx-indicator loading loading-spinner" role="status"></span>
+</div>

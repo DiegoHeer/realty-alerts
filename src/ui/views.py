@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
 
 from ui.models import RealtyQuery, RealtyResult
-from ui.forms import TogglePeriodicTaskForm
+from ui.forms import RealtyQueryForm, TogglePeriodicTaskForm
 from django.urls import reverse_lazy
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
@@ -20,6 +20,8 @@ class HomeView(BreadcrumbMixin, TemplateView):
 
         query_list_response = RealtyQueryListView.as_view()(self.request)
         context_data.update(query_list_response.context_data)
+
+        context_data["form"] = RealtyQueryForm()
 
         return context_data
 
@@ -81,6 +83,20 @@ class RealtyQueryDetailView(BreadcrumbMixin, DetailView):
         context_data.update(result_list_response.context_data)
 
         return context_data
+
+
+# TODO: finish this
+@require_POST
+def create_query(request: HttpRequest) -> HttpResponse:
+    form = RealtyQueryForm(request.POST)
+    if form.is_valid():
+        pass
+
+
+# TODO: finish this
+@require_POST
+def validate_ntfy_topic(request: HttpRequest) -> HttpResponse:
+    return render(request, "ui/partials/success-failure-icon.html", {"success": False})
 
 
 class RealtyResultsListView(ListView):
