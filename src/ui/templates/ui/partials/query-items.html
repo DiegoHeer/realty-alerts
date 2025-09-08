@@ -43,7 +43,7 @@
     <div class="flex flex-row items-center gap-4" hx-on:click="event.stopPropagation()">
       {% include 'ui/partials/query-toggle.html' with query=query %}
 
-      {% include 'ui/components/dropdown_menu.html' %}
+      {% include 'ui/components/dropdown_menu.html' with query=query %}
     </div>
 
   </div>
