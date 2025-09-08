@@ -66,6 +66,11 @@ class RealtyQuery(models.Model):
         return f"{self.name}"
 
 
+class NonArchivedResultsManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().exclude(status=QueryResultStatus.ARCHIVED)
+
+
 class RealtyResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -75,6 +80,9 @@ class RealtyResult(models.Model):
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
     image_url = models.URLField(max_length=500)
+
+    objects = NonArchivedResultsManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["status"]

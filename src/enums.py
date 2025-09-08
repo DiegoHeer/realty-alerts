@@ -16,6 +16,7 @@ class QueryResultStatus(StrEnum):
     NEW = "new"
     UPDATED = "updated"
     NOTIFIED = "notified"
+    ARCHIVED = "archived"
 
     @classmethod
     def choices(cls) -> list[tuple[str, str]]:

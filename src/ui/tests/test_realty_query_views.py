@@ -2,6 +2,7 @@ from http import HTTPStatus
 import pytest
 from django.urls import reverse
 
+from enums import QueryResultStatus
 from ui.tests.factories import RealtyQueryFactory, RealtyResultFactory
 
 
@@ -13,6 +14,10 @@ def query(db):
 @pytest.fixture
 def queries(db):
     return RealtyResultFactory.create_batch(15)
+
+@pytest.fixture
+def archived_result(db, query):
+    return RealtyResultFactory(status=QueryResultStatus.ARCHIVED, query=query)
 
 
 @pytest.fixture
@@ -42,7 +47,7 @@ class TestRealtyQueryListView:
         object_list = response.context_data["queries"]
         assert all("Query 1" in obj.name for obj in object_list)
 
-    def test_context_data_includes_new_results_count(self, client, realty_query_list_url, query, results):
+    def test_context_data_includes_new_results_count(self, client, realty_query_list_url, query, archived_result, results):
         response = client.get(realty_query_list_url)
 
         queries = response.context_data["queries"]

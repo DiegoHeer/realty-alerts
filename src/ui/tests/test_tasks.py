@@ -58,6 +58,11 @@ def realty_results(db, realty_query):
             query=realty_query,
             detail_url="https://aanbod.vastgoednederland.nl/koopwoningen/s-gravenhage/woning-576380-ijmuidenstraat-39",
         ),
+        RealtyResultFactory(
+            query=realty_query,
+            status=QueryResultStatus.ARCHIVED,
+            detail_url="https://aanbod.vastgoednederland.nl/koopwoningen/s-gravenhage/woning-576380-ijmuidenstraat-40",
+        ),
     ]
 
 
@@ -81,8 +86,11 @@ def test_scrape_and_notify__one_new_result(mocker: MockerFixture, realty_query, 
     scrape_and_notify(query_name=realty_query.name)
 
     assert RealtyResult.objects.count() == 8
+    assert RealtyResult.all_objects.count() == 9
     assert RealtyResult.objects.filter(status=QueryResultStatus.NOTIFIED).count() == 1
     assert RealtyResult.objects.filter(status=QueryResultStatus.UPDATED).count() == 7
+    assert RealtyResult.objects.filter(status=QueryResultStatus.ARCHIVED).count() == 0
+    assert RealtyResult.all_objects.filter(status=QueryResultStatus.ARCHIVED).count() == 1
     assert mock_post.call_count == 1
 
 
