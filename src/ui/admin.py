@@ -61,3 +61,6 @@ class RealtyResultAdmin(admin.ModelAdmin):
     )
     search_fields = ("title", "price", "query__name")
     list_select_related = ("query",)
+
+    def get_queryset(self, request):
+        return RealtyResult.all_objects.all()

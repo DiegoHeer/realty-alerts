@@ -44,7 +44,7 @@ def _save_query_results(realty_query: RealtyQuery, query_results: list[QueryResu
             defaults=_get_query_result_defaults(query_result),
         )
 
-        if not created and _is_query_result_changed(query_result, record):
+        if not created and not _is_record_archived(record) and _is_query_result_changed(query_result, record):
             _update_record_from_query_result(record, query_result)
 
 
@@ -62,6 +62,10 @@ def _is_query_result_changed(query_result: QueryResult, record: RealtyResult) ->
         for field in query_result.__class__.model_fields
         if hasattr(record, field)
     )
+
+
+def _is_record_archived(record: RealtyResult) -> bool:
+    return record.status == QueryResultStatus.ARCHIVED
 
 
 def _update_record_from_query_result(record: RealtyResult, query_result: QueryResult) -> None:

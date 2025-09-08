@@ -1,8 +1,9 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from enums import Websites
+from enums import Websites, QueryResultStatus
 from ui.tests.factories import RealtyQueryFactory, RealtyResultFactory
+from ui.models import RealtyResult
 
 
 def test_realty_query_model__success(db):
@@ -27,3 +28,11 @@ def test_realty_result_string(db):
     realty_result = RealtyResultFactory()
 
     assert str(realty_result) == f"{realty_result.title} ({realty_result.query.name})"
+
+
+def test_archived_results(db):
+    RealtyResultFactory(status=QueryResultStatus.NEW)
+    RealtyResultFactory(status=QueryResultStatus.ARCHIVED)
+
+    assert RealtyResult.objects.count() == 1
+    assert RealtyResult.all_objects.count() == 2

@@ -3,13 +3,14 @@ from django.views.generic import ListView, DetailView, TemplateView
 from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
 
+from enums import QueryResultStatus
 from ui.models import RealtyQuery, RealtyResult
 from ui.forms import RealtyQueryForm, TogglePeriodicTaskForm
 from django.urls import reverse_lazy
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from ui.mixins import BreadcrumbMixin, Breadcrumb
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 
 
 class HomeView(BreadcrumbMixin, TemplateView):
@@ -54,6 +55,7 @@ class RealtyQueryListView(ListView):
         query.new_results_count = query.results.filter(created_at__date__gte=today).count()
 
 
+# TODO: write tests
 @require_POST
 def query_toggle(request: HttpRequest, pk: int) -> HttpResponse:
     query = get_object_or_404(RealtyQuery, pk=pk)
@@ -113,3 +115,22 @@ class RealtyResultsListView(ListView):
             queryset = queryset.filter(Q(title__icontains=search_query) | Q(price__icontains=search_query))
 
         return queryset
+
+
+# TODO: write tests
+@require_http_methods(["DELETE"])
+def archive_result(request: HttpRequest, pk: int) -> HttpResponse:
+    """This method won't delete the query result from the database,
+    to avoid situations where the same result is being scraped and shown again.
+    """
+    result = get_object_or_404(RealtyResult, pk=pk)
+    result.status = QueryResultStatus.ARCHIVED
+    result.save()
+
+    # TODO: implement a sonnet functionality
+    context = {
+        "message": f"Query result '{result.title}' successfully deleted",
+        "results": result.query.results.all(),
+    }
+
+    return render(request, "ui/partials/result-list.html", context)
