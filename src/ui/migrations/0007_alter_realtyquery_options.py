@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ui', '0006_alter_realtyquery_options'),
+        ("ui", "0006_alter_realtyquery_options"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='realtyquery',
-            options={'ordering': ['-periodic_task__last_run_at'], 'verbose_name_plural': 'realty queries'},
+            name="realtyquery",
+            options={"ordering": ["-periodic_task__last_run_at"], "verbose_name_plural": "realty queries"},
         ),
     ]
