@@ -4,10 +4,11 @@ import requests
 from django.core.exceptions import ValidationError
 from django.db import models
 from requests import HTTPError
-
+from django.db.models.functions import Coalesce
 from enums import QueryResultStatus, Websites
 from settings import SETTINGS
 from django_celery_beat.models import PeriodicTask
+from django.db.models import F
 
 
 def _validate_ntfy_topic(value: str) -> None:
@@ -46,7 +47,7 @@ class RealtyQuery(models.Model):
     max_listing_page_number = models.PositiveIntegerField(default=3)
 
     class Meta:
-        ordering = ["-periodic_task__last_run_at"]
+        ordering = [Coalesce(F("periodic_task__last_run_at"), F("created_at")).desc(), "-created_at"]
         verbose_name_plural = "realty queries"
 
     @property
