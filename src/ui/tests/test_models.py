@@ -29,6 +29,7 @@ def test_realty_result_string(db):
 
     assert str(realty_result) == f"{realty_result.title} ({realty_result.query.name})"
 
+
 def test_archived_results(db):
     RealtyResultFactory(status=QueryResultStatus.NEW)
     RealtyResultFactory(status=QueryResultStatus.ARCHIVED)
