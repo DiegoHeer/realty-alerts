@@ -2162,9 +2162,6 @@
   .min-h-screen {
     min-height: 100vh;
   }
-  .loading-sm {
-    width: calc(var(--size-selector, 0.25rem) * 5);
-  }
   .loading-xl {
     width: calc(var(--size-selector, 0.25rem) * 8);
   }
@@ -2176,9 +2173,6 @@
   }
   .w-6 {
     width: calc(var(--spacing) * 6);
-  }
-  .w-8 {
-    width: calc(var(--spacing) * 8);
   }
   .w-10 {
     width: calc(var(--spacing) * 10);
@@ -3620,12 +3614,6 @@
           }
         }
       }
-    }
-  }
-  .focus\:border-none {
-    &:focus {
-      --tw-border-style: none;
-      border-style: none;
     }
   }
   .focus\:border-blue-500 {

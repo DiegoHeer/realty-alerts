@@ -14,7 +14,7 @@
         <fieldset class="mt-4 fieldset sm:grid sm:grid-cols-4 gap-3 mb-2">
           {% render_field form.name placeholder="Name" class="input sm:col-span-3 w-auto" %}
 
-          {% render_field form.query_url placeholder="URL with filters" type="text" class="input sm:col-span-3 w-auto" %}
+          {% render_field form.query_url placeholder="URL with filters" class="input sm:col-span-3 w-auto" %}
 
           <div class="flex flex-row items-center gap-1 sm:col-span-4">
             {% render_field form.ntfy_topic placeholder="NTFY topic" class="input" %}
@@ -42,17 +42,17 @@
         <fieldset class="grid grid-cols-2 gap-1 mt-1 w-full">
           <label class="input">
             <span class="label">from</span>
-            {% render_field form.hour_start placeholder="Time" type="time" class="input focus:border-none" %}
+            {{ form.hour_start|append_attr:"type:time" }}
           </label>
 
           <label class="input">
             <span class="label">to</span>
-            {% render_field form.hour_end placeholder="Time" type="time" class="input focus:border-none" %}
+            {{ form.hour_end|append_attr:"type:time" }}
           </label>
 
           <label class="select mt-2">
             <span class="label">every</span>
-            {% render_field form.hour_interval placeholder="Time" class="select focus:border-none" %}
+            {% render_field form.hour_interval placeholder="Time" class="select" %}
           </label>
         </fieldset>
 
