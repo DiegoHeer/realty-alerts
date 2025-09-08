@@ -84,6 +84,8 @@ class RealtyQueryDetailView(BreadcrumbMixin, DetailView):
         result_list_response = RealtyResultsListView.as_view()(self.request, pk=self.object.pk)
         context_data.update(result_list_response.context_data)
 
+        context_data["form"] = RealtyQueryForm()
+
         return context_data
 
 

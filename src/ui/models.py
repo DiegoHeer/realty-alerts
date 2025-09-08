@@ -46,7 +46,7 @@ class RealtyQuery(models.Model):
     max_listing_page_number = models.PositiveIntegerField(default=3)
 
     class Meta:
-        ordering = ["-updated_at", "-created_at"]
+        ordering = ["-periodic_task__last_run_at", "-created_at"]
         verbose_name_plural = "realty queries"
 
     @property
