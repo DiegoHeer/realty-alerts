@@ -21,7 +21,8 @@
 
             <button type="button" class="btn btn-sm bg-gray-800 hover:bg-gray-700 flex justify-between items-center"
               hx-post="{% url 'validate-ntfy-topic' %}" hx-target="#icon-placeholder" hx-swap="outerHTML"
-              hx-indicator="#small-spinner" hx-on::before-request="hideElement('icon')">
+              hx-indicator="#small-spinner" hx-on::before-request="hideElement('icon')"
+              hx-on:success="contact_modal.close(); this.reset();">
               {% include 'ui/partials/success-failure-icon.html' %}
               <span class="ml-1">test topic</span>
             </button>

@@ -89,7 +89,8 @@ class RealtyQueryDetailView(BreadcrumbMixin, DetailView):
 @require_POST
 def create_query(request: HttpRequest) -> HttpResponse:
     form = RealtyQueryForm(request.POST)
-    pass
+    if form.is_valid():
+        pass
 
 
 # TODO: finish this
