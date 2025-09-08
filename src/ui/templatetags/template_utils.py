@@ -11,7 +11,7 @@ def time_or_date(value: datetime):
     Return time (e.g. '14:05') if value is today, otherwise return formatted date.
     Uses Django's formats so it respects localization settings.
     """
-    if not value or isinstance(value, datetime):
+    if not value or not isinstance(value, datetime):
         return ""
 
     value_local = timezone.localtime(value)
