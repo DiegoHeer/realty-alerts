@@ -8,6 +8,7 @@ from ui.views import (
     query_toggle,
     create_query,
     validate_ntfy_topic,
+    archive_result,
 )
 
 urlpatterns = [
@@ -18,4 +19,5 @@ urlpatterns = [
     path("queries/<int:pk>/toggle", query_toggle, name="realty-query-toggle"),
     path("queries/<int:pk>/results/", RealtyResultsListView.as_view(), name="realty-result-list"),
     path("test/ntfy-topic", validate_ntfy_topic, name="validate-ntfy-topic"),
+    path("results/<int:pk>/delete", archive_result, name="realty-result-delete"),
 ]

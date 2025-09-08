@@ -26,15 +26,15 @@
     <span class="font-medium lg:text-2xl">{{ result.title }}</span>
     <span class="lg:text-lg font-medium text-gray-500">{{ result.price }}</span>
   </div>
-  <div class="hidden lg:inline">
-    <a href="#" class="block z-10 px-2 py-2 text-sm text-gray-300/20 hover:text-red-500 focus:outline-hidden">
+  <div id="result-delete">
+    <button class="block text-sm text-gray-300/20 hover:text-red-500 cursor-pointer"
+      hx-delete="{% url 'realty-result-delete' result.pk %}"
+      hx-target="#result-list"
+    >
       <i class="fa-solid fa-trash"></i>
-    </a>
+    </button>
   </div>
-  <!-- TODO: figure out to create an option that when it's hovered over, shows a button like sanfone -->
-  <div class="w-20 h-max bg-red-500 hidden hover:block">
-    <i class="fa-solid fa-trash text-white"></i>
-  </div>
+
 </div>
 {% empty %}
 <span class="text-gray-500 font-medium text-center mt-6">No results available. Enable the query to get results.</span>
