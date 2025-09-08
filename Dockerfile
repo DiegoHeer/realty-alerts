@@ -6,9 +6,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install tailwind CLI
-RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 \
-    && chmod +x tailwindcss-linux-x64 \
-    && mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss
+RUN curl -sLO https://github.com/dobicinaitis/tailwind-cli-extra/releases/latest/download/tailwindcss-extra-linux-x64 \
+    && chmod +x tailwindcss-extra-linux-x64 \
+    && mv tailwindcss-extra-linux-x64 /usr/local/bin/tailwindcss
 
 # Change the working directory to the `app` directory
 WORKDIR /app
