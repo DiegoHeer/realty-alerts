@@ -1,5 +1,6 @@
 from celery import shared_task
 from django.core import serializers
+from django.db import IntegrityError
 from playwright.sync_api import sync_playwright
 
 from enums import QueryResultStatus
@@ -38,11 +39,15 @@ def _scrape_query(realty_query: RealtyQuery) -> list[QueryResult]:
 
 def _save_query_results(realty_query: RealtyQuery, query_results: list[QueryResult]) -> None:
     for query_result in query_results:
-        record, created = RealtyResult.objects.get_or_create(
-            query=realty_query,
-            detail_url=query_result.detail_url,
-            defaults=_get_query_result_defaults(query_result),
-        )
+        try:
+            record, created = RealtyResult.objects.get_or_create(
+                query=realty_query,
+                detail_url=query_result.detail_url,
+                defaults=_get_query_result_defaults(query_result),
+            )
+        except IntegrityError:
+            created = False
+            record = RealtyResult.objects.get(query=realty_query, **query_result.model_dump())
 
         if not created and not _is_record_archived(record) and _is_query_result_changed(query_result, record):
             _update_record_from_query_result(record, query_result)
