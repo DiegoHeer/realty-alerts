@@ -1,6 +1,5 @@
 from celery import shared_task
 from django.core import serializers
-from django.db import IntegrityError
 from playwright.sync_api import sync_playwright
 
 from enums import QueryResultStatus
@@ -8,6 +7,7 @@ from models import QueryResult
 from notifications import notify_about_new_results
 from scraper.scrape_selector import get_scraper_class
 from ui.models import RealtyQuery, RealtyResult
+from django.db import transaction
 
 
 @shared_task
@@ -37,28 +37,14 @@ def _scrape_query(realty_query: RealtyQuery) -> list[QueryResult]:
         return scraper.get_query_results()
 
 
+@transaction.atomic()
 def _save_query_results(realty_query: RealtyQuery, query_results: list[QueryResult]) -> None:
     for query_result in query_results:
-        try:
-            record, created = RealtyResult.objects.get_or_create(
-                query=realty_query,
-                detail_url=query_result.detail_url,
-                defaults=_get_query_result_defaults(query_result),
-            )
-        except IntegrityError:
-            created = False
-            record = RealtyResult.objects.get(query=realty_query, **query_result.model_dump())
-
-        if not created and not _is_record_archived(record) and _is_query_result_changed(query_result, record):
-            _update_record_from_query_result(record, query_result)
-
-
-def _get_query_result_defaults(query_result: QueryResult) -> dict:
-    return {
-        "title": query_result.title,
-        "price": query_result.price,
-        "image_url": query_result.image_url,
-    }
+        if record := RealtyResult.objects.filter(query=realty_query, detail_url=query_result.detail_url).first():
+            if not _is_record_archived(record) and _is_query_result_changed(query_result, record):
+                _update_record_from_query_result(record, query_result)
+        else:
+            RealtyResult.objects.create(query=realty_query, **query_result.model_dump())
 
 
 def _is_query_result_changed(query_result: QueryResult, record: RealtyResult) -> bool:
