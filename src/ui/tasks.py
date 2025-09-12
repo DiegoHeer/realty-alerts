@@ -40,7 +40,7 @@ def _scrape_query(realty_query: RealtyQuery) -> list[QueryResult]:
 @transaction.atomic()
 def _save_query_results(realty_query: RealtyQuery, query_results: list[QueryResult]) -> None:
     for query_result in query_results:
-        if record := RealtyResult.objects.filter(query=realty_query, detail_url=query_result.detail_url).first():
+        if record := RealtyResult.all_objects.filter(query=realty_query, detail_url=query_result.detail_url).first():
             if not _is_record_archived(record) and _is_query_result_changed(query_result, record):
                 _update_record_from_query_result(record, query_result)
         else:
