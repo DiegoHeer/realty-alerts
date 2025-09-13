@@ -30,9 +30,10 @@
 
           <div class="flex flex-row items-center gap-1 sm:col-span-4">
             {% render_field form.ntfy_topic placeholder="NTFY topic" class="input" %}
+            {{ form.ntfy_topic.errors }}
 
             <button type="button" class="btn btn-sm bg-gray-800 hover:bg-gray-700 flex justify-between items-center"
-              hx-post="{% url 'validate-ntfy-topic' %}" hx-target="#icon-placeholder" hx-swap="outerHTML"
+              hx-post="{% url 'check-ntfy-topic' %}" hx-target="#icon-placeholder" hx-swap="outerHTML"
               hx-indicator="#small-spinner" hx-on::before-request="hideElement('icon')"
               hx-on:success="contact_modal.close(); this.reset();">
               {% include 'ui/partials/success-failure-icon.html' %}

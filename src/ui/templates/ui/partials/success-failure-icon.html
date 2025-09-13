@@ -1,10 +1,10 @@
 <div id="icon-placeholder" class="icon-placeholder w-3 flex flex-row items-center">
     {% if success is True %}
-        <div id="icon">
+        <div id="icon" class="tooltip" data-tip="message send to NTFY topic">
             <i class="fa-solid fa-check scale-150 text-success"></i>
         </div>
     {% elif success is False %}
-        <div id="icon">
+        <div id="icon" class="tooltip" data-tip="NTFY topic doesn't exist">
             <i class="fa-solid fa-xmark scale-150 text-error"></i>
         </div>
     {% else %}

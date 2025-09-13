@@ -51,3 +51,9 @@ def _send_to_ntfy(url: str, headers: dict, message: str) -> None:
     else:
         logger.error(f"Failed to send notification '{message}' to {url}. Status code: {response.status_code}")
         response.raise_for_status()
+
+
+def send_a_test_message(url: str) -> None:
+    headers = {"Tags": "test_tube, +1", "Title": "Test Message"}
+    message = "This is a test message."
+    _send_to_ntfy(url, headers, message)
