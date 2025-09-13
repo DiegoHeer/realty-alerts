@@ -21,7 +21,7 @@ def test_realty_query_model__failure(db):
         pass
 
     assert "Please correct the `ntfy_topic`" in exc.value.args[0]["ntfy_topic"][0].message
-    assert "has an invalid domain" in exc.value.args[0]["query_url"][0].message
+    assert "Invalid domain" in exc.value.args[0]["query_url"][0].message
 
 
 def test_realty_result_string(db):

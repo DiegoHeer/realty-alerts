@@ -1154,7 +1154,7 @@
     align-items: center;
     gap: calc(0.25rem * 1.5);
     background-color: var(--color-base-100);
-    padding-inline-start: calc(0.25rem * 4);
+    padding-inline-start: calc(0.25rem * 3);
     padding-inline-end: calc(0.25rem * 7);
     vertical-align: middle;
     width: clamp(3rem, 20rem, 100%);
@@ -1188,7 +1188,7 @@
       margin-inline-end: calc(0.25rem * -7);
       width: calc(100% + 2.75rem);
       appearance: none;
-      padding-inline-start: calc(0.25rem * 4);
+      padding-inline-start: calc(0.25rem * 3);
       padding-inline-end: calc(0.25rem * 7);
       height: calc(100% - calc(var(--border) * 2));
       align-items: center;
@@ -2983,6 +2983,9 @@
   }
   .text-primary-content {
     color: var(--color-primary-content);
+  }
+  .text-red-500 {
+    color: var(--color-red-500);
   }
   .text-success {
     color: var(--color-success);
