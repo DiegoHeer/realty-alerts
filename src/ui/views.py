@@ -4,13 +4,14 @@ from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
 
 from enums import QueryResultStatus
-from ui.models import RealtyQuery, RealtyResult
+from ui.models import RealtyQuery, RealtyResult, validate_query_url
 from ui.forms import RealtyQueryForm, TogglePeriodicTaskForm
 from django.urls import reverse_lazy
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from ui.mixins import BreadcrumbMixin, Breadcrumb
 from django.views.decorators.http import require_POST, require_http_methods
+from django.core.exceptions import ValidationError
 
 
 class HomeView(BreadcrumbMixin, TemplateView):
@@ -136,3 +137,24 @@ def archive_result(request: HttpRequest, pk: int) -> HttpResponse:
     }
 
     return render(request, "ui/partials/result-list.html", context)
+
+
+@require_POST
+def check_query_name(request: HttpRequest) -> HttpResponse:
+    query_name = request.POST.get("name")
+    if RealtyQuery.objects.filter(name=query_name).exists():
+        return HttpResponse("This query name already exists")
+    else:
+        return HttpResponse()
+
+
+@require_POST
+def check_query_url(request: HttpRequest) -> HttpResponse:
+    if query_url := request.POST.get("query_url"):
+        try:
+            validate_query_url(query_url)
+        except ValidationError as exc:
+            return HttpResponse(exc.message)
+
+    return HttpResponse()
+

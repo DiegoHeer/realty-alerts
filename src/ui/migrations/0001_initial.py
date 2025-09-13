@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 ("name", models.CharField(max_length=255, unique=True)),
                 ("ntfy_topic", models.CharField(max_length=255, validators=[ui.models._validate_ntfy_topic])),
-                ("query_url", models.URLField(max_length=500, validators=[ui.models._validate_query_url])),
+                ("query_url", models.URLField(max_length=500, validators=[ui.models.validate_query_url])),
                 ("max_listing_page_number", models.PositiveIntegerField(default=3)),
                 (
                     "periodic_task",

@@ -12,9 +12,21 @@
         {% csrf_token %}
 
         <fieldset class="mt-4 fieldset sm:grid sm:grid-cols-4 gap-3 mb-2">
-          {% render_field form.name placeholder="Name" class="input sm:col-span-3 w-auto" %}
+          <div class="flex flex-col sm:col-span-3">
+            {% url 'check-query-name' as url %}
+            {% render_field form.name placeholder="Name" class="input sm:col-span-3 w-auto" hx-post=url hx-trigger="keyup" hx-target="#name-error" %}
+            <div id="name-error" class="text-xs text-red-500">
+              {{ form.name.errors }}
+            </div>
+          </div>
 
-          {% render_field form.query_url placeholder="URL with filters" class="input sm:col-span-3 w-auto" %}
+          <div class="flex flex-col sm:col-span-3">
+            {% url 'check-query-url' as url %}
+            {% render_field form.query_url placeholder="URL with filters" class="input sm:col-span-3 w-auto" hx-post=url hx-trigger="keyup" hx-target="#query-url-error" %}
+            <div id="query-url-error" class="text-xs text-red-500">
+              {{ form.query_url.errors }}
+            </div>
+          </div>
 
           <div class="flex flex-row items-center gap-1 sm:col-span-4">
             {% render_field form.ntfy_topic placeholder="NTFY topic" class="input" %}

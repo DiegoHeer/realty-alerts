@@ -9,6 +9,7 @@ from enums import QueryResultStatus, Websites
 from settings import SETTINGS
 from django_celery_beat.models import PeriodicTask
 from django.db.models import F
+from loguru import logger
 
 
 def _validate_ntfy_topic(value: str) -> None:
@@ -25,16 +26,17 @@ def _validate_ntfy_topic(value: str) -> None:
         raise ValidationError(msg)
 
 
-def _validate_query_url(value: str) -> None:
+def validate_query_url(value: str) -> None:
     parsed = urlparse(value)
 
     if not parsed.scheme or not parsed.netloc:
-        msg = f"The query url {value} is invalid. Make sure to include a valid scheme (http or https) and domain."
-        raise ValidationError(msg)
+        logger.error(f"The query url {value} is invalid. Include a valid scheme (http or https) and domain.")
+        raise ValidationError("Invalid url. Use a valid scheme (http or https).")
 
     VALID_DOMAINS = [item.value for item in Websites]
     if parsed.netloc not in VALID_DOMAINS:
-        raise ValidationError(f"The query url {value} has an invalid domain. Accepted domains are: {VALID_DOMAINS}.")
+        logger.error(f"The query url {value} has an invalid domain. Accepted domains are: {VALID_DOMAINS}.")
+        raise ValidationError(f"Invalid domain. Accepted domains are: {VALID_DOMAINS}.")
 
 
 class RealtyQuery(models.Model):
@@ -43,7 +45,7 @@ class RealtyQuery(models.Model):
     name = models.CharField(max_length=255, unique=True)
     ntfy_topic = models.CharField(max_length=255, validators=[_validate_ntfy_topic])
     periodic_task = models.OneToOneField(PeriodicTask, on_delete=models.CASCADE, related_name="queries")
-    query_url = models.URLField(max_length=500, validators=[_validate_query_url])
+    query_url = models.URLField(max_length=500, validators=[validate_query_url])
     max_listing_page_number = models.PositiveIntegerField(default=3)
 
     class Meta:
