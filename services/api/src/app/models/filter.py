@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Column
+from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects.postgresql import ARRAY, VARCHAR
 from sqlmodel import Field, SQLModel
 
@@ -24,5 +24,5 @@ class UserFilter(SQLModel, table=True):
     min_area_sqm: float | None = None
     websites: list[str] = Field(default_factory=list, sa_column=Column(ARRAY(VARCHAR)))
     is_active: bool = True
-    created_at: datetime = Field(default_factory=_utcnow)
-    updated_at: datetime = Field(default_factory=_utcnow)
+    created_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
+    updated_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))

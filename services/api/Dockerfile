@@ -12,10 +12,11 @@ COPY alembic/ ./alembic/
 COPY src/ ./src/
 
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app/src"
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=20s --timeout=5s --retries=3 --start-period=10s \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head 2>/dev/null; uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000"]

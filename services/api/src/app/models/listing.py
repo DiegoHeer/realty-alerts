@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import Index
+from sqlalchemy import DateTime, Index
 from sqlmodel import Field, SQLModel
 
 from app.enums import ListingStatus, Website
@@ -28,6 +28,6 @@ class Listing(SQLModel, table=True):
     area_sqm: float | None = None
     image_url: str | None = None
     status: ListingStatus = ListingStatus.ACTIVE
-    scraped_at: datetime = Field(default_factory=_utcnow)
-    created_at: datetime = Field(default_factory=_utcnow)
-    updated_at: datetime = Field(default_factory=_utcnow)
+    scraped_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
+    created_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
+    updated_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
