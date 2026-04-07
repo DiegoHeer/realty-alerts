@@ -1,0 +1,51 @@
+name: Infrastructure CI/CD
+on:
+  push:
+    paths: ["infra/terraform/**"]
+    branches: [main]
+  pull_request:
+    paths: ["infra/terraform/**"]
+
+jobs:
+  plan:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        environment: [dev, prod]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform Plan
+        run: |
+          cd infra/terraform
+          terraform init
+          terraform workspace select ${{ matrix.environment }} || terraform workspace new ${{ matrix.environment }}
+          terraform plan -var-file=${{ matrix.environment }}.tfvars -out=plan.tfplan
+
+  apply-dev:
+    needs: plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: |
+          cd infra/terraform
+          terraform init
+          terraform workspace select dev
+          terraform apply -auto-approve -var-file=dev.tfvars
+
+  apply-prod:
+    needs: apply-dev
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: |
+          cd infra/terraform
+          terraform init
+          terraform workspace select prod
+          terraform apply -auto-approve -var-file=prod.tfvars

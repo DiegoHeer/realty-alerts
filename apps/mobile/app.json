@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Realty Alerts",
+    "slug": "realty-alerts",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "realty-alerts",
+    "platforms": ["ios", "android"],
+    "plugins": ["expo-router"]
+  }
+}

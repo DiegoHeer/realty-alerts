@@ -1,0 +1,41 @@
+[project]
+name = "realty-alerts-api"
+version = "0.1.0"
+description = "FastAPI backend for Realty Alerts — listings, filters, push notifications, scraper management."
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.15",
+    "asyncpg>=0.30",
+    "backoff>=2.2",
+    "expo-server-sdk>=2.1",
+    "fastapi[standard]>=0.115",
+    "httpx>=0.28",
+    "kubernetes>=31.0",
+    "loguru>=0.7",
+    "pydantic-settings>=2.9",
+    "python-jose[cryptography]>=3.3",
+    "sqlmodel>=0.0.22",
+]
+
+[dependency-groups]
+dev = [
+    "polyfactory>=2.18",
+    "pytest>=8.4",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.12",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "C",   # mccabe
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "UP",  # pyupgrade
+]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+asyncio_mode = "auto"

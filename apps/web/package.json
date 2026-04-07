@@ -1,0 +1,24 @@
+{
+  "name": "realty-alerts-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "framer-motion": "^12.0",
+    "next": "^15.2",
+    "react": "^19.0",
+    "react-dom": "^19.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0",
+    "autoprefixer": "^10.4",
+    "postcss": "^8.5",
+    "tailwindcss": "^4.0",
+    "typescript": "^5.7"
+  }
+}
