@@ -22,6 +22,9 @@ web-dev: ## Start Next.js dev server
 
 # --- Quality ---
 
+pre-commit: ## Run all pre-commit checks
+	pre-commit run --all-files
+
 lint: ## Lint all Python services
 	cd services/scraper && uv run ruff check src/ tests/
 	cd services/api && uv run ruff check src/ tests/
