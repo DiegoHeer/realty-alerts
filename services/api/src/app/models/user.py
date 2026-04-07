@@ -1,7 +1,11 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Field, SQLModel
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
 
 
 class UserProfile(SQLModel, table=True):
@@ -11,15 +15,15 @@ class UserProfile(SQLModel, table=True):
     supabase_id: uuid.UUID = Field(unique=True, index=True)
     email: str | None = None
     timezone: str = "Europe/Amsterdam"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 class PushToken(SQLModel, table=True):
     __tablename__ = "push_tokens"
 
     id: int | None = Field(default=None, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user_profiles.id")
+    user_id: uuid.UUID = Field(foreign_key="user_profiles.id", index=True)
     expo_push_token: str
     device_name: str | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)

@@ -1,0 +1,33 @@
+from datetime import UTC, datetime
+
+from sqlalchemy import Index
+from sqlmodel import Field, SQLModel
+
+from app.enums import ListingStatus, Website
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+class Listing(SQLModel, table=True):
+    __tablename__ = "listings"
+    __table_args__ = (
+        Index("idx_listings_filters", "city", "property_type", "price"),
+        Index("idx_listings_website_created", "website", "created_at"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    website: Website
+    detail_url: str = Field(unique=True, index=True)
+    title: str
+    price: str
+    city: str = Field(index=True)
+    property_type: str | None = None
+    bedrooms: int | None = None
+    area_sqm: float | None = None
+    image_url: str | None = None
+    status: ListingStatus = ListingStatus.ACTIVE
+    scraped_at: datetime = Field(default_factory=_utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
