@@ -1,9 +1,15 @@
+import { Hero } from "@/components/Hero";
+import { Features } from "@/components/Features";
+import { HowItWorks } from "@/components/HowItWorks";
+import { CTA } from "@/components/CTA";
+
 export default function Home() {
   return (
-    <main>
-      <h1>Realty Alerts</h1>
-      <p>Never miss a Dutch home listing again.</p>
-      {/* TODO: Hero, Features, HowItWorks, Screenshots, CTA sections */}
-    </main>
+    <>
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <CTA />
+    </>
   );
 }
