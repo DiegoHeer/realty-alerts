@@ -1,25 +1,35 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
-
-# Unit test / coverage reports
+*.pyc
+.venv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
 .coverage
 .coverage.*
-.pytest_cache/
 
-# Database
-*.sqlite3
+# Node.js
+node_modules/
+.next/
+out/
+dist/
 
 # Environments
 .env
 *.env
-.venv
 .secret.txt
 
-# mypy
-.mypy_cache/
+# Database
+*.sqlite3
 
-# Ruff:
-.ruff_cache/
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
 
-# Tailwind
-.django_tailwind_cli/
+# IDE
+.idea/
+
+# OS
+.DS_Store

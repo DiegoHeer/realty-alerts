@@ -1,15 +1,10 @@
 repos:
-  - repo: https://github.com/google/osv-scanner
-    rev: v2.0.2
-    hooks:
-      - id: osv-scanner
-        args: ["--lockfile=./uv.lock"]
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: check-toml
       - id: check-yaml
+        args: [--allow-multiple-documents]
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
@@ -17,13 +12,18 @@ repos:
     rev: v0.12.9
     hooks:
       - id: ruff-check
-        name: Lint python files
-        args: [--config, ./pyproject.toml, --fix, --exit-non-zero-on-fix]
+        name: Lint python (scraper)
+        args: [--config, ./services/scraper/pyproject.toml, --fix, --exit-non-zero-on-fix]
+        files: ^services/scraper/
+      - id: ruff-check
+        name: Lint python (api)
+        args: [--config, ./services/api/pyproject.toml, --fix, --exit-non-zero-on-fix]
+        files: ^services/api/
       - id: ruff-format
-        name: Format python files
-        args: [--config, ./pyproject.toml]
-
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.7.13
-    hooks:
-      - id: uv-lock
+        name: Format python (scraper)
+        args: [--config, ./services/scraper/pyproject.toml]
+        files: ^services/scraper/
+      - id: ruff-format
+        name: Format python (api)
+        args: [--config, ./services/api/pyproject.toml]
+        files: ^services/api/
