@@ -6,6 +6,6 @@
     "orientation": "portrait",
     "scheme": "realty-alerts",
     "platforms": ["ios", "android"],
-    "plugins": ["expo-router"]
+    "plugins": ["expo-router", "expo-notifications"]
   }
 }

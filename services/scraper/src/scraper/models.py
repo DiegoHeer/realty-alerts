@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from scraper.enums import Website
+
 
 class Listing(BaseModel):
     detail_url: str
@@ -10,4 +12,4 @@ class Listing(BaseModel):
     bedrooms: int | None = None
     area_sqm: float | None = None
     image_url: str | None = None
-    website: str
+    website: Website

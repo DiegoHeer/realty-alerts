@@ -17,7 +17,6 @@
     "expo": "~52.0",
     "expo-notifications": "~0.29",
     "expo-router": "~4.0",
-    "ky": "^1.7",
     "nativewind": "^4.1",
     "react": "18.3.1",
     "react-hook-form": "^7.54",
