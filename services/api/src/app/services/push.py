@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from exponent_server_sdk import (
@@ -35,12 +36,11 @@ async def send_push_for_matches(
         body = f"{count} new {'listing' if count == 1 else 'listings'} matching your filters"
 
         messages = [
-            PushMessage(to=token.expo_push_token, title=title, body=body, data={"count": count})
-            for token in tokens
+            PushMessage(to=token.expo_push_token, title=title, body=body, data={"count": count}) for token in tokens
         ]
 
         try:
-            responses = push_client.publish_multiple(messages)
+            responses = await asyncio.to_thread(push_client.publish_multiple, messages)
             for i, response in enumerate(responses):
                 try:
                     response.validate_response()

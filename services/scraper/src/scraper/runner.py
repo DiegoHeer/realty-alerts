@@ -59,8 +59,7 @@ def run() -> None:
         logger.exception(f"Scraping failed for {website}")
     finally:
         finished_at = datetime.now(UTC)
-        if hasattr(fetch, "close"):
-            fetch.close()
+        fetch.close()
 
     # Submit results to backend API
     try:

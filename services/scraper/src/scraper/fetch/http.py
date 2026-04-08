@@ -11,3 +11,6 @@ class HttpFetch:
         response = httpx.get(url, timeout=self.timeout)
         response.raise_for_status()
         return response.text
+
+    def close(self) -> None:
+        pass

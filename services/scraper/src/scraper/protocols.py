@@ -7,6 +7,7 @@ from scraper.models import Listing
 
 class FetchStrategy(Protocol):
     def fetch(self, url: str) -> str: ...
+    def close(self) -> None: ...
 
 
 class Scraper(Protocol):
