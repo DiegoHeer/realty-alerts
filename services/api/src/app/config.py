@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,10 +10,10 @@ class Settings(BaseSettings):
 
     # Supabase Auth
     supabase_url: str = ""
-    supabase_jwt_secret: str = ""
+    supabase_jwt_secret: str
 
     # Internal API
-    internal_api_key: str = ""
+    internal_api_key: str
 
     # Server
     host: str = "0.0.0.0"
@@ -21,4 +22,12 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Amsterdam"
 
     # CORS
-    cors_origins: list[str] = ["*"]
+    cors_origins: list[str] = []
+
+    @model_validator(mode="after")
+    def _validate_secrets(self) -> "Settings":
+        if not self.supabase_jwt_secret:
+            raise ValueError("API_SUPABASE_JWT_SECRET must be set and non-empty")
+        if not self.internal_api_key:
+            raise ValueError("API_INTERNAL_API_KEY must be set and non-empty")
+        return self

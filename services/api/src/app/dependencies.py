@@ -1,3 +1,4 @@
+import hmac
 import uuid
 
 from fastapi import Depends, HTTPException, Request, status
@@ -40,5 +41,5 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 async def verify_internal_api_key(request: Request) -> None:
     settings = get_settings()
     api_key = request.headers.get("X-API-Key", "")
-    if api_key != settings.internal_api_key:
+    if not hmac.compare_digest(api_key, settings.internal_api_key):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid API key")
