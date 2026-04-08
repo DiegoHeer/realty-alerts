@@ -37,11 +37,13 @@ async def submit_scrape_results(
     listings_new = 0
 
     # Upsert listings — insert new, skip existing (dedup by detail_url)
+    detail_urls = [ld.detail_url for ld in data.listings]
+    result = await db.execute(select(Listing.detail_url).where(Listing.detail_url.in_(detail_urls)))
+    existing_urls = set(result.scalars().all())
+
     new_listings: list[Listing] = []
     for listing_data in data.listings:
-        result = await db.execute(select(Listing).where(Listing.detail_url == listing_data.detail_url))
-        existing = result.scalar_one_or_none()
-        if existing is None:
+        if listing_data.detail_url not in existing_urls:
             listing = Listing(
                 **listing_data.model_dump(),
                 scraped_at=datetime.now(UTC),
