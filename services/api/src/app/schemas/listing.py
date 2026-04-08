@@ -17,4 +17,5 @@ class ListingCreate(SQLModel):
 
 class ListingRead(ListingCreate):
     id: int
+    price_cents: int | None = None
     status: ListingStatus

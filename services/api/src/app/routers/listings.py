@@ -33,9 +33,9 @@ async def list_listings(
     if website:
         query = query.where(Listing.website == website)
     if min_price is not None:
-        query = query.where(Listing.price >= str(min_price))
+        query = query.where(Listing.price_cents >= min_price)
     if max_price is not None:
-        query = query.where(Listing.price <= str(max_price))
+        query = query.where(Listing.price_cents <= max_price)
 
     query = query.order_by(Listing.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)

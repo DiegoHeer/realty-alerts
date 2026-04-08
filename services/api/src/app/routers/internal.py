@@ -9,6 +9,7 @@ from app.database import get_db
 from app.dependencies import verify_internal_api_key
 from app.enums import ScrapeRunStatus, Website
 from app.models.listing import Listing
+from app.utils import parse_price_cents
 from app.models.scrape_run import ScrapeRun
 from app.schemas.scrape_run import ScrapeResultSubmission, ScrapeRunRead
 
@@ -41,7 +42,11 @@ async def submit_scrape_results(
         result = await db.execute(select(Listing).where(Listing.detail_url == listing_data.detail_url))
         existing = result.scalar_one_or_none()
         if existing is None:
-            listing = Listing(**listing_data.model_dump(), scraped_at=datetime.now(UTC))
+            listing = Listing(
+                **listing_data.model_dump(),
+                scraped_at=datetime.now(UTC),
+                price_cents=parse_price_cents(listing_data.price),
+            )
             db.add(listing)
             new_listings.append(listing)
             listings_new += 1

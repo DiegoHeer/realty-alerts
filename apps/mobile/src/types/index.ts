@@ -13,6 +13,7 @@ export interface Listing {
   detail_url: string;
   title: string;
   price: string;
+  price_cents: number | null;
   city: string;
   property_type: string | null;
   bedrooms: number | null;

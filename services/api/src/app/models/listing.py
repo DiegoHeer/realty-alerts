@@ -13,7 +13,7 @@ def _utcnow() -> datetime:
 class Listing(SQLModel, table=True):
     __tablename__ = "listings"
     __table_args__ = (
-        Index("idx_listings_filters", "city", "property_type", "price"),
+        Index("idx_listings_filters", "city", "property_type", "price_cents"),
         Index("idx_listings_website_created", "website", "created_at"),
     )
 
@@ -22,6 +22,7 @@ class Listing(SQLModel, table=True):
     detail_url: str = Field(unique=True, index=True)
     title: str
     price: str
+    price_cents: int | None = None
     city: str = Field(index=True)
     property_type: str | None = None
     bedrooms: int | None = None
