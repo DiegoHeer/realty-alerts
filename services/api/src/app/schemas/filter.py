@@ -1,3 +1,6 @@
+import uuid
+from datetime import datetime
+
 from sqlmodel import SQLModel
 
 
@@ -15,6 +18,9 @@ class FilterCreate(SQLModel):
 
 class FilterRead(FilterCreate):
     id: int
+    user_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
 
 
 class FilterUpdate(SQLModel):

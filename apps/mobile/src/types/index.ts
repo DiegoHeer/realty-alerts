@@ -20,10 +20,13 @@ export interface Listing {
   area_sqm: number | null;
   image_url: string | null;
   status: string;
+  scraped_at: string;
+  created_at: string;
 }
 
 export interface Filter {
   id: number;
+  user_id: string;
   name: string;
   city: string | null;
   min_price: number | null;
@@ -33,6 +36,8 @@ export interface Filter {
   min_area_sqm: number | null;
   websites: string[];
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FilterCreate {

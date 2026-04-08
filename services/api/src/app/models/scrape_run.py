@@ -1,13 +1,10 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, Index
 from sqlmodel import Field, SQLModel
 
 from app.enums import ScrapeRunStatus, Website
-
-
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
+from app.utils import utcnow
 
 
 class ScrapeRun(SQLModel, table=True):
@@ -16,7 +13,7 @@ class ScrapeRun(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     website: Website
-    started_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
+    started_at: datetime = Field(default_factory=utcnow, sa_type=DateTime(timezone=True))
     finished_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
     status: ScrapeRunStatus = ScrapeRunStatus.RUNNING
     listings_found: int = 0

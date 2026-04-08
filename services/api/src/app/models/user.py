@@ -1,12 +1,10 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime
 from sqlmodel import Field, SQLModel
 
-
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
+from app.utils import utcnow
 
 
 class UserProfile(SQLModel, table=True):
@@ -16,8 +14,8 @@ class UserProfile(SQLModel, table=True):
     supabase_id: uuid.UUID = Field(unique=True, index=True)
     email: str | None = None
     timezone: str = "Europe/Amsterdam"
-    created_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
-    updated_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
+    created_at: datetime = Field(default_factory=utcnow, sa_type=DateTime(timezone=True))
+    updated_at: datetime = Field(default_factory=utcnow, sa_type=DateTime(timezone=True))
 
 
 class PushToken(SQLModel, table=True):
@@ -27,4 +25,4 @@ class PushToken(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user_profiles.id", index=True)
     expo_push_token: str
     device_name: str | None = None
-    created_at: datetime = Field(default_factory=_utcnow, sa_type=DateTime(timezone=True))
+    created_at: datetime = Field(default_factory=utcnow, sa_type=DateTime(timezone=True))

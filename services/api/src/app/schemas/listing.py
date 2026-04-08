@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlmodel import SQLModel
 
 from app.enums import ListingStatus, Website
@@ -19,3 +21,5 @@ class ListingRead(ListingCreate):
     id: int
     price_cents: int | None = None
     status: ListingStatus
+    scraped_at: datetime
+    created_at: datetime
