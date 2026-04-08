@@ -14,12 +14,12 @@ export interface ListingParams {
 export async function getListings(params?: ListingParams): Promise<Listing[]> {
   const query: Record<string, string> = {};
   if (params?.city) query.city = params.city;
-  if (params?.min_price) query.min_price = String(params.min_price);
-  if (params?.max_price) query.max_price = String(params.max_price);
+  if (params?.min_price != null) query.min_price = String(params.min_price);
+  if (params?.max_price != null) query.max_price = String(params.max_price);
   if (params?.property_type) query.property_type = params.property_type;
   if (params?.website) query.website = params.website;
-  if (params?.page) query.page = String(params.page);
-  if (params?.page_size) query.page_size = String(params.page_size);
+  if (params?.page != null) query.page = String(params.page);
+  if (params?.page_size != null) query.page_size = String(params.page_size);
 
   return api.get<Listing[]>("/api/v1/listings/", query);
 }

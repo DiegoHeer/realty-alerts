@@ -10,6 +10,7 @@ export default function ListingDetailScreen() {
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", listingId],
     queryFn: () => getListing(listingId),
+    enabled: !isNaN(listingId),
   });
 
   if (isLoading || !listing) {

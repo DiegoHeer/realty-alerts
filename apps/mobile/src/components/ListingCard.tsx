@@ -1,4 +1,5 @@
-import { View, Text, Image, Pressable, Linking } from "react-native";
+import { View, Text, Image, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import type { Listing } from "@/types";
 
 interface Props {
@@ -6,9 +7,11 @@ interface Props {
 }
 
 export function ListingCard({ listing }: Props) {
+  const router = useRouter();
+
   return (
     <Pressable
-      onPress={() => Linking.openURL(listing.detail_url)}
+      onPress={() => router.push(`/listing/${listing.id}`)}
       style={{
         backgroundColor: "#fff",
         borderRadius: 12,

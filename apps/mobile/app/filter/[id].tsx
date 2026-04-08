@@ -12,6 +12,7 @@ export default function FilterDetailScreen() {
   const { data: filter, isLoading } = useQuery({
     queryKey: ["filter", filterId],
     queryFn: () => getFilter(filterId),
+    enabled: !isNaN(filterId),
   });
 
   const deleteMutation = useDeleteFilter();
