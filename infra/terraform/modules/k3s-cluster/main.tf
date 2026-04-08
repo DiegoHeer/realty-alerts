@@ -31,7 +31,7 @@ data "external" "k3s_token" {
   depends_on = [null_resource.k3s_server]
 
   program = [
-    "ssh", "-o", "StrictHostKeyChecking=no",
+    "ssh", "-o", "StrictHostKeyChecking=accept-new",
     "-i", pathexpand(var.ssh_private_key_path),
     "${var.ssh_user}@${local.server_host}",
     "echo", "{\\\"token\\\":\\\"$(sudo cat /var/lib/rancher/k3s/server/node-token)\\\"}"
@@ -43,7 +43,7 @@ data "external" "kubeconfig" {
   depends_on = [null_resource.k3s_server]
 
   program = [
-    "ssh", "-o", "StrictHostKeyChecking=no",
+    "ssh", "-o", "StrictHostKeyChecking=accept-new",
     "-i", pathexpand(var.ssh_private_key_path),
     "${var.ssh_user}@${local.server_host}",
     "echo", "{\\\"kubeconfig\\\":\\\"$(sudo cat /etc/rancher/k3s/k3s.yaml | base64 -w0)\\\"}"

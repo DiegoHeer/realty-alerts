@@ -21,6 +21,10 @@ jobs:
           terraform init
           terraform workspace select ${{ matrix.environment }} || terraform workspace new ${{ matrix.environment }}
           terraform plan -var-file=${{ matrix.environment }}.tfvars -out=plan.tfplan
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}
+          path: infra/terraform/plan.tfplan
 
   apply-dev:
     needs: plan
@@ -30,11 +34,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-dev
+          path: infra/terraform
       - run: |
           cd infra/terraform
           terraform init
           terraform workspace select dev
-          terraform apply -auto-approve -var-file=dev.tfvars
+          terraform apply plan.tfplan
 
   apply-prod:
     needs: apply-dev
@@ -44,8 +52,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-prod
+          path: infra/terraform
       - run: |
           cd infra/terraform
           terraform init
           terraform workspace select prod
-          terraform apply -auto-approve -var-file=prod.tfvars
+          terraform apply plan.tfplan
