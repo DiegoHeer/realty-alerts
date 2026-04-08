@@ -28,6 +28,9 @@ dist/
 *.tfstate.backup
 .terraform.lock.hcl
 
+# Claude Code
+.claude/settings.local.json
+
 # IDE
 .idea/
 

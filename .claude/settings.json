@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit",
+      "Write",
+      "Bash(git:*)",
+      "Bash(make:*)",
+      "Bash(uv:*)",
+      "Bash(cd services/scraper && uv:*)",
+      "Bash(cd services/api && uv:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(cd apps/mobile &&:*)",
+      "Bash(cd apps/web &&:*)",
+      "Bash(terraform:*)",
+      "Bash(cd infra/terraform &&:*)",
+      "Bash(docker:*)",
+      "Bash(docker compose:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(which:*)",
+      "Bash(echo:*)",
+      "Bash(pwd:*)",
+      "Bash(date:*)",
+      "Bash(jq:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(touch:*)",
+      "Bash(pre-commit:*)",
+      "Bash(gh:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(terraform destroy:*)"
+    ]
+  }
+}
