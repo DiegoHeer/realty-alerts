@@ -6,7 +6,7 @@ help: ## Show this help
 # --- Local Development ---
 
 dev: ## Start all services locally via docker-compose
-	docker compose up --build
+	docker compose -f docker-compose.dev.yml up --build
 
 scraper-dev: ## Run scraper locally
 	cd services/scraper && uv run python -m scraper
