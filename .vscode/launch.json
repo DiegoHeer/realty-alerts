@@ -2,29 +2,65 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Realty Alerts - Scheduler",
+            "name": "Python: Scraper",
             "type": "debugpy",
             "request": "launch",
-            "module": "celery",
-            "args": [
-                "-A",
-                "core",
-                "worker",
-                "-B",
-                "--loglevel=info"
-            ],
-            "cwd": "${workspaceFolder}/src",
+            "module": "scraper",
+            "cwd": "${workspaceFolder}/services/scraper",
+            "python": "${workspaceFolder}/services/scraper/.venv/bin/python",
+            "envFile": "${workspaceFolder}/services/scraper/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/services/scraper/src"
+            },
             "justMyCode": false
         },
         {
-            "name": "Python: Realty Alerts - UI",
+            "name": "Python: API (uvicorn)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/manage.py",
-            "args": ["tailwind", "runserver"],
-            "cwd": "${workspaceFolder}/src",
-            "justMyCode": false,
-            "django": true
+            "module": "uvicorn",
+            "args": [
+                "app.main:create_app",
+                "--factory",
+                "--reload",
+                "--port",
+                "8000"
+            ],
+            "cwd": "${workspaceFolder}/services/api",
+            "python": "${workspaceFolder}/services/api/.venv/bin/python",
+            "envFile": "${workspaceFolder}/services/api/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/services/api/src"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Pytest: Scraper (current file)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["${file}", "-v"],
+            "cwd": "${workspaceFolder}/services/scraper",
+            "python": "${workspaceFolder}/services/scraper/.venv/bin/python",
+            "envFile": "${workspaceFolder}/services/scraper/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/services/scraper/src"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Pytest: API (current file)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["${file}", "-v"],
+            "cwd": "${workspaceFolder}/services/api",
+            "python": "${workspaceFolder}/services/api/.venv/bin/python",
+            "envFile": "${workspaceFolder}/services/api/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/services/api/src"
+            },
+            "justMyCode": false
         }
     ]
 }
