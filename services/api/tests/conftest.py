@@ -7,8 +7,8 @@ os.environ.setdefault("API_INTERNAL_API_KEY", "test-api-key")
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.database import get_settings
-from app.main import create_app
+from database import get_settings
+from main import create_app
 
 
 @pytest.fixture

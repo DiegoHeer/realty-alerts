@@ -7,8 +7,8 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.database import get_db, get_settings
 from app.models.user import UserProfile
+from database import get_db, get_settings
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> UserProfile:

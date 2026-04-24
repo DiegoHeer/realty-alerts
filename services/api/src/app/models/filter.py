@@ -5,7 +5,7 @@ from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects.postgresql import ARRAY, VARCHAR
 from sqlmodel import Field, SQLModel
 
-from app.utils import utcnow
+from utils import utcnow
 
 
 class UserFilter(SQLModel, table=True):

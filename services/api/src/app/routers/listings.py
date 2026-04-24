@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.enums import Website
 from app.models.listing import Listing
 from app.models.user import UserProfile
 from app.schemas.listing import ListingRead
+from database import get_db
+from dependencies import get_current_user
+from enums import Website
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 

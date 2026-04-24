@@ -5,13 +5,13 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.database import get_db
-from app.dependencies import verify_internal_api_key
-from app.enums import ScrapeRunStatus, Website
 from app.models.listing import Listing
-from app.utils import parse_price_cents
 from app.models.scrape_run import ScrapeRun
 from app.schemas.scrape_run import ScrapeResultSubmission, ScrapeRunRead
+from database import get_db
+from dependencies import verify_internal_api_key
+from enums import ScrapeRunStatus, Website
+from utils import parse_price_cents
 
 router = APIRouter(dependencies=[Depends(verify_internal_api_key)], tags=["internal"])
 

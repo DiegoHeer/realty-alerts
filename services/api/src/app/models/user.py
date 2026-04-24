@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import DateTime
 from sqlmodel import Field, SQLModel
 
-from app.utils import utcnow
+from utils import utcnow
 
 
 class UserProfile(SQLModel, table=True):

@@ -1,13 +1,15 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
-from app.config import Settings
 from app.routers import filters, health, internal, listings, scrape_runs, users
+from config import Settings
+
+settings = Settings()
 
 
 def create_app() -> FastAPI:
-    settings = Settings()  # type: ignore[call-arg]
-
     app = FastAPI(title="Realty Alerts API", version="0.1.0")
 
     app.add_middleware(
@@ -26,3 +28,23 @@ def create_app() -> FastAPI:
     app.include_router(internal.router, prefix="/internal/v1")
 
     return app
+
+
+def run_api() -> None:
+    """
+    Entrypoint for the API
+    """
+    try:
+        logger.info("Starting uvicorn server...")
+
+        app = create_app()
+        uvicorn.run(app=app, host=settings.host, port=settings.port, log_level=settings.log_level)
+
+        logger.info("Stopped uvicorn server.")
+    except Exception as exc:
+        logger.exception(f"Uvicorn server failure: {exc}")
+        exit(1)
+
+
+if __name__ == "__main__":
+    run_api()

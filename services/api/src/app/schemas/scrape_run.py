@@ -2,8 +2,8 @@ from datetime import datetime
 
 from sqlmodel import SQLModel
 
-from app.enums import ScrapeRunStatus, Website
 from app.schemas.listing import ListingCreate
+from enums import ScrapeRunStatus, Website
 
 
 class ScrapeRunRead(SQLModel):

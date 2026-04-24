@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.database import get_db
-from app.dependencies import get_current_user
 from app.models.filter import UserFilter
 from app.models.user import UserProfile
 from app.schemas.filter import FilterCreate, FilterRead, FilterUpdate
+from database import get_db
+from dependencies import get_current_user
 
 router = APIRouter(prefix="/filters", tags=["filters"])
 

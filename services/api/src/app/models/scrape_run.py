@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, Index
 from sqlmodel import Field, SQLModel
 
-from app.enums import ScrapeRunStatus, Website
-from app.utils import utcnow
+from enums import ScrapeRunStatus, Website
+from utils import utcnow
 
 
 class ScrapeRun(SQLModel, table=True):

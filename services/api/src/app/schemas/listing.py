@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlmodel import SQLModel
 
-from app.enums import ListingStatus, Website
+from enums import ListingStatus, Website
 
 
 class ListingCreate(SQLModel):

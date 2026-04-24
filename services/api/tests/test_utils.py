@@ -1,6 +1,6 @@
 import pytest
 
-from app.utils import parse_price_cents
+from utils import parse_price_cents
 
 
 @pytest.mark.parametrize(

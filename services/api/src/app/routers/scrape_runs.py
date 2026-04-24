@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.enums import Website
 from app.models.scrape_run import ScrapeRun
 from app.models.user import UserProfile
 from app.schemas.scrape_run import ScrapeRunRead
+from database import get_db
+from dependencies import get_current_user
+from enums import Website
 
 router = APIRouter(prefix="/scrape-runs", tags=["scrape-runs"])
 

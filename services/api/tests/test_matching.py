@@ -1,9 +1,9 @@
 import uuid
 
-from app.enums import ListingStatus, Website
 from app.matching.engine import _listing_matches_filter
 from app.models.filter import UserFilter
 from app.models.listing import Listing
+from enums import ListingStatus, Website
 
 
 def _make_listing(**overrides) -> Listing:
