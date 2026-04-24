@@ -20,7 +20,7 @@
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "app.main:create_app",
+                "main:create_app",
                 "--factory",
                 "--reload",
                 "--port",
