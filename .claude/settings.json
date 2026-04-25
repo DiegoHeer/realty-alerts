@@ -15,8 +15,8 @@
       "Bash(npx:*)",
       "Bash(cd apps/mobile &&:*)",
       "Bash(cd apps/web &&:*)",
-      "Bash(terraform:*)",
-      "Bash(cd infra/terraform &&:*)",
+      "Bash(ruff:*)",
+      "Bash(pytest:*)",
       "Bash(docker:*)",
       "Bash(docker compose:*)",
       "Bash(ls:*)",
@@ -29,6 +29,11 @@
       "Bash(pwd:*)",
       "Bash(date:*)",
       "Bash(jq:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(tree:*)",
+      "Bash(diff:*)",
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Bash(mv:*)",
@@ -41,8 +46,7 @@
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Bash(git reset --hard:*)",
-      "Bash(git clean -f:*)",
-      "Bash(terraform destroy:*)"
+      "Bash(git clean -f:*)"
     ]
   }
 }
