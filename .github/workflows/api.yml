@@ -15,6 +15,7 @@ jobs:
       - run: cd services/api && uv sync --dev
       - run: cd services/api && uv run ruff check realty_api/ scraping/ tests/
       - run: cd services/api && uv run ruff format --check realty_api/ scraping/ tests/
+      - run: cd services/api && uv run ty check realty_api/ scraping/ tests/
 
   test:
     runs-on: ubuntu-latest
