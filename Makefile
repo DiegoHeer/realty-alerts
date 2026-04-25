@@ -1,4 +1,4 @@
-.PHONY: help dev scraper-dev api-dev api-migrate api-superuser api-shell mobile-dev web-dev pre-commit lint format test build build-scraper build-api build-web
+.PHONY: help dev scraper-dev api-dev api-migrate api-superuser api-shell mobile-dev web-dev pre-commit lint format typecheck test build build-scraper build-api build-web
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -41,6 +41,10 @@ lint: ## Lint all Python services
 format: ## Format all Python services
 	cd services/scraper && uv run ruff format src/ tests/
 	cd services/api && uv run ruff format realty_api/ scraping/ tests/
+
+typecheck: ## Typecheck all Python services
+	cd services/scraper && uv run ty check src/ tests/
+	cd services/api && uv run ty check realty_api/ scraping/ tests/
 
 test: ## Run all tests
 	cd services/scraper && uv run pytest tests/
