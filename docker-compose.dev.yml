@@ -7,9 +7,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      API_DATABASE_URL: postgresql+asyncpg://realty:realty@database:5432/realty_alerts
-      API_INTERNAL_API_KEY: dev-internal-api-key
-      API_LOG_LEVEL: debug
+      DJANGO_SETTINGS_MODULE: realty_api.settings.prod
+      DATABASE_URL: postgres://realty:realty@database:5432/realty_alerts
+      INTERNAL_API_KEY: dev-internal-api-key
+      LOG_LEVEL: DEBUG
     depends_on:
       database:
         condition: service_healthy

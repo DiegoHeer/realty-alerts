@@ -7,16 +7,16 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 RUN uv sync --locked --no-dev --compile-bytecode
 
-COPY alembic.ini ./
-COPY alembic/ ./alembic/
-COPY src/ ./src/
+COPY manage.py ./
+COPY realty_api/ ./realty_api/
+COPY scraping/ ./scraping/
 
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH="/app/src"
+ENV DJANGO_SETTINGS_MODULE=realty_api.settings.prod
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=20s --timeout=5s --retries=3 --start-period=10s \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:create_app --factory --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn realty_api.wsgi:application --bind 0.0.0.0:8000"]
