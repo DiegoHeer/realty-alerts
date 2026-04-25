@@ -4,6 +4,94 @@
 
 - **Ask before acting:** Only start executing when you have at least 95% confidence on the topic. Otherwise, ask clarifying questions, reason through the problem, or do web research for more context.
 - **PR preflight:** Before creating a PR, always run all relevant tests (`make test`) and pre-commit checks (`make pre-commit`) and fix any failures first.
+- **Conventional Commits:** every commit follows [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). See `## Commits`.
+- **Atomic commits:** one logical change per commit, summarisable in a single sentence. See `## Commits`.
+
+## Commits
+
+All commits follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and must be atomic.
+
+### Format
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+- `<description>` is imperative mood, lowercase, no trailing period, ≤ 72 chars.
+- Body (when needed) explains the *why*, not the *what*. One blank line after the description.
+- Footers use `Token: value` form (e.g. `Refs: #123`, `Co-Authored-By: ...`).
+
+### Allowed types
+
+| Type | Use for |
+|---|---|
+| `feat` | new user-visible functionality (MINOR bump) |
+| `fix` | bug fix (PATCH bump) |
+| `docs` | documentation only |
+| `style` | formatting, whitespace, lint-only changes (no logic) |
+| `refactor` | internal restructuring with no behaviour change |
+| `perf` | performance improvement |
+| `test` | adding or updating tests only |
+| `build` | build system, Docker, dependencies (`uv`, `npm`) |
+| `ci` | GitHub Actions, pre-commit config |
+| `chore` | maintenance that does not fit above (rare) |
+| `revert` | revert a previous commit |
+
+### Allowed scopes
+
+Scope is **required** and must be one of: `api`, `scraper`, `mobile`, `web`, `docker`, `ci`, `deps`, `repo`.
+
+- Use `repo` for cross-cutting changes (root configs, Makefile, top-level docs).
+- Use `deps` for dependency bumps that span services; otherwise scope to the service (`feat(api): ...`).
+
+### Breaking changes
+
+Breaking changes **must** use both signals:
+
+1. Append `!` before the colon: `feat(api)!: ...`
+2. Include a `BREAKING CHANGE:` footer explaining the break and the migration.
+
+Example:
+
+```
+feat(api)!: drop legacy /v1 listings endpoint
+
+BREAKING CHANGE: clients must migrate to /v2/listings. The /v1 route
+now returns 410 Gone. Mobile app ≥ 1.4 already uses /v2.
+```
+
+### Atomic commits
+
+Each commit does **one** thing, summarisable in a single sentence:
+
+- One logical change. Don't mix a refactor with a feature, or formatting with logic.
+- The repo must build and tests must pass at every commit (bisectable history).
+- If `git diff --stat` touches unrelated areas, split with `git add -p` or `git restore --staged`.
+- Pure formatting/rename commits go in their own `style:` or `refactor:` commit, separate from behaviour changes.
+- A commit that needs the word "and" in its description is probably two commits.
+
+### Examples
+
+Good:
+
+- `feat(scraper): add Funda fetch strategy`
+- `fix(api): handle null price in ListingRead`
+- `refactor(mobile): extract useListingFilters hook`
+- `build(deps): bump expo from 52.0.0 to 52.0.7`
+- `docs(repo): document conventional commits in CLAUDE.md`
+- `ci(repo): run mobile jest only on apps/mobile changes`
+- `test(scraper): cover VastgoedNL pagination edge case`
+
+Bad (and why):
+
+- `API|Migrate: replace FastAPI...` — legacy format, not Conventional Commits.
+- `feat(api): add endpoint and fix unrelated bug` — two changes, split it.
+- `chore: stuff` — no scope, no real description.
+- `Update files` — not a Conventional Commit at all.
 
 ## Project Overview
 
