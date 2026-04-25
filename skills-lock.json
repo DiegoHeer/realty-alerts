@@ -1,10 +1,10 @@
 {
   "version": 1,
   "skills": {
-    "fastapi": {
-      "source": "fastapi/fastapi",
+    "django-expert": {
+      "source": "vintasoftware/django-ai-plugins",
       "sourceType": "github",
-      "computedHash": "ee23d5285caf055cf164ff45dd34888d381143564666baacab8aa786f22e413a"
+      "computedHash": "a6b8c224017570496d688a526fcbea74025a01cc90d9afb0977bfcc1f76af306"
     },
     "framer-motion-animator": {
       "source": "patricio0312rev/skills",
@@ -26,6 +26,11 @@
       "sourceType": "github",
       "computedHash": "91ee61c66315a02b9fd3165488604f20d84a1f55cfbeedbbb35c6d0b6fc5e1e3"
     },
+    "pytest-django-patterns": {
+      "source": "kjnez/claude-code-django",
+      "sourceType": "github",
+      "computedHash": "efb3232a6de1e79ddf0f2fdaf71659016df08dbff722e08d9343d4d9b2c1f556"
+    },
     "react-native": {
       "source": "jezweb/claude-skills",
       "sourceType": "github",
@@ -35,16 +40,6 @@
       "source": "josiahsiegel/claude-plugin-marketplace",
       "sourceType": "github",
       "computedHash": "91d2c2a0af9d050f38639f240c078eea5c587da6da2873d078a34a24fa375adb"
-    },
-    "terraform-style-guide": {
-      "source": "hashicorp/agent-skills",
-      "sourceType": "github",
-      "computedHash": "1fb650e4627c740f024b80947964769f5f5d58efff54870cef2791324d5aa451"
-    },
-    "terraform-test": {
-      "source": "hashicorp/agent-skills",
-      "sourceType": "github",
-      "computedHash": "c446a090ac98bea46704c16003761a030e6aa56a27b0e95d6914fbdb7c1d2a23"
     },
     "web-scraping": {
       "source": "jamditis/claude-skills-journalism",
