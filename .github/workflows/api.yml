@@ -10,12 +10,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-      - run: cd services/api && uv sync --dev
-      - run: cd services/api && uv run ruff check realty_api/ scraping/ tests/
-      - run: cd services/api && uv run ruff format --check realty_api/ scraping/ tests/
-      - run: cd services/api && uv run ty check realty_api/ scraping/ tests/
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Install dependencies
+        run: cd services/api && uv sync --dev
+      - name: Lint with ruff
+        run: cd services/api && uv run ruff check realty_api/ scraping/ tests/
+      - name: Check formatting
+        run: cd services/api && uv run ruff format --check realty_api/ scraping/ tests/
+      - name: Type-check with ty
+        run: cd services/api && uv run ty check realty_api/ scraping/ tests/
 
   test:
     runs-on: ubuntu-latest
@@ -33,10 +39,14 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-      - run: cd services/api && uv sync --dev
-      - run: cd services/api && uv run pytest tests/ -v --ds=realty_api.settings.test
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Install dependencies
+        run: cd services/api && uv sync --dev
+      - name: Run tests
+        run: cd services/api && uv run pytest tests/ -v --ds=realty_api.settings.test
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_realty_alerts
           INTERNAL_API_KEY: test-key
@@ -48,13 +58,16 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - name: Build and push api image
+        uses: docker/build-push-action@v6
         with:
           context: services/api
           push: true
