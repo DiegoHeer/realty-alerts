@@ -1,4 +1,4 @@
-.PHONY: help dev scraper-dev api-dev mobile-dev web-dev lint test build
+.PHONY: help dev scraper-dev api-dev api-migrate api-superuser api-shell mobile-dev web-dev pre-commit lint format test build build-scraper build-api build-web
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -11,8 +11,17 @@ dev: ## Start all services locally via docker-compose
 scraper-dev: ## Run scraper locally
 	cd services/scraper && uv run python -m scraper
 
-api-dev: ## Run API locally
-	cd services/api && uv run uvicorn app.main:create_app --factory --reload --port 8000
+api-dev: ## Run API locally (Django runserver, sqlite by default)
+	cd services/api && uv run python manage.py runserver 0.0.0.0:8000
+
+api-migrate: ## Apply Django migrations locally
+	cd services/api && uv run python manage.py migrate
+
+api-superuser: ## Create a Django admin superuser locally
+	cd services/api && uv run python manage.py createsuperuser
+
+api-shell: ## Open a Django shell locally
+	cd services/api && uv run python manage.py shell
 
 mobile-dev: ## Start Expo dev server
 	cd apps/mobile && npx expo start
@@ -27,11 +36,11 @@ pre-commit: ## Run all pre-commit checks
 
 lint: ## Lint all Python services
 	cd services/scraper && uv run ruff check src/ tests/
-	cd services/api && uv run ruff check src/ tests/
+	cd services/api && uv run ruff check realty_api/ scraping/ tests/
 
 format: ## Format all Python services
 	cd services/scraper && uv run ruff format src/ tests/
-	cd services/api && uv run ruff format src/ tests/
+	cd services/api && uv run ruff format realty_api/ scraping/ tests/
 
 test: ## Run all tests
 	cd services/scraper && uv run pytest tests/
