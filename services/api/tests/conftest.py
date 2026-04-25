@@ -1,7 +1,6 @@
 import os
 
 # Set required environment variables before importing app modules
-os.environ.setdefault("API_SUPABASE_JWT_SECRET", "test-jwt-secret")
 os.environ.setdefault("API_INTERNAL_API_KEY", "test-api-key")
 
 import pytest

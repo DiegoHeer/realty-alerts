@@ -7,16 +7,15 @@
 
 ## Project Overview
 
-Realty Alerts — real estate listing notifications for the Dutch housing market. Monorepo with 5 services deployed on self-hosted Proxmox + k3s.
+Realty Alerts — real estate listing notifications for the Dutch housing market. Monorepo holding application code only; deployment is GitOps via [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) (Talos + k3s + ArgoCD).
 
 ## Repository Structure
 
 ```
 services/scraper/   Python CDC scraper (BeautifulSoup, Playwright, httpx)
-services/api/       FastAPI backend (SQLModel, Alembic, asyncpg, Supabase Auth)
+services/api/       FastAPI backend (SQLModel, Alembic, asyncpg)
 apps/mobile/        React Native / Expo (TanStack Query, Zustand, NativeWind)
 apps/web/           Next.js 15 static landing page (Tailwind CSS)
-infra/terraform/    Proxmox VMs, k3s, K8s resources, Supabase, monitoring
 ```
 
 ## Development Commands
@@ -52,7 +51,7 @@ make web-dev          # next dev
 ## Frontend Conventions (apps/mobile, apps/web)
 
 - TypeScript throughout
-- Mobile: Expo 52, React Native 0.76, Expo Router, Supabase JS, Zod for validation
+- Mobile: Expo 52, React Native 0.76, Expo Router, Zod for validation
 - Web: Next.js 15, React 19, Tailwind CSS 4, Framer Motion
 
 ## SQLModel & Alembic Conventions (services/api)
@@ -75,10 +74,10 @@ make web-dev          # next dev
 - Scraper is CDC-style (scrape all new listings since last run), API matches listings to user filters
 - Scraper architecture: Protocol + Strategy pattern (FetchStrategy + Scraper protocols)
 - Notifications: Expo Push (FCM/APNs)
-- Real-time: Supabase Realtime (Postgres change subscriptions)
-- Database: PostgreSQL via Supabase, no separate search engine
+- Database: standalone PostgreSQL, no separate search engine
+- Authentication: not yet wired (`get_current_user` returns 501); replacement provider lands in a follow-up PR
 - Shared code: duplicate small files across services (no shared package)
-- Terraform: single config with dev.tfvars / prod.tfvars + workspaces
+- Deployment: GitOps via [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) — this repo only builds and pushes images
 - CI: GitHub Actions with per-service path-filtered workflows
 
 ## Testing
@@ -138,10 +137,3 @@ Skills live in `.claude/skills/` and are auto-loaded by Claude Code. Use the rig
 | `tailwindcss-fundamentals-v4` | Tailwind v4 syntax: `@theme` directive, OKLCH colors, `@utility`, CSS-first config (not v3 `tailwind.config.js`) |
 | `framer-motion-animator` | Entrance/exit animations, scroll-triggered effects, page transitions, `useReducedMotion` |
 | `frontend-design` | Landing page components, layout, visual polish (official Anthropic skill) |
-
-### Infra (`infra/terraform/`)
-
-| Skill | When to use |
-|---|---|
-| `terraform-style-guide` | File organization, naming, variable validation, `for_each` over `count`, security hardening (official HashiCorp skill) |
-| `terraform-test` | Writing `.tftest.hcl` files, plan/apply mode tests, mock providers, CI/CD integration (official HashiCorp skill) |

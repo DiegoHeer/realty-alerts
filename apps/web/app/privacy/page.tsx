@@ -33,9 +33,8 @@ export default function Privacy() {
         <section>
           <h2 className="text-xl font-semibold text-gray-900">3. Data storage</h2>
           <p className="mt-2">
-            All data is stored on self-hosted servers within the European Union. We use Supabase
-            (self-hosted) for authentication and PostgreSQL for data storage. Data is encrypted in
-            transit (TLS) and at rest.
+            All data is stored on self-hosted servers within the European Union, using PostgreSQL
+            for data storage. Data is encrypted in transit (TLS) and at rest.
           </p>
         </section>
 

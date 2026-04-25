@@ -8,10 +8,6 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://localhost:5432/realty_alerts"
 
-    # Supabase Auth
-    supabase_url: str = ""
-    supabase_jwt_secret: str
-
     # Internal API
     internal_api_key: str
 
@@ -26,8 +22,6 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_secrets(self) -> "Settings":
-        if not self.supabase_jwt_secret:
-            raise ValueError("API_SUPABASE_JWT_SECRET must be set and non-empty")
         if not self.internal_api_key:
             raise ValueError("API_INTERNAL_API_KEY must be set and non-empty")
         return self

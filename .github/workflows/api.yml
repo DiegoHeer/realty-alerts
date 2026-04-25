@@ -38,7 +38,6 @@ jobs:
       - run: cd services/api && uv run pytest tests/ -v
         env:
           API_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_realty_alerts
-          API_SUPABASE_JWT_SECRET: test-secret
           API_INTERNAL_API_KEY: test-key
 
   build:

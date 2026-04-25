@@ -1,10 +1,20 @@
 import { create } from "zustand";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+
+// Auth not implemented; tracked in follow-up PR.
+// These are minimal local types to keep consumers compiling.
+export interface AuthUser {
+  id: string;
+  email: string | null;
+}
+
+export interface AuthSession {
+  access_token: string;
+  user: AuthUser;
+}
 
 interface AuthState {
-  session: Session | null;
-  user: User | null;
+  session: AuthSession | null;
+  user: AuthUser | null;
   isLoading: boolean;
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -12,42 +22,26 @@ interface AuthState {
   signOut: () => Promise<void>;
 }
 
-let _unsubscribe: (() => void) | null = null;
+const NOT_IMPLEMENTED = new Error("Auth not implemented; pending follow-up PR");
 
 export const useAuthStore = create<AuthState>((set) => ({
   session: null,
   user: null,
-  isLoading: true,
+  isLoading: false,
 
   initialize: async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    set({ session, user: session?.user ?? null, isLoading: false });
-
-    if (!_unsubscribe) {
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        set({ session, user: session?.user ?? null });
-      });
-      _unsubscribe = () => subscription.unsubscribe();
-    }
+    set({ session: null, user: null, isLoading: false });
   },
 
-  signIn: async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+  signIn: async (_email: string, _password: string) => {
+    throw NOT_IMPLEMENTED;
   },
 
-  signUp: async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+  signUp: async (_email: string, _password: string) => {
+    throw NOT_IMPLEMENTED;
   },
 
   signOut: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
     set({ session: null, user: null });
   },
 }));

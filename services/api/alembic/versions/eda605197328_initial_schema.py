@@ -57,14 +57,14 @@ def upgrade() -> None:
     op.create_index('idx_scrape_runs_website_started', 'scrape_runs', ['website', 'started_at'], unique=False)
     op.create_table('user_profiles',
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('supabase_id', sa.Uuid(), nullable=False),
+    sa.Column('auth_id', sa.Uuid(), nullable=True),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('timezone', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_user_profiles_supabase_id'), 'user_profiles', ['supabase_id'], unique=True)
+    op.create_index(op.f('ix_user_profiles_auth_id'), 'user_profiles', ['auth_id'], unique=True)
     op.create_table('push_tokens',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
@@ -102,7 +102,7 @@ def downgrade() -> None:
     op.drop_table('user_filters')
     op.drop_index(op.f('ix_push_tokens_user_id'), table_name='push_tokens')
     op.drop_table('push_tokens')
-    op.drop_index(op.f('ix_user_profiles_supabase_id'), table_name='user_profiles')
+    op.drop_index(op.f('ix_user_profiles_auth_id'), table_name='user_profiles')
     op.drop_table('user_profiles')
     op.drop_index('idx_scrape_runs_website_started', table_name='scrape_runs')
     op.drop_table('scrape_runs')

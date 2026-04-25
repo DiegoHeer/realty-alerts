@@ -50,17 +50,3 @@ build-web: ## Build landing page Docker image
 	docker build -t ghcr.io/diegoheer/realty-web:latest apps/web
 
 build: build-scraper build-api build-web ## Build all Docker images
-
-# --- Infrastructure ---
-
-tf-plan-dev: ## Terraform plan for dev
-	cd infra/terraform && terraform plan -var-file=dev.tfvars
-
-tf-plan-prod: ## Terraform plan for prod
-	cd infra/terraform && terraform plan -var-file=prod.tfvars
-
-tf-apply-dev: ## Terraform apply for dev
-	cd infra/terraform && terraform apply -var-file=dev.tfvars
-
-tf-apply-prod: ## Terraform apply for prod
-	cd infra/terraform && terraform apply -var-file=prod.tfvars

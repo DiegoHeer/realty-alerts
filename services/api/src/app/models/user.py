@@ -11,7 +11,7 @@ class UserProfile(SQLModel, table=True):
     __tablename__ = "user_profiles"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    supabase_id: uuid.UUID = Field(unique=True, index=True)
+    auth_id: uuid.UUID | None = Field(default=None, unique=True, index=True)
     email: str | None = None
     timezone: str = "Europe/Amsterdam"
     created_at: datetime = Field(default_factory=utcnow, sa_type=DateTime(timezone=True))

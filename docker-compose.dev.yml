@@ -8,8 +8,6 @@ services:
       - "8000:8000"
     environment:
       API_DATABASE_URL: postgresql+asyncpg://realty:realty@database:5432/realty_alerts
-      API_SUPABASE_URL: http://supabase:9999
-      API_SUPABASE_JWT_SECRET: super-secret-jwt-token-for-dev
       API_INTERNAL_API_KEY: dev-internal-api-key
       API_LOG_LEVEL: debug
     depends_on:
