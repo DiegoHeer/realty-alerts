@@ -27,3 +27,13 @@ repos:
         name: Format python (api)
         args: [--config, ./services/api/pyproject.toml]
         files: ^services/api/
+
+  - repo: https://github.com/allganize/ty-pre-commit
+    rev: v0.0.32
+    hooks:
+      - id: ty-check
+        name: Typecheck python (scraper)
+        files: ^services/scraper/
+      - id: ty-check
+        name: Typecheck python (api)
+        files: ^services/api/
