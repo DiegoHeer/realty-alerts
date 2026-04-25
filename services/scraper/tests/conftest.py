@@ -1,5 +1,10 @@
 from pathlib import Path
 
+import pytest
+
+from scraper.scrapers.pararius import ParariusScraper
+from scraper.scrapers.vastgoed_nl import VastgoedNLScraper
+
 MOCK_DATA_DIR = Path(__file__).resolve().parent / "data"
 
 URL_TO_FILE = {
@@ -24,3 +29,24 @@ class MockFetch:
             raise KeyError(f"No mock defined for URL: {url}")
         file_path = MOCK_DATA_DIR / URL_TO_FILE[url]
         return file_path.read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def mock_fetch() -> MockFetch:
+    return MockFetch()
+
+
+@pytest.fixture
+def pararius_scraper(mock_fetch: MockFetch) -> ParariusScraper:
+    return ParariusScraper(
+        fetch=mock_fetch,
+        base_url="https://www.pararius.nl/koopwoningen/nederland/50m2",
+    )
+
+
+@pytest.fixture
+def vastgoed_nl_scraper(mock_fetch: MockFetch) -> VastgoedNLScraper:
+    return VastgoedNLScraper(
+        fetch=mock_fetch,
+        base_url="https://aanbod.vastgoednederland.nl/koopwoningen?q=den+haag",
+    )

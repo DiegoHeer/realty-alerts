@@ -1,12 +1,5 @@
-from scraper.scrapers.vastgoed_nl import VastgoedNLScraper
-from conftest import MockFetch
-
-
-def test_scrape_first_page():
-    scraper = VastgoedNLScraper(
-        fetch=MockFetch(), base_url="https://aanbod.vastgoednederland.nl/koopwoningen?q=den+haag"
-    )
-    listings = scraper._scrape_page(page_number=1)
+def test_scrape_first_page(vastgoed_nl_scraper):
+    listings = vastgoed_nl_scraper._scrape_page(page_number=1)
 
     assert len(listings) > 0
     assert all(listing.website == "vastgoed_nl" for listing in listings)

@@ -1,16 +1,10 @@
-from scraper.scrapers.pararius import ParariusScraper
-from conftest import MockFetch
-
-
-def test_scrape_last_page_number():
-    scraper = ParariusScraper(fetch=MockFetch(), base_url="https://www.pararius.nl/koopwoningen/nederland/50m2")
-    last_page = scraper._get_last_page()
+def test_scrape_last_page_number(pararius_scraper):
+    last_page = pararius_scraper._get_last_page()
     assert last_page == 5  # capped by MAX_PAGES
 
 
-def test_scrape_first_page():
-    scraper = ParariusScraper(fetch=MockFetch(), base_url="https://www.pararius.nl/koopwoningen/nederland/50m2")
-    listings = scraper._scrape_page(page_number=1)
+def test_scrape_first_page(pararius_scraper):
+    listings = pararius_scraper._scrape_page(page_number=1)
 
     assert len(listings) == 30
     listings.sort(key=lambda r: r.title)
