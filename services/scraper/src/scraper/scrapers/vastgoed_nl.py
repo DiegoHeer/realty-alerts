@@ -15,7 +15,7 @@ class VastgoedNLScraper(BaseScraper):
     MAX_PAGES = 5
 
     def __init__(
-        self, fetch: FetchStrategy, base_url: str = "https://aanbod.vastgoednederland.nl/koop"
+        self, fetch: FetchStrategy, base_url: str = "https://aanbod.vastgoednederland.nl/koopwoningen"
     ) -> None:
         super().__init__(fetch)
         self.base_url = base_url

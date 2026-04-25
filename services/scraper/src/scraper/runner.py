@@ -38,7 +38,7 @@ def run() -> None:
     logger.info(f"Last successful run: {since or 'never'}")
 
     # Initialize fetch strategy
-    if website == Website.FUNDA:
+    if website in [Website.FUNDA, Website.PARARIUS]:
         fetch = PlaywrightFetch(browser_url=settings.browser_url)
     else:
         fetch = HttpFetch()
@@ -70,8 +70,8 @@ def run() -> None:
             finished_at=finished_at,
             error_message=error_message,
         )
-    except Exception:
-        logger.exception("Failed to submit results to backend API")
+    except Exception as exc:
+        logger.exception(f"Failed to submit results to backend API: {exc}")
         sys.exit(1)
 
     if error_message:

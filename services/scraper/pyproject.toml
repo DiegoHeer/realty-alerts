@@ -8,9 +8,10 @@ dependencies = [
     "beautifulsoup4>=4.13",
     "httpx>=0.28",
     "loguru>=0.7",
-    "playwright>=1.53",
+    "playwright==1.53",
     "pydantic>=2.11",
     "pydantic-settings>=2.9",
+    "requests>=2.32",
 ]
 
 [dependency-groups]
