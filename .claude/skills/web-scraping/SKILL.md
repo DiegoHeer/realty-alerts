@@ -146,7 +146,7 @@ class PlaywrightScraper(Scraper):
 
 class PlaywrightScraperAsync:
     """Async Playwright scraper for Jupyter notebooks (.ipynb files).
-    
+
     Jupyter notebooks run their own event loop, so sync Playwright won't work.
     Use this async version with `await` in notebook cells.
     """
