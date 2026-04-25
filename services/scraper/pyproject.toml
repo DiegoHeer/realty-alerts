@@ -20,6 +20,7 @@ dev = [
     "pytest-mock>=3.14",
     "respx>=0.22",
     "ruff>=0.12",
+    "ty>=0.0.32",
 ]
 
 [tool.ruff]
@@ -35,3 +36,6 @@ select = [
 
 [tool.pytest.ini_options]
 pythonpath = "src"
+
+[tool.ty.environment]
+python-version = "3.12"
