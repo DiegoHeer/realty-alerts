@@ -15,23 +15,15 @@
             "justMyCode": false
         },
         {
-            "name": "Python: API (uvicorn)",
+            "name": "Python: API (Django)",
             "type": "debugpy",
             "request": "launch",
-            "module": "uvicorn",
-            "args": [
-                "main:create_app",
-                "--factory",
-                "--reload",
-                "--port",
-                "8000"
-            ],
+            "program": "${workspaceFolder}/services/api/manage.py",
+            "args": ["runserver", "0.0.0.0:8000", "--noreload"],
             "cwd": "${workspaceFolder}/services/api",
             "python": "${workspaceFolder}/services/api/.venv/bin/python",
             "envFile": "${workspaceFolder}/services/api/.env",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/services/api/src"
-            },
+            "django": true,
             "justMyCode": false
         },
         {
@@ -57,9 +49,6 @@
             "cwd": "${workspaceFolder}/services/api",
             "python": "${workspaceFolder}/services/api/.venv/bin/python",
             "envFile": "${workspaceFolder}/services/api/.env",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/services/api/src"
-            },
             "justMyCode": false
         }
     ]
