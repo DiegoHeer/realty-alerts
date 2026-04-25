@@ -37,3 +37,4 @@ select = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "realty_api.settings.local"
 python_files = "test_*.py"
+addopts = ["--reuse-db", "-ra"]
