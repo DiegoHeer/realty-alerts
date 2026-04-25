@@ -1,4 +1,4 @@
-.PHONY: help dev scraper-dev api-dev api-migrate api-superuser api-shell mobile-dev web-dev pre-commit lint format test build build-scraper build-api build-web
+.PHONY: help dev scraper-dev api-dev api-migrate api-superuser api-shell mobile-dev web-dev pre-commit lint format test web-test build build-scraper build-api build-web
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -46,6 +46,10 @@ test: ## Run all tests
 	cd services/scraper && uv run pytest tests/
 	cd services/api && uv run pytest tests/
 	cd apps/mobile && npm test
+	cd apps/web && npm test
+
+web-test: ## Run web (Next.js) tests via vitest
+	cd apps/web && npm test
 
 # --- Build ---
 
