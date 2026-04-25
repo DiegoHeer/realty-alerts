@@ -21,6 +21,7 @@ dev = [
     "pytest>=8.4",
     "pytest-django>=4.9",
     "ruff>=0.12",
+    "ty>=0.0.32",
 ]
 
 [tool.ruff]
@@ -38,3 +39,6 @@ select = [
 DJANGO_SETTINGS_MODULE = "realty_api.settings.local"
 python_files = "test_*.py"
 addopts = ["--reuse-db", "-ra"]
+
+[tool.ty.environment]
+python-version = "3.12"
