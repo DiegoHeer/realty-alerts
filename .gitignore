@@ -25,11 +25,6 @@ dist/
 # Database
 *.sqlite3
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.backup
-
 # Claude Code
 .claude/settings.local.json
 
