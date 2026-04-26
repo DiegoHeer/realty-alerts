@@ -5,7 +5,7 @@ services:
     build:
       context: services/api
     ports:
-      - "8000:8000"
+      - 8000:8000
     environment:
       DJANGO_SETTINGS_MODULE: realty_api.settings.prod
       DATABASE_URL: postgres://realty:realty@database:5432/realty_alerts
@@ -30,7 +30,7 @@ services:
       POSTGRES_PASSWORD: realty
       POSTGRES_DB: realty_alerts
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -46,7 +46,7 @@ services:
     image: mcr.microsoft.com/playwright:v1.53.0-noble
     command: npx -y playwright@1.53.0 run-server --port 3000 --host 0.0.0.0
     ports:
-      - "3000:3000"
+      - 3000:3000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 10s
