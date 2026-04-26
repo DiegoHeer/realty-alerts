@@ -30,6 +30,9 @@ class MockFetch:
         file_path = MOCK_DATA_DIR / URL_TO_FILE[url]
         return file_path.read_text(encoding="utf-8")
 
+    def close(self) -> None:
+        pass
+
 
 @pytest.fixture
 def mock_fetch() -> MockFetch:
