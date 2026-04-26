@@ -16,4 +16,4 @@ uv run pytest tests/ -v
 
 Settings split: `realty_api/settings/{base,local,prod,ci}.py` selected via `DJANGO_SETTINGS_MODULE`. See the repo-level [CLAUDE.md](../../CLAUDE.md) for the full Django + Django Ninja conventions.
 
-The Docker image is `ghcr.io/diegoheer/realty-alerts/api` — built and pushed by [.github/workflows/api.yml](../../.github/workflows/api.yml).
+The Docker image is `ghcr.io/diegoheer/realty-alerts/api` — built and pushed by [.github/workflows/api.yml](../../.github/workflows/api.yml). On merge to `main`, that workflow opens a `release/api-sha-…` PR on `realty-ai-platform` to promote the new image to production.
