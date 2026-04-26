@@ -16,7 +16,6 @@ URL_TO_FILE = {
     "https://www.funda.nl/scraper-detected": "funda_scraper_detected.html",
     "https://www.pararius.nl/koopwoningen/nederland/50m2": "pararius_listing.html",
     "https://www.pararius.nl/koopwoningen/nederland/50m2/page-1": "pararius_listing.html",
-    "https://www.pararius.nl/scraper-detected": "pararius_scraper_detected.html",
     "https://aanbod.vastgoednederland.nl/koopwoningen?q=den+haag": "vastgoed_nl_listing.html",
     "https://aanbod.vastgoednederland.nl/koopwoningen?q=den%20haag&p=1": "vastgoed_nl_listing.html",
 }
