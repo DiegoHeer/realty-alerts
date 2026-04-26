@@ -23,7 +23,7 @@ class Listing(models.Model):
     detail_url = models.URLField(max_length=500, unique=True)
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
-    price_cents = models.BigIntegerField(null=True, blank=True)
+    price_eur = models.BigIntegerField(null=True, blank=True)
     city = models.CharField(max_length=255, db_index=True)
     property_type = models.CharField(max_length=100, null=True, blank=True)
     bedrooms = models.PositiveIntegerField(null=True, blank=True)
@@ -41,7 +41,7 @@ class Listing(models.Model):
     class Meta:
         db_table = "listings"
         indexes = [
-            models.Index(fields=["city", "property_type", "price_cents"], name="idx_listings_filters"),
+            models.Index(fields=["city", "property_type", "price_eur"], name="idx_listings_filters"),
             models.Index(fields=["website", "created_at"], name="idx_listings_website_created"),
         ]
 

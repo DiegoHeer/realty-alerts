@@ -14,7 +14,7 @@ class ListingFactory(DjangoModelFactory):
     detail_url = factory.Sequence(lambda n: f"https://example.com/listing/{n}")
     title = factory.Sequence(lambda n: f"Listing {n}")
     price = "€ 500.000 k.k."
-    price_cents = 500_000
+    price_eur = 500_000
     city = "Amsterdam"
     property_type = "apartment"
     bedrooms = 2

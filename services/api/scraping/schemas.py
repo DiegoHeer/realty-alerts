@@ -19,7 +19,7 @@ class ListingIn(Schema):
 
 class ListingOut(ListingIn):
     id: int
-    price_cents: int | None = None
+    price_eur: int | None = None
     status: ListingStatus
     scraped_at: datetime
     created_at: datetime

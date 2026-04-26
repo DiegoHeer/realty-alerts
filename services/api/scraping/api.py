@@ -67,7 +67,7 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
             detail_url=listing.detail_url,
             title=listing.title,
             price=listing.price,
-            price_cents=_parse_price_cents(listing.price),
+            price_eur=_parse_price_eur(listing.price),
             city=listing.city,
             property_type=listing.property_type,
             bedrooms=listing.bedrooms,
@@ -102,10 +102,16 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
 
 
-def _parse_price_cents(price_str: str) -> int | None:
-    """Extract numeric value from Dutch price strings like '€ 350.000 k.k.' or '€ 1.250'."""
-    cleaned = price_str.replace("€", "").replace("k.k.", "").replace("v.o.n.", "").replace(" ", "").strip()
-    cleaned = cleaned.replace(".", "").replace(",", "")
+def _parse_price_eur(price_str: str) -> int | None:
+    """Extract whole-euro value from Dutch price strings like '€ 350.000 k.k.' or '€ 1.250.000 v.o.n.'.
+
+    Dutch numerals: '.' is thousands separator, ',' is decimal. Cent-precision is dropped.
+    """
+    cleaned = price_str.replace("€", "").replace("k.k.", "").replace("v.o.n.", "")
+    cleaned = "".join(cleaned.split())  # drop all whitespace, including U+00A0
+    if "," in cleaned:
+        cleaned = cleaned.split(",", 1)[0]
+    cleaned = cleaned.replace(".", "")
     try:
         return int(cleaned)
     except ValueError:
