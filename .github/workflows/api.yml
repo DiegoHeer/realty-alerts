@@ -97,26 +97,3 @@ jobs:
         env:
           APP_ID: ${{ secrets.APP_ID }}
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-
-  scaffold:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Scaffold platform config
-        uses: ./.github/actions/gitops-scaffold
-        with:
-          app-name: api
-          port: "8000"
-          health-path: /healthz
-          memory-request: 128Mi
-          memory-limit: 256Mi
-          cpu-request: 50m
-        env:
-          APP_ID: ${{ secrets.APP_ID }}
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
