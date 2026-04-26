@@ -12,7 +12,10 @@ if not SETTINGS.django_secret_key:
 SECRET_KEY = SETTINGS.django_secret_key
 
 DEBUG = False
-ALLOWED_HOSTS = ["*"]
+
+ALLOWED_HOSTS = [h.strip() for h in SETTINGS.allowed_hosts.split(",") if h.strip()]
+if not ALLOWED_HOSTS:
+    raise ImproperlyConfigured("ALLOWED_HOSTS must be set (comma-separated) in production.")
 
 # HTTPS / SSL
 USE_X_FORWARDED_HOST = True

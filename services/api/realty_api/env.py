@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     internal_api_key: str = Field(...)
     django_secret_key: str | None = None
+    allowed_hosts: str = ""
     log_level: str = "INFO"
     timezone: str = "Europe/Amsterdam"
 
