@@ -12,4 +12,4 @@ npm test       # vitest
 npm run build  # static export to ./out
 ```
 
-The Docker image is `ghcr.io/diegoheer/realty-alerts/web` — built and pushed by [.github/workflows/web.yml](../../.github/workflows/web.yml). See the repo-level [CLAUDE.md](../../CLAUDE.md) for project-wide conventions.
+The Docker image is `ghcr.io/diegoheer/realty-alerts/web` — built and pushed by [.github/workflows/web.yml](../../.github/workflows/web.yml). On merge to `main`, that workflow opens a `release/web-sha-…` PR on `realty-ai-platform` to promote the new image to production. See the repo-level [CLAUDE.md](../../CLAUDE.md) for project-wide conventions.
