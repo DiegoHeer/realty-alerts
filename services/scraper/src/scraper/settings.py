@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     backend_api_url: str = "http://localhost:8000"
     # WebSocket URL of a remote Playwright server (e.g. browserless). The scraper image does not bundle browsers.
     browser_url: str = "ws://localhost:3000"
-    scraper_api_key: str = Field(...)
+    realty_api_key: str = Field(...)
 
     # Operational
     timezone: str = "Europe/Amsterdam"

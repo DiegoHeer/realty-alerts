@@ -20,7 +20,7 @@ class InternalApiKey(APIKeyHeader):
     param_name = "X-API-Key"
 
     def authenticate(self, request, key):
-        if key and hmac.compare_digest(key, settings.INTERNAL_API_KEY):
+        if key and hmac.compare_digest(key, settings.REALTY_API_KEY):
             return key
         return None
 

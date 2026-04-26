@@ -17,7 +17,7 @@ def client() -> TestClient:
 
 @pytest.fixture
 def api_key_headers() -> dict[str, str]:
-    return {"X-API-Key": settings.INTERNAL_API_KEY}
+    return {"X-API-Key": settings.REALTY_API_KEY}
 
 
 @pytest.fixture
