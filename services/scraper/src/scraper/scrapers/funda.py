@@ -39,16 +39,13 @@ class FundaScraper(BaseScraper):
 
     def _get_last_page(self) -> int:
         soup = self.get_soup(self.base_url)
-        hrefs = [str(link.get("href")) for link in soup.select("a")]
-        page_hrefs = [href for href in hrefs if "?page" in href]
-        page_numbers = []
-        for href in page_hrefs:
-            try:
-                page_numbers.append(int(href.split("=")[1]))
-            except (ValueError, IndexError):
-                continue
-        max_page = max(page_numbers) if page_numbers else 1
-        return min(max_page, self.MAX_PAGES)
+        page_numbers: list[int] = []
+        for link in soup.select("a[href*='page=']"):
+            href = str(link.get("href", ""))
+            page_str = parse_qs(urlparse(href).query).get("page", [""])[0]
+            if page_str.isdigit():
+                page_numbers.append(int(page_str))
+        return min(max(page_numbers, default=1), self.MAX_PAGES)
 
     @staticmethod
     def _append_page_number(url: str, page_number: int) -> str:

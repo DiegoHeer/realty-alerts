@@ -1,11 +1,37 @@
 from pathlib import Path
 
+import pytest
+
+from scraper.scrapers.funda import FundaScraper
+
 MOCK_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
 
 def test_get_last_page_capped_at_max(funda_scraper):
     last_page = funda_scraper._get_last_page()
     assert last_page == 5  # capped by MAX_PAGES (fixture exposes pages up to 666)
+
+
+@pytest.mark.parametrize(
+    ("html", "expected"),
+    [
+        ('<a href="?page=3">3</a>', 3),
+        ('<a href="?page=3&utm_source=foo">3</a>', 3),  # extra query params
+        ('<a href="/zoeken/koop?utm_source=foo&page=4">4</a>', 4),  # page not first param
+        ('<a href="?page=abc">x</a><a href="?page=2">2</a>', 2),  # malformed entry skipped
+        ("<a>nothing</a>", 1),  # default when no pagination
+    ],
+)
+def test_get_last_page_parses_query_string(html, expected):
+    class _Fetch:
+        def fetch(self, url: str) -> str:
+            return f"<html><body>{html}</body></html>"
+
+        def close(self) -> None:
+            pass
+
+    scraper = FundaScraper(fetch=_Fetch(), base_url="https://www.funda.nl/zoeken/koop")
+    assert scraper._get_last_page() == expected
 
 
 def test_scrape_detail_urls_filters_to_detail_pattern(funda_scraper, monkeypatch):
