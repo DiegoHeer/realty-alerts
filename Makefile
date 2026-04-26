@@ -1,4 +1,4 @@
-.PHONY: help dev scraper-dev api-dev api-migrate api-superuser api-shell mobile-dev web-dev pre-commit lint format typecheck test build build-scraper build-api build-web
+.PHONY: help dev scraper api api-migrate api-superuser api-shell mobile web pre-commit lint format typecheck test build build-scraper build-api build-web
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

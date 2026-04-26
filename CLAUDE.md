@@ -118,13 +118,13 @@ make test             # pytest (scraper + api) + jest (mobile) + vitest (web)
 make build            # build all Docker images
 
 # Per-service
-make scraper-dev      # run scraper locally
-make api-dev          # python manage.py runserver on :8000
+make scraper          # run scraper locally
+make api              # python manage.py runserver on :8000
 make api-migrate      # python manage.py migrate
 make api-superuser    # python manage.py createsuperuser
 make api-shell        # python manage.py shell
-make mobile-dev       # expo start
-make web-dev          # next dev
+make mobile           # expo start
+make web              # next dev
 ```
 
 ## Python Conventions (services/scraper, services/api)
