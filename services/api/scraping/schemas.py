@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import Self
 
 from ninja import Schema
+from pydantic import model_validator
 
 from scraping.models import ListingStatus, ScrapeRunStatus, Website
 
@@ -42,3 +44,9 @@ class ScrapeResultsIn(Schema):
     finished_at: datetime
     error_message: str | None = None
     listings: list[ListingIn]
+
+    @model_validator(mode="after")
+    def _check_timestamps(self) -> Self:
+        if self.finished_at < self.started_at:
+            raise ValueError("finished_at must be >= started_at")
+        return self

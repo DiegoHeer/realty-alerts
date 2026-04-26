@@ -87,6 +87,17 @@ def test_submit_results_dedups_existing_listings(client, api_key_headers, scrape
     assert Listing.objects.count() == 2
 
 
+def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
+    payload = scrape_payload(listings=[])
+    payload["started_at"], payload["finished_at"] = payload["finished_at"], payload["started_at"]
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 422
+
+
 def test_submit_results_marks_run_failed_when_error_message(client, api_key_headers, scrape_payload):
     payload = scrape_payload(listings=[], error_message="boom")
 
