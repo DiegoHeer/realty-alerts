@@ -20,7 +20,7 @@ SCRAPER_MAP = {
 
 
 def run() -> None:
-    settings = Settings()  # type: ignore[call-arg]
+    settings = Settings()
     logger.remove()
     logger.add(sys.stderr, level=settings.log_level)
 
