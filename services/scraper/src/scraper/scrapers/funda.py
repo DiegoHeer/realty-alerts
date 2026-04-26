@@ -12,6 +12,7 @@ from scraper.scrapers.base import BaseScraper
 
 class FundaScraper(BaseScraper):
     website = Website.FUNDA
+    detection_markers = ("Je bent bijna op de pagina die je zoekt",)
     MAX_PAGES = 5
 
     def __init__(self, fetch: FetchStrategy, base_url: str = "https://www.funda.nl/zoeken/koop") -> None:
@@ -76,9 +77,6 @@ class FundaScraper(BaseScraper):
             image_url=image_url or None,
             website=self.website,
         )
-
-    def is_scraping_detected(self, content: str) -> bool:
-        return "Je bent bijna op de pagina die je zoekt" in content
 
     @staticmethod
     def _extract_city_from_url(url: str) -> str:

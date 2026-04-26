@@ -10,6 +10,10 @@ class ScrapingException(Exception):
 class BaseScraper:
     """Common utilities for all scrapers."""
 
+    # Site-specific substrings that, if present in a 200-OK body, indicate a
+    # block / interstitial page. Subclasses override with confirmed markers.
+    detection_markers: tuple[str, ...] = ()
+
     def __init__(self, fetch: FetchStrategy) -> None:
         self.fetch = fetch
 
@@ -20,4 +24,4 @@ class BaseScraper:
         return BeautifulSoup(content, features="html.parser")
 
     def is_scraping_detected(self, content: str) -> bool:
-        return False
+        return any(marker in content for marker in self.detection_markers)
