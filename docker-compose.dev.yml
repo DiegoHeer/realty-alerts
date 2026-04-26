@@ -7,7 +7,7 @@ services:
     ports:
       - 8000:8000
     environment:
-      DJANGO_SETTINGS_MODULE: realty_api.settings.prod
+      DJANGO_SETTINGS_MODULE: realty_api.settings.local
       DATABASE_URL: postgres://realty:realty@database:5432/realty_alerts
       INTERNAL_API_KEY: dev-internal-api-key
       LOG_LEVEL: DEBUG
