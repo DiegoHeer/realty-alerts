@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from scraper.scrapers.funda import FundaScraper
 from scraper.scrapers.pararius import ParariusScraper
 from scraper.scrapers.vastgoed_nl import VastgoedNLScraper
 
@@ -37,6 +38,14 @@ class MockFetch:
 @pytest.fixture
 def mock_fetch() -> MockFetch:
     return MockFetch()
+
+
+@pytest.fixture
+def funda_scraper(mock_fetch: MockFetch) -> FundaScraper:
+    return FundaScraper(
+        fetch=mock_fetch,
+        base_url="https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D",
+    )
 
 
 @pytest.fixture
