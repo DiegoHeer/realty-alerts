@@ -6,6 +6,10 @@ on:
   pull_request:
     paths: ["services/api/**"]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -62,26 +66,34 @@ jobs:
 
   build:
     needs: [lint, test]
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       packages: write
+      deployments: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push api image
-        uses: docker/build-push-action@v6
+      - name: Build and push image
+        id: docker
+        uses: ./.github/actions/docker-build-push
         with:
           context: services/api
-          push: true
-          tags: |
-            ghcr.io/diegoheer/realty-api:${{ github.sha }}
-            ghcr.io/diegoheer/realty-api:latest
+          image-name: api
+
+      - name: Set preview URL
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/preview-url
+        with:
+          app-name: api
+
+      - name: Bump GitOps tags
+        if: github.ref == 'refs/heads/main'
+        uses: ./.github/actions/gitops-bump-tag
+        with:
+          app-name: api
+          image-tag: ${{ steps.docker.outputs.image-tag }}
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}

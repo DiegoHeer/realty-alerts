@@ -1,0 +1,71 @@
+name: GitOps Bump Tag
+description: Bump image tag in realty-ai-platform config repo (staging direct commit, production PR)
+
+inputs:
+  app-name:
+    description: The app name (matches the directory under apps/ in the config repo)
+    required: true
+  image-tag:
+    description: The new image tag to deploy (e.g. sha-abc1234)
+    required: true
+  config-repo:
+    description: The GitOps config repository
+    required: false
+    default: DiegoHeer/realty-ai-platform
+  image-registry:
+    description: Full image name prefix in ghcr.io
+    required: false
+    default: ghcr.io/${{ github.repository_owner }}/realty-alerts
+
+runs:
+  using: composite
+  steps:
+    - name: Generate GitHub App token
+      id: app-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ env.APP_ID }}
+        private-key: ${{ env.APP_PRIVATE_KEY }}
+        repositories: realty-ai-platform
+
+    - name: Checkout config repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.config-repo }}
+        token: ${{ steps.app-token.outputs.token }}
+        path: _gitops
+
+    - name: Bump staging tag (direct commit)
+      shell: bash
+      working-directory: _gitops
+      run: |
+        IMAGE_REGISTRY=$(echo "${{ inputs.image-registry }}" | tr '[:upper:]' '[:lower:]')
+        cd apps/${{ inputs.app-name }}/overlays/staging
+        kustomize edit set image ${IMAGE_REGISTRY}/${{ inputs.app-name }}=${IMAGE_REGISTRY}/${{ inputs.app-name }}:${{ inputs.image-tag }}
+
+    - name: Commit and push staging
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        repository: _gitops
+        commit_message: "chore(staging): bump ${{ inputs.app-name }} to ${{ inputs.image-tag }}"
+
+    - name: Bump production tag (PR)
+      shell: bash
+      working-directory: _gitops
+      run: |
+        IMAGE_REGISTRY=$(echo "${{ inputs.image-registry }}" | tr '[:upper:]' '[:lower:]')
+        cd apps/${{ inputs.app-name }}/overlays/production
+        kustomize edit set image ${IMAGE_REGISTRY}/${{ inputs.app-name }}=${IMAGE_REGISTRY}/${{ inputs.app-name }}:${{ inputs.image-tag }}
+
+    - name: Create production PR
+      uses: peter-evans/create-pull-request@v7
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+        path: _gitops
+        branch: release/${{ inputs.app-name }}-${{ inputs.image-tag }}
+        base: main
+        title: "Deploy ${{ inputs.app-name }} ${{ inputs.image-tag }} to production"
+        body: |
+          Promotes image `${{ inputs.image-tag }}` to production.
+          Staging was deployed automatically via direct commit.
+        commit-message: "chore(prod): bump ${{ inputs.app-name }} to ${{ inputs.image-tag }}"
