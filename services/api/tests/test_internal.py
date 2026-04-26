@@ -129,10 +129,16 @@ def test_submit_results_marks_run_failed_when_error_message(client, api_key_head
     assert response.json()["status"] == ScrapeRunStatus.FAILED.value
 
 
-def test_internal_endpoints_require_api_key(client):
-    no_key = client.get(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/last-successful")
-    wrong_key = client.get(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/last-successful", headers={"X-API-Key": "wrong"}
-    )
-    assert no_key.status_code == 401
-    assert wrong_key.status_code == 401
+def test_internal_endpoints_require_api_key(client, scrape_payload):
+    last_run_url = f"/internal/v1/scrape-runs/{Website.FUNDA.value}/last-successful"
+    results_url = f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results"
+    payload = scrape_payload(listings=[])
+
+    cases = [
+        client.get(last_run_url),
+        client.get(last_run_url, headers={"X-API-Key": "wrong"}),
+        client.post(results_url, json=payload),
+        client.post(results_url, json=payload, headers={"X-API-Key": "wrong"}),
+    ]
+    for response in cases:
+        assert response.status_code == 401
