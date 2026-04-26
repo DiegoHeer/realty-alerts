@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import pytest
 
@@ -18,8 +19,11 @@ def test_last_successful_returns_latest_success(client, api_key_headers):
     ScrapeRunFactory(
         website=Website.FUNDA, status=ScrapeRunStatus.SUCCESS, started_at=datetime.now(UTC) - timedelta(hours=2)
     )
-    latest = ScrapeRunFactory(
-        website=Website.FUNDA, status=ScrapeRunStatus.SUCCESS, started_at=datetime.now(UTC) - timedelta(minutes=10)
+    latest = cast(
+        ScrapeRun,
+        ScrapeRunFactory(
+            website=Website.FUNDA, status=ScrapeRunStatus.SUCCESS, started_at=datetime.now(UTC) - timedelta(minutes=10)
+        ),
     )
     ScrapeRunFactory(
         website=Website.FUNDA, status=ScrapeRunStatus.FAILED, started_at=datetime.now(UTC) - timedelta(minutes=1)
@@ -27,19 +31,19 @@ def test_last_successful_returns_latest_success(client, api_key_headers):
 
     response = client.get(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/last-successful", headers=api_key_headers)
     assert response.status_code == 200
-    assert response.json()["id"] == latest.id
+    assert response.json()["id"] == latest.pk
 
 
 def test_active_runs_lists_only_running(client, api_key_headers):
     ScrapeRunFactory(status=ScrapeRunStatus.SUCCESS)
     ScrapeRunFactory(status=ScrapeRunStatus.FAILED)
-    running = ScrapeRunFactory(status=ScrapeRunStatus.RUNNING, finished_at=None)
+    running = cast(ScrapeRun, ScrapeRunFactory(status=ScrapeRunStatus.RUNNING, finished_at=None))
 
     response = client.get("/internal/v1/scrape-runs/active", headers=api_key_headers)
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 1
-    assert body[0]["id"] == running.id
+    assert body[0]["id"] == running.pk
 
 
 def test_submit_results_creates_run_and_listings(client, api_key_headers, scrape_payload, listing_payload):
