@@ -28,12 +28,33 @@ repos:
         args: [--config, ./services/api/pyproject.toml]
         files: ^services/api/
 
-  - repo: https://github.com/allganize/ty-pre-commit
-    rev: v0.0.32
+  - repo: local
     hooks:
-      - id: ty-check
+      - id: ty-check-scraper
         name: Typecheck python (scraper)
-        files: ^services/scraper/
-      - id: ty-check
+        language: system
+        entry: bash -c 'cd services/scraper && uv run ty check'
+        files: ^services/scraper/.*\.py$
+        pass_filenames: false
+        require_serial: true
+      - id: ty-check-api
         name: Typecheck python (api)
-        files: ^services/api/
+        language: system
+        entry: bash -c 'cd services/api && uv run ty check'
+        files: ^services/api/.*\.py$
+        pass_filenames: false
+        require_serial: true
+      - id: eslint-web
+        name: Lint TS (web)
+        language: system
+        entry: bash -c 'cd apps/web && npx --no-install eslint --max-warnings=0 .'
+        files: ^apps/web/.*\.(ts|tsx|js|jsx|mjs|cjs)$
+        pass_filenames: false
+        require_serial: true
+      - id: eslint-mobile
+        name: Lint TS (mobile)
+        language: system
+        entry: bash -c 'cd apps/mobile && npx --no-install eslint --max-warnings=0 .'
+        files: ^apps/mobile/.*\.(ts|tsx|js|jsx|mjs|cjs)$
+        pass_filenames: false
+        require_serial: true
