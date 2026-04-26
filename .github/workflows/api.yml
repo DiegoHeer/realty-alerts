@@ -58,6 +58,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_realty_alerts
           INTERNAL_API_KEY: test-key
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
   build:
     needs: [lint, test]

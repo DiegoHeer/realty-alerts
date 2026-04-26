@@ -7,13 +7,11 @@ Shared between local and prod. Per-environment overrides live in
 
 from pathlib import Path
 
-from secret_key_generator import secret_key_generator
-
 from realty_api.env import SETTINGS
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-SECRET_KEY = secret_key_generator.generate()
+# SECRET_KEY is intentionally not set here. Each environment (local/ci/prod) sets it.
 
 ALLOWED_HOSTS: list[str] = []
 
