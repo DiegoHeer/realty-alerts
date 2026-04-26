@@ -52,7 +52,7 @@ export interface FilterCreate {
   is_active?: boolean;
 }
 
-export interface FilterUpdate extends Partial<FilterCreate> {}
+export type FilterUpdate = Partial<FilterCreate>;
 
 export interface ScrapeRun {
   id: number;
