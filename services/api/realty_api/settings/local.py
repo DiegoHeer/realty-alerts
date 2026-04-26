@@ -1,7 +1,7 @@
 import os
 
 # Sensible defaults for local dev / test runs. Production must set these explicitly via prod.py.
-os.environ.setdefault("INTERNAL_API_KEY", "dev-internal-api-key")
+os.environ.setdefault("REALTY_API_KEY", "dev-realty-api-key")
 
 from secret_key_generator import secret_key_generator  # noqa: E402
 
