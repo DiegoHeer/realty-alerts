@@ -129,7 +129,7 @@ make web              # next dev
 
 ## Python Conventions (services/scraper, services/api)
 
-- Python 3.12+, managed with `uv`
+- Python 3.14+, managed with `uv`
 - Ruff linter + formatter, line length 120
 - Modern Python: f-strings, `list[X]` (not `List[X]`), `StrEnum`, walrus operator, absolute imports only
 - Type hints everywhere; Pydantic `BaseModel`/`BaseSettings` in the scraper, `pydantic-settings` for env config in both services
