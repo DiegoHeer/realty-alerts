@@ -17,6 +17,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "django-types>=0.24.0",
     "factory-boy>=3.3",
     "pytest>=8.4",
     "pytest-django>=4.9",
