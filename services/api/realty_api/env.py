@@ -1,10 +1,11 @@
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    internal_api_key: str
+    internal_api_key: str = Field(...)
     log_level: str = "INFO"
     timezone: str = "Europe/Amsterdam"
 
