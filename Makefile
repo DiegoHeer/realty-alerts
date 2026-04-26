@@ -8,10 +8,10 @@ help: ## Show this help
 dev: ## Start all services locally via docker-compose
 	docker compose -f docker-compose.dev.yml up --build
 
-scraper-dev: ## Run scraper locally
+scraper: ## Run scraper locally
 	cd services/scraper && uv run python -m scraper
 
-api-dev: ## Run API locally (Django runserver, sqlite by default)
+api: ## Run API locally (Django runserver, sqlite by default)
 	cd services/api && uv run python manage.py runserver 0.0.0.0:8000
 
 api-migrate: ## Apply Django migrations locally
@@ -23,10 +23,10 @@ api-superuser: ## Create a Django admin superuser locally
 api-shell: ## Open a Django shell locally
 	cd services/api && uv run python manage.py shell
 
-mobile-dev: ## Start Expo dev server
+mobile: ## Start Expo dev server
 	cd apps/mobile && npx expo start
 
-web-dev: ## Start Next.js dev server
+web: ## Start Next.js dev server
 	cd apps/web && npm run dev
 
 # --- Quality ---
