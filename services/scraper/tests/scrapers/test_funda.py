@@ -24,6 +24,7 @@ def test_scrape_detail_page_extracts_fields(funda_scraper):
     assert listing.detail_url == detail_url
     assert listing.title == "Bangert 58"
     assert listing.price == "€ 775.000 k.k."
+    assert listing.city == "blokker"
     assert listing.image_url and listing.image_url.startswith("https://")
     assert listing.website == "funda"
 

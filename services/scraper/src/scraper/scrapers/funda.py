@@ -83,8 +83,8 @@ class FundaScraper(BaseScraper):
     @staticmethod
     def _extract_city_from_url(url: str) -> str:
         parts = urlparse(url).path.strip("/").split("/")
-        # URL pattern: /koop/city/detail/...
-        return parts[1] if len(parts) > 1 else "unknown"
+        # URL pattern: /detail/<koop|huur>/<city>/<slug>/<id>/
+        return parts[2] if len(parts) > 2 else "unknown"
 
     @staticmethod
     def _get_text(soup: BeautifulSoup, selector: str) -> str:
