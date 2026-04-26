@@ -61,7 +61,7 @@ jobs:
         run: cd services/api && uv run pytest tests/ -v --ds=realty_api.settings.ci
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_realty_alerts
-          INTERNAL_API_KEY: test-key
+          REALTY_API_KEY: test-key
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
   build:
