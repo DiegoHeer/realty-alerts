@@ -87,6 +87,26 @@ def test_submit_results_dedups_existing_listings(client, api_key_headers, scrape
     assert Listing.objects.count() == 2
 
 
+def test_submit_results_idempotent_for_duplicate_urls(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(
+        listings=[
+            listing_payload("https://example.com/listing/1"),
+            listing_payload("https://example.com/listing/1"),
+            listing_payload("https://example.com/listing/2"),
+        ]
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["listings_found"] == 3
+    assert body["listings_new"] == 2
+    assert Listing.objects.count() == 2
+
+
 def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
     payload = scrape_payload(listings=[])
     payload["started_at"], payload["finished_at"] = payload["finished_at"], payload["started_at"]

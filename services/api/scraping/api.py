@@ -59,9 +59,9 @@ def get_active_runs(request):
 def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
     duration = (payload.finished_at - payload.started_at).total_seconds()
     detail_urls = [listing.detail_url for listing in payload.listings]
-    existing_urls = set(Listing.objects.filter(detail_url__in=detail_urls).values_list("detail_url", flat=True))
+    existing_count_before = Listing.objects.filter(detail_url__in=detail_urls).count()
 
-    new_listings = [
+    candidates = [
         Listing(
             website=listing.website,
             detail_url=listing.detail_url,
@@ -76,26 +76,27 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
             scraped_at=datetime.now(UTC),
         )
         for listing in payload.listings
-        if listing.detail_url not in existing_urls
     ]
 
     run_status = ScrapeRunStatus.FAILED if payload.error_message else ScrapeRunStatus.SUCCESS
 
     with transaction.atomic():
-        if new_listings:
-            Listing.objects.bulk_create(new_listings)
+        if candidates:
+            Listing.objects.bulk_create(candidates, ignore_conflicts=True)
+        existing_count_after = Listing.objects.filter(detail_url__in=detail_urls).count()
+        listings_new = existing_count_after - existing_count_before
         scrape_run = ScrapeRun.objects.create(
             website=website,
             started_at=payload.started_at,
             finished_at=payload.finished_at,
             status=run_status,
             listings_found=len(payload.listings),
-            listings_new=len(new_listings),
+            listings_new=listings_new,
             error_message=payload.error_message,
             duration_seconds=duration,
         )
 
-    logger.info(f"Scrape run for {website}: {len(new_listings)} new / {len(payload.listings)} found in {duration:.1f}s")
+    logger.info(f"Scrape run for {website}: {listings_new} new / {len(payload.listings)} found in {duration:.1f}s")
     return scrape_run
 
 
