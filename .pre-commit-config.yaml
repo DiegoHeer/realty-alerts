@@ -47,14 +47,14 @@ repos:
       - id: eslint-web
         name: Lint TS (web)
         language: system
-        entry: bash -c 'cd apps/web && npx --no-install eslint --max-warnings=0 .'
+        entry: bash -c 'cd apps/web && ./node_modules/.bin/eslint --max-warnings=0 .'
         files: ^apps/web/.*\.(ts|tsx|js|jsx|mjs|cjs)$
         pass_filenames: false
         require_serial: true
       - id: eslint-mobile
         name: Lint TS (mobile)
         language: system
-        entry: bash -c 'cd apps/mobile && npx --no-install eslint --max-warnings=0 .'
+        entry: bash -c 'cd apps/mobile && ./node_modules/.bin/eslint --max-warnings=0 .'
         files: ^apps/mobile/.*\.(ts|tsx|js|jsx|mjs|cjs)$
         pass_filenames: false
         require_serial: true

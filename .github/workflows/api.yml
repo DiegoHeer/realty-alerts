@@ -81,6 +81,8 @@ jobs:
   build:
     needs: [lint, test]
     runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.docker.outputs.image-tag }}
     permissions:
       contents: read
       packages: write
@@ -102,12 +104,21 @@ jobs:
         with:
           app-name: api
 
+  gitops-bump:
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Bump GitOps tags
-        if: github.ref == 'refs/heads/main'
         uses: ./.github/actions/gitops-bump-tag
         with:
           app-name: api
-          image-tag: ${{ steps.docker.outputs.image-tag }}
+          image-tag: ${{ needs.build.outputs.image-tag }}
         env:
           APP_ID: ${{ secrets.APP_ID }}
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
