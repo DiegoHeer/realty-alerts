@@ -31,7 +31,7 @@ class FundaScraper(BaseScraper):
             page_url = self._append_page_number(self.base_url, page_number)
             soup = self.get_soup(page_url)
             hrefs = [str(link.get("href")) for link in soup.select("a")]
-            detail_hrefs = [href for href in hrefs if "detail" in href]
+            detail_hrefs = [href for href in hrefs if href.startswith("/detail/")]
             urls.update(f"https://www.funda.nl{href}" for href in detail_hrefs)
         logger.info(f"Found {len(urls)} detail URLs across {last_page} pages")
         return urls
