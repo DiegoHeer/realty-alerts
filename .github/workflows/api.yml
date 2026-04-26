@@ -54,7 +54,7 @@ jobs:
         run: cd services/api && uv sync --dev
 
       - name: Run tests
-        run: cd services/api && uv run pytest tests/ -v --ds=realty_api.settings.test
+        run: cd services/api && uv run pytest tests/ -v --ds=realty_api.settings.ci
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_realty_alerts
           INTERNAL_API_KEY: test-key
