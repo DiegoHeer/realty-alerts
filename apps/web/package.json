@@ -1,0 +1,36 @@
+{
+  "name": "realty-alerts-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "framer-motion": "^12.0",
+    "next": "^15.2",
+    "react": "^19.0",
+    "react-dom": "^19.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "25.6.0",
+    "@types/react": "^19.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9",
+    "eslint-config-next": "^15.2",
+    "jsdom": "^29.0.2",
+    "postcss": "^8.5",
+    "tailwindcss": "^4.0",
+    "typescript": "^5.7",
+    "vitest": "^4.1.5"
+  }
+}

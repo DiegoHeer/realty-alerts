@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Realty Alerts",
+    "slug": "realty-alerts",
+    "owner": "realty-ai",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "realty-alerts",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.realtyai.realtyalerts"
+    },
+    "android": {
+      "package": "com.realtyai.realtyalerts"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "e146f795-429e-4623-b67f-62ea8b783ae4"
+      }
+    }
+  }
+}

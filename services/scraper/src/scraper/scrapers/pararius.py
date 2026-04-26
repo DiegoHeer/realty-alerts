@@ -1,0 +1,76 @@
+from datetime import datetime
+from pathlib import PurePosixPath
+from urllib.parse import urlparse, urlunparse
+
+from bs4 import Tag
+from loguru import logger
+
+from scraper.enums import Website
+from scraper.models import Listing
+from scraper.protocols import FetchStrategy
+from scraper.scrapers.base import BaseScraper
+
+
+class ParariusScraper(BaseScraper):
+    website = Website.PARARIUS
+    MAX_PAGES = 5
+
+    def __init__(self, fetch: FetchStrategy, base_url: str = "https://www.pararius.nl/koopwoningen/nederland") -> None:
+        super().__init__(fetch)
+        self.base_url = base_url
+
+    def scrape(self, since: datetime | None) -> list[Listing]:
+        logger.info(f"Scraping Pararius (since={since})")
+        last_page = self._get_last_page()
+        listings = []
+        for page_number in range(1, last_page + 1):
+            listings.extend(self._scrape_page(page_number))
+        logger.info(f"Found {len(listings)} listings across {last_page} pages")
+        return listings
+
+    def _get_last_page(self) -> int:
+        soup = self.get_soup(self.base_url)
+        anchors = soup.select('ul[class="pagination__list"] li a')
+        page_numbers = [int(a.text) for a in anchors if a.text.isdigit()]
+        max_page = max(page_numbers) if page_numbers else 1
+        return min(max_page, self.MAX_PAGES)
+
+    def _scrape_page(self, page_number: int) -> list[Listing]:
+        page_url = self._append_page_number(self.base_url, page_number)
+        soup = self.get_soup(page_url)
+        cards = soup.select("section.listing-search-item--for-sale")
+        return [self._parse_card(card) for card in cards]
+
+    @staticmethod
+    def _append_page_number(url: str, page_number: int) -> str:
+        parsed = urlparse(url)
+        new_path = PurePosixPath(parsed.path) / f"page-{page_number}"
+        return urlunparse(parsed._replace(path=str(new_path)))
+
+    def _parse_card(self, card: Tag) -> Listing:
+        url_el = card.select_one("a.listing-search-item__link")
+        detail_url = f"https://www.pararius.nl{url_el.get('href')}" if url_el else ""
+
+        title_el = card.select_one("h2.listing-search-item__title a")
+        title = title_el.get_text().strip() if title_el else ""
+
+        price_el = card.select_one("div.listing-search-item__price")
+        price = price_el.get_text().strip() if price_el else ""
+
+        image_el = card.select_one("img.picture__image")
+        image_url = str(image_el.get("src", "")) if image_el else None
+
+        return Listing(
+            detail_url=detail_url,
+            title=title,
+            price=price,
+            city=self._extract_city_from_url(detail_url),
+            image_url=image_url or None,
+            website=self.website,
+        )
+
+    @staticmethod
+    def _extract_city_from_url(url: str) -> str:
+        parts = urlparse(url).path.strip("/").split("/")
+        # URL pattern: /huis-te-koop/<city>/<id>/<slug>
+        return parts[1] if len(parts) > 1 else "unknown"

@@ -1,87 +1,72 @@
-<p align="center">
-  <br/>
-  <a href="https://www.python.org">
-    <img src="https://img.shields.io/badge/Python-FFD43B?style=for-the-badge&logo=python&logoColor=blue"
-    alt="Python"/>
-  </a>
-  <a href="https://docs.celeryq.dev/en/stable/getting-started/introduction.html">
-    <img src="https://img.shields.io/badge/celery-%23a9cc54.svg?style=for-the-badge&logo=celery&logoColor=ddf4a4"
-    alt="Celery"/>
-  </a>
-  <a href="https://docs.pydantic.dev/latest/">
-    <img src="https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=Pydantic&logoColor=white"
-    alt="Pydantic"/>
-  </a>
-  <a href="https://sqlite.org">
-    <img src="https://img.shields.io/badge/Sqlite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
-  </a>
-  <a href="https://playwright.dev/python/">
-    <img src="https://img.shields.io/badge/Playwright-45ba4b?style=for-the-badge&logo=Playwright&logoColor=white"
-    alt="Playwright"/>
-  </a>
-  <a href="https://docs.docker.com/compose/">
-    <img src="https://img.shields.io/badge/Docker%20Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose"/>
-  </a>
-  <br/>
-  <br/>
-</p>
-
 # Realty Alerts
 
-Realty Alerts is a simple alerting tool for notifying when new homes become available for purchase on Dutch real estate websites, such as Funda.nl.
+Real estate listing notifications for the Dutch housing market. Get push notifications when new properties appear on Funda, Pararius, and Vastgoed Nederland.
 
-<div align="center">
-    <img src="./assets/images/app-example.jpg" >
-</div>
+## Architecture
 
-## Key Features
+Application monorepo with 4 services. Deployment is GitOps — see [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) for the cluster and ArgoCD configuration.
 
-- Queries for each website can be added through an intuitive UI
-- Notifications can be received through NTFY (app available on Android/iOS)
-- Only new house offers will be notified. The ones that already have been notified won't repeat again.
-- Deployment of the whole tool can be easily done with a docker compose file.
+```
+services/
+  scraper/     CDC scraper (Python, K8s CronJobs per website)
+  api/         Django 6.0 + Django Ninja backend (Django ORM, psycopg3)
+apps/
+  mobile/      React Native / Expo (TanStack Query, Zustand)
+  web/         Next.js static landing page (Tailwind CSS)
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend API | Django 6.0, Django Ninja, Django ORM, psycopg3, Gunicorn, WhiteNoise |
+| Scraper | Python, BeautifulSoup, Playwright, httpx |
+| Mobile App | React Native, Expo, TanStack Query, Zustand |
+| Landing Page | Next.js 15, Tailwind CSS |
+| Database | PostgreSQL |
+| Notifications | Expo Push (FCM/APNs) |
+| Deployment | GitOps — [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) |
+| CI/CD | GitHub Actions (per-service path-filtered workflows building & pushing images to GHCR) |
 
 ## Supported Websites
 
-- Funda: https://www.funda.nl
-- Pararius: https://www.pararius.nl
-- Vastgoed Nederland: https://aanbod.vastgoednederland.nl
+- [Funda](https://www.funda.nl) (Playwright)
+- [Pararius](https://www.pararius.nl) (Playwright)
+- [Vastgoed Nederland](https://aanbod.vastgoednederland.nl) (HTTP)
 
-> [!NOTE]
-> Only the list of websites above is currently available for scraping. Other websites (e.g. real estate brokers) will be supported on request (Github issue).
-
-
-## App setup
-
-1. Download the NTFY app from the [Play Store](https://play.google.com/store/apps/details?id=io.heckel.ntfy) (Android) or from the [App Store](https://apps.apple.com/us/app/ntfy/id1625396347) (iOS)
-2. Click on the plus icon to add a new topic. Write a creative one, to avoid other people pushing to your topic. All topics on the `https://ntfy.sh` server are public, so if you wish, you can also use your own NTFY server for more privacy. If doing so, please check the following [link](https://docs.ntfy.sh/install/), and don't forget to add the [environment variable](#additional-configuration) `NTFY_URL` in the docker compose file.
-
-
-## How to use
-
-1. Check if docker is installed. If not, follow the guidelines in the [official website](https://docs.docker.com/engine/install/).
-2. Copy the `docker-compose.yml` file from this repo.
-3. Create a `data` folder in the same directory where the `docker-compose.yml` file is.
-4. If needed, configure any environment variables in the docker compose file. Please check [below](#additional-configuration)
-5. Run the command:
+## Local Development
 
 ```bash
-docker compose up -d
+# Start database + Playwright (for scraper testing)
+docker compose -f docker-compose.dev.yml up -d
+
+# Backend API
+cd services/api && uv sync --dev
+make api
+
+# Scraper tests
+cd services/scraper && uv sync --dev
+uv run pytest tests/ -v
+
+# Mobile app (requires Node.js)
+cd apps/mobile && npm install
+npx expo start
+
+# Landing page (requires Node.js)
+cd apps/web && npm install
+npm run dev
 ```
 
-6. Access the UI through the URL: http://localhost:9000
-7. Add new queries. Each query requires a listing url with active filters of one of the [suported websites](#supported-websites). Also, don't forget to include your NTFY topic (see [app setup](#app-setup)).
-8. Before saving a new query, run the test command, to see if everything is working as expected. If not, please check the docker compose logs.
-8. Everything is set! You will receive a notifications of new houses per defined query, on the desired time schedule.
+Or use the root Makefile:
 
+```bash
+make help          # show all targets
+make dev           # start all via docker-compose
+make lint          # lint all Python services
+make test          # run all tests
+make build         # build all Docker images
+```
 
-## Additional configuration
+## Deployment
 
-Realty Alerts can be run as is, without any additional configuration. But in case needed, environment variables can be set. Here is a list of them and their default values:
-
-| Env variable | Default value                 |
-| ------------ | ----------------------------- |
-| NTFY_URL     | https://ntfy.sh               |
-| REDIS_URL    | redis://localhost:6379/0      |
-| BROWSER_URL  | ws://localhost:3000           |
-| TIMEZONE     | Europe/Amsterdam              |
+This repo builds container images and pushes them to GHCR. Cluster provisioning, Kubernetes manifests, and ArgoCD reconciliation live in [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform).

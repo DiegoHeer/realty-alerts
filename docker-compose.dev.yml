@@ -1,0 +1,57 @@
+services:
+  # --- Backend API ---
+  api:
+    container_name: realty-api
+    build:
+      context: services/api
+    ports:
+      - 8000:8000
+    environment:
+      DJANGO_SETTINGS_MODULE: realty_api.settings.local
+      DATABASE_URL: postgres://realty:realty@database:5432/realty_alerts
+      INTERNAL_API_KEY: dev-internal-api-key
+      LOG_LEVEL: DEBUG
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: curl -f http://localhost:8000/healthz || exit 1
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --- Database ---
+  database:
+    container_name: realty-database
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_USER: realty
+      POSTGRES_PASSWORD: realty
+      POSTGRES_DB: realty_alerts
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U realty -d realty_alerts"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # --- Playwright Server (for Funda scraper) ---
+  playwright:
+    container_name: realty-playwright
+    image: mcr.microsoft.com/playwright:v1.53.0-noble
+    command: npx -y playwright@1.53.0 run-server --port 3000 --host 0.0.0.0
+    ports:
+      - 3000:3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pgdata:

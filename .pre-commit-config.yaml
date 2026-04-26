@@ -1,15 +1,10 @@
 repos:
-  - repo: https://github.com/google/osv-scanner
-    rev: v2.0.2
-    hooks:
-      - id: osv-scanner
-        args: ["--lockfile=./uv.lock"]
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: check-toml
       - id: check-yaml
+        args: [--allow-multiple-documents]
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
@@ -17,13 +12,49 @@ repos:
     rev: v0.12.9
     hooks:
       - id: ruff-check
-        name: Lint python files
-        args: [--config, ./pyproject.toml, --fix, --exit-non-zero-on-fix]
+        name: Lint python (scraper)
+        args: [--config, ./services/scraper/pyproject.toml, --fix, --exit-non-zero-on-fix]
+        files: ^services/scraper/
+      - id: ruff-check
+        name: Lint python (api)
+        args: [--config, ./services/api/pyproject.toml, --fix, --exit-non-zero-on-fix]
+        files: ^services/api/
       - id: ruff-format
-        name: Format python files
-        args: [--config, ./pyproject.toml]
+        name: Format python (scraper)
+        args: [--config, ./services/scraper/pyproject.toml]
+        files: ^services/scraper/
+      - id: ruff-format
+        name: Format python (api)
+        args: [--config, ./services/api/pyproject.toml]
+        files: ^services/api/
 
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.7.13
+  - repo: local
     hooks:
-      - id: uv-lock
+      - id: ty-check-scraper
+        name: Typecheck python (scraper)
+        language: system
+        entry: bash -c 'cd services/scraper && uv run ty check'
+        files: ^services/scraper/.*\.py$
+        pass_filenames: false
+        require_serial: true
+      - id: ty-check-api
+        name: Typecheck python (api)
+        language: system
+        entry: bash -c 'cd services/api && uv run ty check'
+        files: ^services/api/.*\.py$
+        pass_filenames: false
+        require_serial: true
+      - id: eslint-web
+        name: Lint TS (web)
+        language: system
+        entry: bash -c 'cd apps/web && npx --no-install eslint --max-warnings=0 .'
+        files: ^apps/web/.*\.(ts|tsx|js|jsx|mjs|cjs)$
+        pass_filenames: false
+        require_serial: true
+      - id: eslint-mobile
+        name: Lint TS (mobile)
+        language: system
+        entry: bash -c 'cd apps/mobile && npx --no-install eslint --max-warnings=0 .'
+        files: ^apps/mobile/.*\.(ts|tsx|js|jsx|mjs|cjs)$
+        pass_filenames: false
+        require_serial: true

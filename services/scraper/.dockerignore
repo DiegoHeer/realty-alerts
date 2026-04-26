@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+
+# Tests (not copied by Dockerfile, but keeps context small)
+tests/
+
+# Env / secrets
+.env
+*.env
+
+# Logs
+*.log
+
+# Docker / git
+Dockerfile
+.dockerignore
+.gitignore

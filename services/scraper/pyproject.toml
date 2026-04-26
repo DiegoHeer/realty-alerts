@@ -1,0 +1,41 @@
+[project]
+name = "realty-alerts-scraper"
+version = "0.1.0"
+description = "CDC-style real estate listing scraper for Dutch websites."
+requires-python = ">=3.14"
+dependencies = [
+    "backoff>=2.2",
+    "beautifulsoup4>=4.13",
+    "httpx>=0.28",
+    "loguru>=0.7",
+    "playwright>=1.58",
+    "pydantic>=2.13",
+    "pydantic-settings>=2.9",
+    "requests>=2.32",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "pytest-mock>=3.14",
+    "respx>=0.22",
+    "ruff>=0.15",
+    "ty>=0.0.32",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "C",   # mccabe
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "UP",  # pyupgrade
+]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+
+[tool.ty.environment]
+python-version = "3.14"

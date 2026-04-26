@@ -2,29 +2,43 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Realty Alerts - Scheduler",
+            "name": "Service: Scraper",
             "type": "debugpy",
             "request": "launch",
-            "module": "celery",
-            "args": [
-                "-A",
-                "core",
-                "worker",
-                "-B",
-                "--loglevel=info"
-            ],
-            "cwd": "${workspaceFolder}/src",
+            "module": "scraper",
+            "cwd": "${workspaceFolder}/services/scraper",
+            "python": "${workspaceFolder}/services/scraper/.venv/bin/python",
+            "envFile": "${workspaceFolder}/services/scraper/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/services/scraper/src"
+            },
             "justMyCode": false
         },
         {
-            "name": "Python: Realty Alerts - UI",
+            "name": "Service: API",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/manage.py",
-            "args": ["tailwind", "runserver"],
-            "cwd": "${workspaceFolder}/src",
-            "justMyCode": false,
-            "django": true
+            "program": "${workspaceFolder}/services/api/manage.py",
+            "args": ["runserver", "0.0.0.0:8000", "--noreload"],
+            "cwd": "${workspaceFolder}/services/api",
+            "python": "${workspaceFolder}/services/api/.venv/bin/python",
+            "envFile": "${workspaceFolder}/services/api/.env",
+            "django": true,
+            "justMyCode": false
+        },
+        {
+            "name": "App: Web",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}/apps/web"
+        },
+        {
+            "name": "App: Mobile",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm start",
+            "cwd": "${workspaceFolder}/apps/mobile"
         }
     ]
 }

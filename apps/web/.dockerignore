@@ -1,0 +1,27 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Next.js build output
+.next/
+out/
+
+# Env / secrets
+.env
+*.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Tests (not needed in production image)
+**/*.test.ts
+**/*.test.tsx
+vitest.config.ts
+vitest.setup.ts
+
+# Docker / git
+Dockerfile
+.dockerignore
+.gitignore

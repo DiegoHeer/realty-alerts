@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit",
+      "Write",
+      "Bash(git:*)",
+      "Bash(make:*)",
+      "Bash(uv:*)",
+      "Bash(cd services/scraper && uv:*)",
+      "Bash(cd services/api && uv:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(cd apps/mobile &&:*)",
+      "Bash(cd apps/web &&:*)",
+      "Bash(ruff:*)",
+      "Bash(pytest:*)",
+      "Bash(docker:*)",
+      "Bash(docker compose:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(which:*)",
+      "Bash(echo:*)",
+      "Bash(pwd:*)",
+      "Bash(date:*)",
+      "Bash(jq:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(tree:*)",
+      "Bash(diff:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(touch:*)",
+      "Bash(pre-commit:*)",
+      "Bash(gh:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)"
+    ]
+  }
+}

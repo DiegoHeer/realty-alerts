@@ -4,6 +4,7 @@
 		"ms-python.vscode-pylance",
         "charliermarsh.ruff",
         "albert.tabout",
-        "redhat.vscode-yaml"
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml"
     ]
 }

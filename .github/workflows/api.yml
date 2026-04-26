@@ -1,0 +1,87 @@
+name: API CI
+on:
+  push:
+    paths: ["services/api/**"]
+    branches: [main]
+  pull_request:
+    paths: ["services/api/**"]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: cd services/api && uv sync --dev
+
+      - name: Lint with ruff
+        run: cd services/api && uv run ruff check realty_api/ scraping/ tests/
+
+      - name: Check formatting
+        run: cd services/api && uv run ruff format --check realty_api/ scraping/ tests/
+
+      - name: Type-check with ty
+        run: cd services/api && uv run ty check realty_api/ scraping/ tests/
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_realty_alerts
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: cd services/api && uv sync --dev
+
+      - name: Run tests
+        run: cd services/api && uv run pytest tests/ -v --ds=realty_api.settings.ci
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_realty_alerts
+          INTERNAL_API_KEY: test-key
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+
+  build:
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push api image
+        uses: docker/build-push-action@v6
+        with:
+          context: services/api
+          push: true
+          tags: |
+            ghcr.io/diegoheer/realty-api:${{ github.sha }}
+            ghcr.io/diegoheer/realty-api:latest
