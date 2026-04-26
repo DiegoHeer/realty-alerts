@@ -9,7 +9,7 @@ Application monorepo with 4 services. Deployment is GitOps — see [realty-ai-pl
 ```
 services/
   scraper/     CDC scraper (Python, K8s CronJobs per website)
-  api/         FastAPI backend (SQLModel, Alembic)
+  api/         Django 5.1 + Django Ninja backend (Django ORM, psycopg3)
 apps/
   mobile/      React Native / Expo (TanStack Query, Zustand)
   web/         Next.js static landing page (Tailwind CSS)
@@ -19,7 +19,7 @@ apps/
 
 | Layer | Technology |
 |---|---|
-| Backend API | FastAPI, SQLModel, Alembic, asyncpg |
+| Backend API | Django 5.1, Django Ninja, Django ORM, psycopg3, Gunicorn, WhiteNoise |
 | Scraper | Python, BeautifulSoup, Playwright, httpx |
 | Mobile App | React Native, Expo, TanStack Query, Zustand |
 | Landing Page | Next.js 15, Tailwind CSS |
@@ -31,7 +31,7 @@ apps/
 ## Supported Websites
 
 - [Funda](https://www.funda.nl) (Playwright)
-- [Pararius](https://www.pararius.nl) (HTTP)
+- [Pararius](https://www.pararius.nl) (Playwright)
 - [Vastgoed Nederland](https://aanbod.vastgoednederland.nl) (HTTP)
 
 ## Local Development
@@ -42,7 +42,7 @@ docker compose -f docker-compose.dev.yml up -d
 
 # Backend API
 cd services/api && uv sync --dev
-make api-dev
+make api
 
 # Scraper tests
 cd services/scraper && uv sync --dev
