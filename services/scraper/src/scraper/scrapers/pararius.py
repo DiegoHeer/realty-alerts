@@ -72,5 +72,5 @@ class ParariusScraper(BaseScraper):
     @staticmethod
     def _extract_city_from_url(url: str) -> str:
         parts = urlparse(url).path.strip("/").split("/")
-        # URL pattern: /koopwoningen/city/...
+        # URL pattern: /huis-te-koop/<city>/<id>/<slug>
         return parts[1] if len(parts) > 1 else "unknown"

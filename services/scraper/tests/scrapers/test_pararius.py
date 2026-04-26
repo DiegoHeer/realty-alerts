@@ -12,4 +12,5 @@ def test_scrape_first_page(pararius_scraper):
     assert listings[0].detail_url == "https://www.pararius.nl/huis-te-koop/almere/f38b9ba5/anjerstraat"
     assert listings[0].title == "Anjerstraat 2"
     assert listings[0].price == "€\xa0535.000 k.k."
+    assert listings[0].city == "almere"
     assert listings[0].website == "pararius"
