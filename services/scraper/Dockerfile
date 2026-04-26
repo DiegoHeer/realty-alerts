@@ -9,4 +9,6 @@ COPY src/ ./src/
 
 ENV PATH="/app/.venv/bin:$PATH"
 
+# This image deliberately does NOT bundle Playwright browsers.
+# The scraper connects to a remote Playwright server at $BROWSER_URL (ws://...).
 CMD ["python", "-m", "scraper"]

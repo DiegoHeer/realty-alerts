@@ -101,7 +101,7 @@ Realty Alerts — real estate listing notifications for the Dutch housing market
 
 ```
 services/scraper/   Python CDC scraper (BeautifulSoup, Playwright, httpx, requests)
-services/api/       Django 5.1 + Django Ninja backend (Django ORM, psycopg3, Gunicorn)
+services/api/       Django 6.0 + Django Ninja backend (Django ORM, psycopg3, Gunicorn)
 apps/mobile/        React Native / Expo (TanStack Query, Zustand)
 apps/web/           Next.js 15 static landing page (Tailwind CSS)
 ```
@@ -157,6 +157,7 @@ make web              # next dev
 - Admin: register models in `scraping/admin.py` with read-only timestamps and useful `list_display` / `list_filter` / `search_fields`.
 - Tests: pytest-django + factory-boy. Mark DB-touching tests with `@pytest.mark.django_db`. Factories live in `tests/factories.py`; shared fixtures in `tests/conftest.py`. Use the Django test client (or `ninja.testing.TestClient`) — no async test helpers.
 - Server: Gunicorn WSGI in production (`realty_api.wsgi:application`); `python manage.py runserver` in dev. WhiteNoise serves static files in prod.
+- Required env vars in production: `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS` (comma-separated), `DATABASE_URL`, `INTERNAL_API_KEY`. The settings module raises `ImproperlyConfigured` at import if any are missing.
 
 ## Architecture Decisions
 
@@ -164,7 +165,7 @@ make web              # next dev
 - Scraper architecture: Protocol + Strategy pattern (FetchStrategy + Scraper protocols)
 - Notifications: Expo Push (FCM/APNs)
 - Database: standalone PostgreSQL, no separate search engine
-- API framework: Django 5.1 + Django Ninja over Django ORM (migrated from FastAPI + SQLModel + Alembic on this branch)
+- API framework: Django 6.0 + Django Ninja over Django ORM (migrated from FastAPI + SQLModel + Alembic on this branch)
 - Authentication: internal endpoints use `X-API-Key` (constant-time HMAC compare); end-user auth not yet wired and lands in a follow-up PR
 - Shared code: duplicate small files across services (no shared package)
 - Deployment: GitOps via [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) — this repo only builds and pushes images

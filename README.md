@@ -9,7 +9,7 @@ Application monorepo with 4 services. Deployment is GitOps — see [realty-ai-pl
 ```
 services/
   scraper/     CDC scraper (Python, K8s CronJobs per website)
-  api/         Django 5.1 + Django Ninja backend (Django ORM, psycopg3)
+  api/         Django 6.0 + Django Ninja backend (Django ORM, psycopg3)
 apps/
   mobile/      React Native / Expo (TanStack Query, Zustand)
   web/         Next.js static landing page (Tailwind CSS)
@@ -19,7 +19,7 @@ apps/
 
 | Layer | Technology |
 |---|---|
-| Backend API | Django 5.1, Django Ninja, Django ORM, psycopg3, Gunicorn, WhiteNoise |
+| Backend API | Django 6.0, Django Ninja, Django ORM, psycopg3, Gunicorn, WhiteNoise |
 | Scraper | Python, BeautifulSoup, Playwright, httpx |
 | Mobile App | React Native, Expo, TanStack Query, Zustand |
 | Landing Page | Next.js 15, Tailwind CSS |
