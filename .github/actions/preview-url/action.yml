@@ -1,0 +1,41 @@
+name: Preview URL
+description: Create a GitHub Deployment with the preview environment URL
+
+inputs:
+  app-name:
+    description: The app name (e.g. api, web)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Create GitHub Deployment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        PREVIEW_URL="https://${{ inputs.app-name }}-pr-${{ github.event.pull_request.number }}.realty-ai.nl"
+        ENVIRONMENT="preview: ${{ inputs.app-name }}"
+
+        # Create deployment
+        DEPLOYMENT_ID=$(gh api repos/${{ github.repository }}/deployments \
+          --input - --jq '.id' <<EOF
+        {
+          "ref": "${{ github.head_ref }}",
+          "environment": "${ENVIRONMENT}",
+          "auto_merge": false,
+          "required_contexts": []
+        }
+        EOF
+        )
+
+        # Set deployment status to success with the preview URL
+        gh api repos/${{ github.repository }}/deployments/${DEPLOYMENT_ID}/statuses \
+          --input - <<EOF
+        {
+          "state": "success",
+          "environment_url": "${PREVIEW_URL}",
+          "description": "Preview deployed for PR #${{ github.event.pull_request.number }}",
+          "auto_inactive": true
+        }
+        EOF

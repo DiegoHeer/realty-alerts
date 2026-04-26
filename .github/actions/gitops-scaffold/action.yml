@@ -1,0 +1,176 @@
+name: GitOps Scaffold
+description: Scaffold Kubernetes and ArgoCD config in realty-ai-platform for new apps
+
+inputs:
+  app-name:
+    description: The app name (matches the directory under apps/ in the config repo)
+    required: true
+  port:
+    description: Container port exposed by the application
+    required: false
+    default: "80"
+  health-path:
+    description: HTTP path for liveness/readiness probes
+    required: false
+    default: /
+  replicas:
+    description: Number of deployment replicas
+    required: false
+    default: "1"
+  memory-request:
+    description: Kubernetes memory request (e.g. 32Mi)
+    required: true
+  memory-limit:
+    description: Kubernetes memory limit (e.g. 64Mi)
+    required: true
+  cpu-request:
+    description: Kubernetes CPU request (e.g. 10m)
+    required: true
+  config-repo:
+    description: The GitOps config repository
+    required: false
+    default: DiegoHeer/realty-ai-platform
+  image-registry:
+    description: Full image name prefix in ghcr.io
+    required: false
+    default: ghcr.io/${{ github.repository_owner }}/realty-alerts
+
+runs:
+  using: composite
+  steps:
+    - name: Generate GitHub App token
+      id: app-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ env.APP_ID }}
+        private-key: ${{ env.APP_PRIVATE_KEY }}
+        repositories: realty-ai-platform
+
+    - name: Check if platform config exists
+      id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        # Check if config already exists on main
+        if gh api repos/${{ inputs.config-repo }}/contents/apps/${{ inputs.app-name }} --silent 2>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        # Check if a scaffold PR is already open
+        PR_COUNT=$(gh pr list --repo ${{ inputs.config-repo }} --head scaffold/${{ inputs.app-name }} --state open --json number --jq 'length')
+        if [ "$PR_COUNT" -gt 0 ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Checkout config repo
+      if: steps.check.outputs.exists == 'false'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.config-repo }}
+        token: ${{ steps.app-token.outputs.token }}
+        path: _gitops
+
+    - name: Generate config files from templates
+      if: steps.check.outputs.exists == 'false'
+      shell: bash
+      env:
+        APP_NAME: ${{ inputs.app-name }}
+        APP_PORT: ${{ inputs.port }}
+        HEALTH_PATH: ${{ inputs.health-path }}
+        REPLICAS: ${{ inputs.replicas }}
+        MEMORY_REQUEST: ${{ inputs.memory-request }}
+        MEMORY_LIMIT: ${{ inputs.memory-limit }}
+        CPU_REQUEST: ${{ inputs.cpu-request }}
+        CONFIG_REPO: ${{ inputs.config-repo }}
+        IMAGE_REGISTRY: ${{ inputs.image-registry }}
+        DOMAIN: realty-ai.nl
+        CLOUDFLARE_TUNNEL_HOST: d3dd139e-37a4-4c8e-9633-2b8665860867.cfargotunnel.com
+      run: |
+        IMAGE_REGISTRY=$(echo "${IMAGE_REGISTRY}" | tr '[:upper:]' '[:lower:]')
+        export IMAGE_REGISTRY
+
+        TEMPLATE_DIR="${{ github.action_path }}/templates"
+        APPS_DIR="_gitops/apps/${APP_NAME}"
+        ARGOCD_DIR="_gitops/infrastructure/argocd/apps/${APP_NAME}"
+
+        VARS='$APP_NAME $APP_PORT $HEALTH_PATH $REPLICAS $MEMORY_REQUEST $MEMORY_LIMIT $CPU_REQUEST $CONFIG_REPO $IMAGE_REGISTRY $DOMAIN $CLOUDFLARE_TUNNEL_HOST'
+
+        # Generate Kustomize manifests
+        for subdir in base overlays/staging overlays/production overlays/preview; do
+          mkdir -p "${APPS_DIR}/${subdir}"
+          for tmpl in "${TEMPLATE_DIR}/${subdir}"/*.yaml; do
+            [ -f "$tmpl" ] || continue
+            filename=$(basename "$tmpl")
+            envsubst "${VARS}" < "$tmpl" > "${APPS_DIR}/${subdir}/${filename}"
+          done
+        done
+
+        # Generate ArgoCD manifests
+        mkdir -p "${ARGOCD_DIR}"
+        for tmpl in "${TEMPLATE_DIR}/argocd"/*.yaml; do
+          [ -f "$tmpl" ] || continue
+          filename="${APP_NAME}-$(basename "$tmpl")"
+          envsubst "${VARS}" < "$tmpl" > "${ARGOCD_DIR}/${filename}"
+        done
+
+    - name: Create platform PR
+      if: steps.check.outputs.exists == 'false'
+      id: platform-pr
+      uses: peter-evans/create-pull-request@v7
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+        path: _gitops
+        branch: scaffold/${{ inputs.app-name }}
+        base: main
+        title: "Add Kubernetes config for ${{ inputs.app-name }}"
+        body: |
+          Scaffolds Kubernetes and ArgoCD config for the **${{ inputs.app-name }}** app.
+
+          **Generated from:** ${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.pull_request.number }}
+
+          **Configuration:**
+          | Setting | Value |
+          |---|---|
+          | Port | `${{ inputs.port }}` |
+          | Health path | `${{ inputs.health-path }}` |
+          | Replicas | `${{ inputs.replicas }}` |
+          | CPU request | `${{ inputs.cpu-request }}` |
+          | Memory request | `${{ inputs.memory-request }}` |
+          | Memory limit | `${{ inputs.memory-limit }}` |
+
+          **Files created:**
+          - `apps/${{ inputs.app-name }}/base/` — Deployment, Service, Ingress, Kustomization
+          - `apps/${{ inputs.app-name }}/overlays/` — staging, production, preview overlays
+          - `infrastructure/argocd/apps/${{ inputs.app-name }}/` — AppProject, Applications, ApplicationSet
+
+          > Merge this PR before the app's first merge to main, so that `gitops-bump-tag` can find the overlay paths.
+        commit-message: "chore: scaffold platform config for ${{ inputs.app-name }}"
+
+    - name: Find existing scaffold comment
+      if: steps.platform-pr.outputs.pull-request-url != ''
+      id: find-comment
+      uses: peter-evans/find-comment@v4
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-author: github-actions[bot]
+        body-includes: "<!-- platform-setup-${{ inputs.app-name }} -->"
+
+    - name: Comment on PR
+      if: steps.platform-pr.outputs.pull-request-url != ''
+      uses: peter-evans/create-or-update-comment@v5
+      with:
+        comment-id: ${{ steps.find-comment.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        edit-mode: replace
+        body: |
+          <!-- platform-setup-${{ inputs.app-name }} -->
+          ## Platform Config PR Created
+
+          A pull request has been created in the platform repo to set up Kubernetes resources for **${{ inputs.app-name }}**:
+
+          ${{ steps.platform-pr.outputs.pull-request-url }}
+
+          > **Important:** Merge the platform PR before merging this PR, so that ArgoCD and `gitops-bump-tag` can find the deployment config.

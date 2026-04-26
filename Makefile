@@ -55,12 +55,12 @@ test: ## Run all tests
 # --- Build ---
 
 build-scraper: ## Build scraper Docker image
-	docker build -t ghcr.io/diegoheer/realty-scraper:latest services/scraper
+	docker build -t ghcr.io/diegoheer/realty-alerts/scraper:latest services/scraper
 
 build-api: ## Build API Docker image
-	docker build -t ghcr.io/diegoheer/realty-api:latest services/api
+	docker build -t ghcr.io/diegoheer/realty-alerts/api:latest services/api
 
 build-web: ## Build landing page Docker image
-	docker build -t ghcr.io/diegoheer/realty-web:latest apps/web
+	docker build -t ghcr.io/diegoheer/realty-alerts/web:latest apps/web
 
 build: build-scraper build-api build-web ## Build all Docker images

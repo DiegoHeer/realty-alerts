@@ -1,0 +1,50 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: ${APP_NAME}-preview
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - pullRequest:
+        github:
+          owner: DiegoHeer
+          repo: realty-alerts
+          tokenRef:
+            secretName: argocd-repo-creds-github-private
+            key: password
+          labels:
+            - preview
+        requeueAfterSeconds: 60
+  template:
+    metadata:
+      name: "${APP_NAME}-preview-pr-{{ .number }}"
+    spec:
+      project: ${APP_NAME}
+      source:
+        repoURL: https://github.com/${CONFIG_REPO}.git
+        targetRevision: main
+        path: apps/${APP_NAME}/overlays/preview
+        kustomize:
+          namespace: "${APP_NAME}-preview-pr-{{ .number }}"
+          images:
+            - "${IMAGE_REGISTRY}/${APP_NAME}:pr-{{ .number }}"
+          patches:
+            - target:
+                kind: Ingress
+                name: ${APP_NAME}
+              patch: |
+                - op: replace
+                  path: /spec/rules/0/host
+                  value: "${APP_NAME}-pr-{{ .number }}.${DOMAIN}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "${APP_NAME}-preview-pr-{{ .number }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,21 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${APP_NAME}-staging
+  namespace: argocd
+spec:
+  project: ${APP_NAME}
+  source:
+    repoURL: https://github.com/${CONFIG_REPO}.git
+    targetRevision: main
+    path: apps/${APP_NAME}/overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${APP_NAME}-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

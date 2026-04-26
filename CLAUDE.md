@@ -188,9 +188,9 @@ cd apps/mobile && npm test
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d   # PostgreSQL + Playwright
-make build-scraper    # ghcr.io/diegoheer/realty-scraper:latest
-make build-api        # ghcr.io/diegoheer/realty-api:latest
-make build-web        # ghcr.io/diegoheer/realty-web:latest
+make build-scraper    # ghcr.io/diegoheer/realty-alerts/scraper:latest
+make build-api        # ghcr.io/diegoheer/realty-alerts/api:latest
+make build-web        # ghcr.io/diegoheer/realty-alerts/web:latest
 ```
 
 ## Installed Skills

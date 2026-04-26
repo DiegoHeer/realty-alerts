@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ${APP_NAME}-production
+
+resources:
+- ../../base
+
+images:
+- name: ${IMAGE_REGISTRY}/${APP_NAME}
+  newTag: placeholder
