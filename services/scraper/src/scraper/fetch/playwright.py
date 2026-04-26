@@ -1,4 +1,5 @@
 from loguru import logger
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
 
@@ -15,6 +16,8 @@ class PlaywrightFetch:
         try:
             page.goto(url, wait_until="domcontentloaded")
             return page.content()
+        except PlaywrightError as e:
+            raise RuntimeError(f"Playwright fetch failed for {url}: {e}") from e
         finally:
             page.close()
 
