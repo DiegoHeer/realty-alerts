@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Scraper",
+            "name": "Service: Scraper",
             "type": "debugpy",
             "request": "launch",
             "module": "scraper",
@@ -15,7 +15,7 @@
             "justMyCode": false
         },
         {
-            "name": "Python: API (Django)",
+            "name": "Service: API",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/services/api/manage.py",
@@ -27,63 +27,18 @@
             "justMyCode": false
         },
         {
-            "name": "Pytest: Scraper (current file)",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "pytest",
-            "args": ["${file}", "-v"],
-            "cwd": "${workspaceFolder}/services/scraper",
-            "python": "${workspaceFolder}/services/scraper/.venv/bin/python",
-            "envFile": "${workspaceFolder}/services/scraper/.env",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/services/scraper/src"
-            },
-            "justMyCode": false
-        },
-        {
-            "name": "Pytest: API (current file)",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "pytest",
-            "args": ["${file}", "-v"],
-            "cwd": "${workspaceFolder}/services/api",
-            "python": "${workspaceFolder}/services/api/.venv/bin/python",
-            "envFile": "${workspaceFolder}/services/api/.env",
-            "justMyCode": false
-        },
-        {
-            "name": "Web: Next.js (dev)",
+            "name": "App: Web",
             "type": "node-terminal",
             "request": "launch",
             "command": "npm run dev",
             "cwd": "${workspaceFolder}/apps/web"
         },
         {
-            "name": "Vitest: Web (current file)",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "npx",
-            "runtimeArgs": ["vitest", "run", "${file}"],
-            "cwd": "${workspaceFolder}/apps/web",
-            "console": "integratedTerminal",
-            "skipFiles": ["<node_internals>/**"]
-        },
-        {
-            "name": "Mobile: Expo (start)",
+            "name": "App: Mobile",
             "type": "node-terminal",
             "request": "launch",
             "command": "npm start",
             "cwd": "${workspaceFolder}/apps/mobile"
-        },
-        {
-            "name": "Jest: Mobile (current file)",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "npx",
-            "runtimeArgs": ["jest", "${file}", "--runInBand"],
-            "cwd": "${workspaceFolder}/apps/mobile",
-            "console": "integratedTerminal",
-            "skipFiles": ["<node_internals>/**"]
         }
     ]
 }
