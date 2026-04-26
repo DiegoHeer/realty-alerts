@@ -1,3 +1,5 @@
+from typing import cast
+
 import dj_database_url
 
 from realty_api.settings.base import *  # noqa: F403, F401
@@ -18,4 +20,4 @@ STORAGES = {
 }
 
 # Database (DATABASE_URL required)
-DATABASES = {"default": dj_database_url.config(conn_max_age=600, conn_health_checks=True)}
+DATABASES = {"default": cast(dict, dj_database_url.config(conn_max_age=600, conn_health_checks=True))}

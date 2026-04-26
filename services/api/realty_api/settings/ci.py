@@ -1,7 +1,9 @@
 """Settings for CI test runs against a real Postgres service."""
 
+from typing import cast
+
 import dj_database_url
 
 from realty_api.settings.base import *  # noqa: F403, F401
 
-DATABASES = {"default": dj_database_url.config()}
+DATABASES = {"default": cast(dict, dj_database_url.config())}
