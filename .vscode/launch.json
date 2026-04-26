@@ -50,6 +50,40 @@
             "python": "${workspaceFolder}/services/api/.venv/bin/python",
             "envFile": "${workspaceFolder}/services/api/.env",
             "justMyCode": false
+        },
+        {
+            "name": "Web: Next.js (dev)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}/apps/web"
+        },
+        {
+            "name": "Vitest: Web (current file)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npx",
+            "runtimeArgs": ["vitest", "run", "${file}"],
+            "cwd": "${workspaceFolder}/apps/web",
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**"]
+        },
+        {
+            "name": "Mobile: Expo (start)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm start",
+            "cwd": "${workspaceFolder}/apps/mobile"
+        },
+        {
+            "name": "Jest: Mobile (current file)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npx",
+            "runtimeArgs": ["jest", "${file}", "--runInBand"],
+            "cwd": "${workspaceFolder}/apps/mobile",
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**"]
         }
     ]
 }
