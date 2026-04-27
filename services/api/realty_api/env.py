@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     realty_api_key: str = Field(...)
     django_secret_key: str | None = None
     allowed_hosts: str = ""
+    csrf_trusted_origins: str = ""
     log_level: str = "INFO"
     timezone: str = "Europe/Amsterdam"
 
