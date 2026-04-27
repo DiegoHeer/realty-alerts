@@ -26,12 +26,15 @@ The Docker image is `ghcr.io/diegoheer/realty-alerts/api` — built and pushed b
 - **Beat:** uses `django_celery_beat.schedulers:DatabaseScheduler`, so periodic tasks live in Postgres
   and are managed at <http://localhost:8000/admin/django_celery_beat/periodictask/> after running
   `make api-superuser`.
+- **Results:** persisted in Postgres via `django_celery_results` (`CELERY_RESULT_BACKEND = "django-db"`).
+  Browse at <http://localhost:8000/admin/django_celery_results/taskresult/>.
 
-Smoke-test from the api container:
+Smoke-test from the api container (use `manage.py shell -c` so the Django app registry is ready before
+the result backend is loaded):
 
 ```bash
-docker compose -f docker-compose.dev.yml exec api \
-    python -c "from scraping.tasks import ping; print(ping.delay().get(timeout=5))"
+docker compose -f docker-compose.dev.yml exec api python manage.py shell -c \
+    "from scraping.tasks import ping; print(ping.delay().get(timeout=5))"
 ```
 
 Watch the worker log:

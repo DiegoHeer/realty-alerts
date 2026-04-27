@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "scraping",
     "django_celery_beat",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -84,7 +85,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Celery ---
 CELERY_BROKER_URL = SETTINGS.celery_broker_url
-CELERY_RESULT_BACKEND = SETTINGS.celery_result_backend
+CELERY_RESULT_BACKEND = "django-db"
 CELERY_TIMEZONE = SETTINGS.timezone
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_SOFT_TIME_LIMIT = 240

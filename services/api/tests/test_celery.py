@@ -10,4 +10,9 @@ def test_celery_app_uses_django_settings_broker():
     from realty_api import celery_app
 
     assert celery_app.conf.broker_url == settings.CELERY_BROKER_URL
-    assert celery_app.conf.result_backend == settings.CELERY_RESULT_BACKEND
+
+
+def test_celery_app_uses_django_db_result_backend():
+    from realty_api import celery_app
+
+    assert celery_app.conf.result_backend == "django-db"

@@ -25,10 +25,6 @@ if not SETTINGS.celery_broker_url or SETTINGS.celery_broker_url.startswith("redi
     raise ImproperlyConfigured(
         "CELERY_BROKER_URL must be set to a non-localhost redis URL in production.",
     )
-if not SETTINGS.celery_result_backend or SETTINGS.celery_result_backend.startswith("redis://localhost"):
-    raise ImproperlyConfigured(
-        "CELERY_RESULT_BACKEND must be set to a non-localhost redis URL in production.",
-    )
 
 # HTTPS / SSL
 USE_X_FORWARDED_HOST = True
