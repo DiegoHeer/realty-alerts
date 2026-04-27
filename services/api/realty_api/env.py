@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     timezone: str = "Europe/Amsterdam"
     celery_broker_url: str = "redis://localhost:6379/0"
+    celery_task_always_eager: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
