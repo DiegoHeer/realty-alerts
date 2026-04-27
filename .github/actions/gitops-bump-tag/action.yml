@@ -3,7 +3,7 @@ description: Bump image tag in realty-ai-platform config repo (staging direct co
 
 inputs:
   app-name:
-    description: The app name (matches the directory under apps/ in the config repo)
+    description: The app name (matches the directory under apps/realty-alerts/ in the config repo)
     required: true
   image-tag:
     description: The new image tag to deploy (e.g. sha-abc1234)
@@ -40,7 +40,7 @@ runs:
       working-directory: _gitops
       run: |
         IMAGE_REGISTRY=$(echo "${{ inputs.image-registry }}" | tr '[:upper:]' '[:lower:]')
-        cd apps/${{ inputs.app-name }}/overlays/staging
+        cd apps/realty-alerts/${{ inputs.app-name }}/overlays/staging
         kustomize edit set image ${IMAGE_REGISTRY}/${{ inputs.app-name }}=${IMAGE_REGISTRY}/${{ inputs.app-name }}:${{ inputs.image-tag }}
 
     - name: Commit and push staging
@@ -54,7 +54,7 @@ runs:
       working-directory: _gitops
       run: |
         IMAGE_REGISTRY=$(echo "${{ inputs.image-registry }}" | tr '[:upper:]' '[:lower:]')
-        cd apps/${{ inputs.app-name }}/overlays/production
+        cd apps/realty-alerts/${{ inputs.app-name }}/overlays/production
         kustomize edit set image ${IMAGE_REGISTRY}/${{ inputs.app-name }}=${IMAGE_REGISTRY}/${{ inputs.app-name }}:${{ inputs.image-tag }}
 
     - name: Create production PR
