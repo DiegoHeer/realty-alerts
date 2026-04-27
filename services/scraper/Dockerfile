@@ -8,6 +8,7 @@ RUN uv sync --locked --no-dev --compile-bytecode
 COPY src/ ./src/
 
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app/src
 
 # This image deliberately does NOT bundle Playwright browsers.
 # The scraper connects to a remote Playwright server at $BROWSER_URL (ws://...).
