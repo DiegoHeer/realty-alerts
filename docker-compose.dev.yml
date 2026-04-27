@@ -10,9 +10,12 @@ services:
       DJANGO_SETTINGS_MODULE: realty_api.settings.local
       DATABASE_URL: postgres://realty:realty@database:5432/realty_alerts
       REALTY_API_KEY: dev-realty-api-key
+      CELERY_BROKER_URL: redis://redis:6379/0
       LOG_LEVEL: DEBUG
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: curl -f http://localhost:8000/healthz || exit 1
@@ -20,6 +23,58 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  # --- Celery worker ---
+  celery-worker:
+    container_name: realty-celery-worker
+    build:
+      context: services/api
+    command: ["celery", "-A", "realty_api", "worker", "-l", "info", "--concurrency=2", "--max-tasks-per-child=200"]
+    environment:
+      DJANGO_SETTINGS_MODULE: realty_api.settings.local
+      DATABASE_URL: postgres://realty:realty@database:5432/realty_alerts
+      REALTY_API_KEY: dev-realty-api-key
+      CELERY_BROKER_URL: redis://redis:6379/0
+      LOG_LEVEL: DEBUG
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Celery beat ---
+  celery-beat:
+    container_name: realty-celery-beat
+    build:
+      context: services/api
+    command: ["celery", "-A", "realty_api", "beat", "-l", "info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+    environment:
+      DJANGO_SETTINGS_MODULE: realty_api.settings.local
+      DATABASE_URL: postgres://realty:realty@database:5432/realty_alerts
+      REALTY_API_KEY: dev-realty-api-key
+      CELERY_BROKER_URL: redis://redis:6379/0
+      LOG_LEVEL: DEBUG
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  # --- Redis (broker + result backend) ---
+  redis:
+    container_name: realty-redis
+    image: redis:8-alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   # --- Database ---
   database:
@@ -55,3 +110,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

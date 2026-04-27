@@ -21,6 +21,11 @@ CSRF_TRUSTED_ORIGINS = [o.strip() for o in SETTINGS.csrf_trusted_origins.split("
 if not CSRF_TRUSTED_ORIGINS:
     raise ImproperlyConfigured("CSRF_TRUSTED_ORIGINS must be set (comma-separated, scheme included) in production.")
 
+if not SETTINGS.celery_broker_url or SETTINGS.celery_broker_url.startswith("redis://localhost"):
+    raise ImproperlyConfigured(
+        "CELERY_BROKER_URL must be set to a non-localhost redis URL in production.",
+    )
+
 # HTTPS / SSL
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

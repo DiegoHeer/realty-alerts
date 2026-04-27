@@ -1,4 +1,5 @@
 import os
+from typing import cast
 
 # Sensible defaults for local dev / test runs. Production must set these explicitly via prod.py.
 os.environ.setdefault("REALTY_API_KEY", "dev-realty-api-key")
@@ -11,3 +12,12 @@ DEBUG = True
 
 # Single-process runserver; per-boot regeneration is harmless and avoids requiring an env var locally.
 SECRET_KEY = secret_key_generator.generate()
+
+# Use DATABASE_URL when running inside Docker; fall back to SQLite for plain `manage.py runserver`.
+if _db_url := os.environ.get("DATABASE_URL"):
+    import dj_database_url
+
+    DATABASES = {"default": cast(dict, dj_database_url.parse(_db_url, conn_max_age=60))}
+
+# collectstatic needs a writable target even in dev-container mode.
+STATIC_ROOT = "/tmp/staticfiles"
