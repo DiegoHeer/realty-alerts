@@ -4,13 +4,16 @@ version = "0.1.0"
 description = "Django + Ninja backend for Realty Alerts — listings and scrape-run tracking."
 requires-python = ">=3.14"
 dependencies = [
+    "celery[redis]>=5.5",
     "dj-database-url>=2.3",
     "django>=6.0.4",
+    "django-celery-beat>=2.7",
     "django-ninja>=1.6",
     "gunicorn>=23",
     "loguru>=0.7",
     "psycopg[binary]>=3.3",
     "pydantic-settings>=2.9",
+    "redis>=5.2",
     "secret-key-generator>=0.0.8",
     "whitenoise>=6.8",
 ]
