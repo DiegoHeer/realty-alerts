@@ -13,7 +13,6 @@ dependencies = [
     "loguru>=0.7",
     "psycopg[binary]>=3.3",
     "pydantic-settings>=2.9",
-    "redis>=5.2",
     "secret-key-generator>=0.0.8",
     "whitenoise>=6.8",
 ]

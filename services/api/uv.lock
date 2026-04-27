@@ -505,7 +505,6 @@ dependencies = [
     { name = "loguru" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic-settings" },
-    { name = "redis" },
     { name = "secret-key-generator" },
     { name = "whitenoise" },
 ]
@@ -531,7 +530,6 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3" },
     { name = "pydantic-settings", specifier = ">=2.9" },
-    { name = "redis", specifier = ">=5.2" },
     { name = "secret-key-generator", specifier = ">=0.0.8" },
     { name = "whitenoise", specifier = ">=6.8" },
 ]
