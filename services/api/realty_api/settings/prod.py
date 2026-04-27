@@ -19,9 +19,7 @@ if not ALLOWED_HOSTS:
 
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in SETTINGS.csrf_trusted_origins.split(",") if o.strip()]
 if not CSRF_TRUSTED_ORIGINS:
-    raise ImproperlyConfigured(
-        "CSRF_TRUSTED_ORIGINS must be set (comma-separated, scheme included) in production."
-    )
+    raise ImproperlyConfigured("CSRF_TRUSTED_ORIGINS must be set (comma-separated, scheme included) in production.")
 
 # HTTPS / SSL
 USE_X_FORWARDED_HOST = True
