@@ -13,11 +13,15 @@ from scraping.models import ListingStatus, ScrapeRunStatus, Website
 # chars on pararius) while staying well under the de-facto browser URL limit.
 ImageUrl = Annotated[str, StringConstraints(max_length=2000, pattern=r"^https?://")]
 
+# Reject empty titles so scraper selector drift surfaces as a 422 instead of
+# silently storing blank cards in Postgres.
+Title = Annotated[str, StringConstraints(min_length=1)]
+
 
 class ListingIn(Schema):
     website: Website
     detail_url: str
-    title: str
+    title: Title
     price: str
     city: str
     property_type: str | None = None
