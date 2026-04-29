@@ -14,3 +14,11 @@ def test_scrape_first_page(pararius_scraper):
     assert listings[0].price == "€\xa0535.000 k.k."
     assert listings[0].city == "almere"
     assert listings[0].website == "pararius"
+
+
+def test_image_urls_are_http_or_none(pararius_scraper):
+    listings = pararius_scraper._scrape_page(page_number=1)
+
+    assert listings, "fixture should yield listings"
+    for listing in listings:
+        assert listing.image_url is None or listing.image_url.startswith(("http://", "https://"))

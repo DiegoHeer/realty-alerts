@@ -58,7 +58,10 @@ class ParariusScraper(BaseScraper):
         price = price_el.get_text().strip() if price_el else ""
 
         image_el = card.select_one("img.picture__image")
-        image_url = str(image_el.get("src", "")) if image_el else None
+        image_src = str(image_el.get("src", "")) if image_el else ""
+        # Pararius lazy-loads thumbnails behind inline SVG data: placeholders;
+        # only accept real http(s) URLs to keep payloads under the API's varchar(500) cap.
+        image_url = image_src if image_src.startswith(("http://", "https://")) else None
 
         return Listing(
             detail_url=detail_url,
