@@ -6,10 +6,12 @@ from pydantic import StringConstraints, model_validator
 
 from scraping.models import ListingStatus, ScrapeRunStatus, Website
 
-# Mirrors Listing.image_url = URLField(max_length=500). Reject non-http(s) values
+# Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
 # (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
-# 422 from Ninja rather than a Postgres DataError surfacing as a 500.
-ImageUrl = Annotated[str, StringConstraints(max_length=500, pattern=r"^https?://")]
+# 422 from Ninja rather than a Postgres DataError surfacing as a 500. The 2000
+# cap covers fastly/CDN signed URLs with query strings (observed up to ~700
+# chars on pararius) while staying well under the de-facto browser URL limit.
+ImageUrl = Annotated[str, StringConstraints(max_length=2000, pattern=r"^https?://")]
 
 
 class ListingIn(Schema):

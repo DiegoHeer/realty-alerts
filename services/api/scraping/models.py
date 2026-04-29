@@ -28,7 +28,7 @@ class Listing(models.Model):
     property_type = models.CharField(max_length=100, null=True, blank=True)
     bedrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqm = models.FloatField(null=True, blank=True)
-    image_url = models.URLField(max_length=500, null=True, blank=True)
+    image_url = models.URLField(max_length=2000, null=True, blank=True)
     status = models.CharField(
         max_length=10,
         choices=ListingStatus.choices,
