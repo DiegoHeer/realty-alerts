@@ -118,6 +118,28 @@ def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scr
     assert response.status_code == 422
 
 
+@pytest.mark.parametrize(
+    "image_url",
+    [
+        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>",
+        "https://example.com/" + ("x" * 500),
+    ],
+    ids=["data_uri", "over_500_chars"],
+)
+def test_submit_results_rejects_invalid_image_url(client, api_key_headers, scrape_payload, listing_payload, image_url):
+    payload = scrape_payload(
+        listings=[listing_payload("https://example.com/listing/1", image_url=image_url)],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 422
+    assert "image_url" in response.content.decode()
+    assert Listing.objects.count() == 0
+
+
 def test_submit_results_marks_run_failed_when_error_message(client, api_key_headers, scrape_payload):
     payload = scrape_payload(listings=[], error_message="boom")
 

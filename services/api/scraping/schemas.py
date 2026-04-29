@@ -1,10 +1,15 @@
 from datetime import datetime
-from typing import Self
+from typing import Annotated, Self
 
 from ninja import Schema
-from pydantic import model_validator
+from pydantic import StringConstraints, model_validator
 
 from scraping.models import ListingStatus, ScrapeRunStatus, Website
+
+# Mirrors Listing.image_url = URLField(max_length=500). Reject non-http(s) values
+# (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
+# 422 from Ninja rather than a Postgres DataError surfacing as a 500.
+ImageUrl = Annotated[str, StringConstraints(max_length=500, pattern=r"^https?://")]
 
 
 class ListingIn(Schema):
@@ -16,7 +21,7 @@ class ListingIn(Schema):
     property_type: str | None = None
     bedrooms: int | None = None
     area_sqm: float | None = None
-    image_url: str | None = None
+    image_url: ImageUrl | None = None
 
 
 class ListingOut(ListingIn):
