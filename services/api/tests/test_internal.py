@@ -46,20 +46,20 @@ def test_active_runs_lists_only_running(client, api_key_headers):
     assert body[0]["id"] == running.pk
 
 
-def test_submit_results_creates_run_and_listings(client, api_key_headers, scrape_payload, listing_payload):
+@pytest.mark.parametrize("website", list(Website))
+def test_submit_results_creates_run_and_listings(client, api_key_headers, scrape_payload, listing_payload, website):
     payload = scrape_payload(
         listings=[
-            listing_payload("https://example.com/listing/1"),
-            listing_payload("https://example.com/listing/2"),
+            listing_payload("https://example.com/listing/1", website=website.value),
+            listing_payload("https://example.com/listing/2", website=website.value),
         ]
     )
 
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
+    response = client.post(f"/internal/v1/scrape-runs/{website.value}/results", json=payload, headers=api_key_headers)
 
     assert response.status_code == 200
     body = response.json()
+    assert body["website"] == website.value
     assert body["listings_found"] == 2
     assert body["listings_new"] == 2
     assert body["status"] == ScrapeRunStatus.SUCCESS.value
