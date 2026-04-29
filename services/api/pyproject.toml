@@ -11,6 +11,7 @@ dependencies = [
     "django-celery-results>=2.5",
     "django-ninja>=1.6",
     "gunicorn>=23",
+    "httpx>=0.28",
     "loguru>=0.7",
     "psycopg[binary]>=3.3",
     "pydantic-settings>=2.9",
@@ -24,6 +25,7 @@ dev = [
     "factory-boy>=3.3",
     "pytest>=8.4",
     "pytest-django>=4.9",
+    "respx>=0.22",
     "ruff>=0.15",
     "ty>=0.0.32",
 ]
