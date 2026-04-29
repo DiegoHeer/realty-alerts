@@ -42,3 +42,28 @@ Watch the worker log:
 ```bash
 docker compose -f docker-compose.dev.yml logs -f celery-worker
 ```
+
+### Scheduling scrapes from the admin
+
+`scraping.dispatch_scrape(website, run_id=None)` POSTs to the in-cluster Argo
+Events webhook (`ARGO_EVENTS_WEBHOOK_URL`) which spawns a one-shot scraper
+`Job`. To run a scrape on a schedule:
+
+1. Open <http://localhost:8000/admin/django_celery_beat/periodictask/> (or the
+   staging/production admin equivalent).
+2. **Add periodic task** → name it `Scrape funda nightly` (or similar) → pick
+   task `scraping.dispatch_scrape` from the dropdown.
+3. Set kwargs:
+   ```json
+   {"website": "funda"}
+   ```
+   (Valid values: `funda`, `pararius`, `vastgoed_nl` — must match the
+   `Website` enum in `scraping/models.py`. `run_id` is optional; the task
+   generates a UUID when missing.)
+4. Pick or create a Crontab schedule (e.g. `0 6 * * *` UTC).
+5. Save. Beat will fire the task at the next matching tick; the worker POSTs
+   to the webhook; Argo Events spawns the scrape Job.
+
+If `ARGO_EVENTS_WEBHOOK_URL` is unset (local dev, preview namespaces), the
+task short-circuits with a warning instead of erroring — useful for running
+Beat locally without a real webhook to call.
