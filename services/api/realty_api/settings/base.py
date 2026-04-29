@@ -93,3 +93,10 @@ CELERY_TASK_SOFT_TIME_LIMIT = 240
 CELERY_TASK_ALWAYS_EAGER = SETTINGS.celery_task_always_eager
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# --- Argo Events bridge ---
+# The webhook URL the `scraping.dispatch_scrape` Celery task POSTs to
+# in order to spawn a scrape Job via Argo Events. Empty/None lets the
+# task short-circuit (logged warning, no HTTP call) — useful in local
+# dev and preview namespaces that don't run Argo Events.
+ARGO_EVENTS_WEBHOOK_URL = SETTINGS.argo_events_webhook_url

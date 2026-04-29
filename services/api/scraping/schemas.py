@@ -50,3 +50,10 @@ class ScrapeResultsIn(Schema):
         if self.finished_at < self.started_at:
             raise ValueError("finished_at must be >= started_at")
         return self
+
+
+class ScrapeDispatchPayload(Schema):
+    """Body posted to the Argo Events webhook to spawn a scrape Job."""
+
+    website: Website
+    run_id: str

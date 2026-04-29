@@ -26,6 +26,12 @@ if not SETTINGS.celery_broker_url or SETTINGS.celery_broker_url.startswith("redi
         "CELERY_BROKER_URL must be set to a non-localhost redis URL in production.",
     )
 
+if not SETTINGS.argo_events_webhook_url:
+    raise ImproperlyConfigured(
+        "ARGO_EVENTS_WEBHOOK_URL must be set in production "
+        "(e.g. http://scrape-webhook-eventsource-svc.<ns>.svc.cluster.local:12000/scrape).",
+    )
+
 # HTTPS / SSL
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
