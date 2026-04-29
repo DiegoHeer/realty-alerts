@@ -58,3 +58,10 @@ repos:
         files: ^apps/mobile/.*\.(ts|tsx|js|jsx|mjs|cjs)$
         pass_filenames: false
         require_serial: true
+      - id: playwright-version-sync
+        name: Playwright client/server version match
+        language: system
+        entry: bash scripts/check-playwright-version.sh
+        files: ^(services/scraper/uv\.lock|docker-compose\.dev\.yml)$
+        pass_filenames: false
+        require_serial: true
