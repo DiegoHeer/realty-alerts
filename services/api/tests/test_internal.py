@@ -122,9 +122,9 @@ def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scr
     "image_url",
     [
         "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>",
-        "https://example.com/" + ("x" * 500),
+        "https://example.com/" + ("x" * 2000),
     ],
-    ids=["data_uri", "over_500_chars"],
+    ids=["data_uri", "over_2000_chars"],
 )
 def test_submit_results_rejects_invalid_image_url(client, api_key_headers, scrape_payload, listing_payload, image_url):
     payload = scrape_payload(
@@ -138,6 +138,23 @@ def test_submit_results_rejects_invalid_image_url(client, api_key_headers, scrap
     assert response.status_code == 422
     assert "image_url" in response.content.decode()
     assert Listing.objects.count() == 0
+
+
+def test_submit_results_accepts_long_signed_image_url(client, api_key_headers, scrape_payload, listing_payload):
+    # Real fastly/CDN URLs with signed query strings can exceed 500 chars
+    # (observed up to ~700 on pararius); the 500-char cap was the original
+    # source of the production 500. 1500 chars must round-trip end-to-end.
+    long_url = "https://cdn.example.com/img/" + ("a" * 1500)
+    payload = scrape_payload(
+        listings=[listing_payload("https://example.com/listing/long-image", image_url=long_url)],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 200
+    assert Listing.objects.get().image_url == long_url
 
 
 def test_submit_results_marks_run_failed_when_error_message(client, api_key_headers, scrape_payload):
