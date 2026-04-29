@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0002_rename_price_cents_to_price_eur'),
+        ("scraping", "0002_rename_price_cents_to_price_eur"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='listing',
-            name='image_url',
+            model_name="listing",
+            name="image_url",
             field=models.URLField(blank=True, max_length=2000, null=True),
         ),
     ]
