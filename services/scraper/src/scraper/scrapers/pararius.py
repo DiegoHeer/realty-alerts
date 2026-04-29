@@ -51,8 +51,8 @@ class ParariusScraper(BaseScraper):
         url_el = card.select_one("a.listing-search-item__link")
         detail_url = f"https://www.pararius.nl{url_el.get('href')}" if url_el else ""
 
-        title_el = card.select_one("h2.listing-search-item__title a")
-        title = title_el.get_text().strip() if title_el else ""
+        title_el = card.select_one("a.listing-search-item__link--title")
+        title = title_el.get_text(strip=True) if title_el else ""
 
         price_el = card.select_one("div.listing-search-item__price")
         price = price_el.get_text().strip() if price_el else ""

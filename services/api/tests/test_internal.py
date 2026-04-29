@@ -157,6 +157,20 @@ def test_submit_results_accepts_long_signed_image_url(client, api_key_headers, s
     assert Listing.objects.get().image_url == long_url
 
 
+def test_submit_results_rejects_empty_title(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(
+        listings=[listing_payload("https://example.com/listing/1", title="")],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 422
+    assert "title" in response.content.decode()
+    assert Listing.objects.count() == 0
+
+
 def test_submit_results_marks_run_failed_when_error_message(client, api_key_headers, scrape_payload):
     payload = scrape_payload(listings=[], error_message="boom")
 
