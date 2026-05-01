@@ -5,9 +5,9 @@ from scraping.models import Listing, ScrapeRun
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ("id", "website", "city", "price", "status", "scraped_at")
+    list_display = ("id", "website", "city", "street", "house_number", "postcode", "price", "status", "scraped_at")
     list_filter = ("website", "status", "city")
-    search_fields = ("title", "detail_url")
+    search_fields = ("title", "detail_url", "street", "postcode")
     ordering = ("-scraped_at",)
     readonly_fields = ("created_at", "updated_at")
 

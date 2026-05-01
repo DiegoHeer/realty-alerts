@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 from bs4 import Tag
 from loguru import logger
 
+from scraper.address import parse_dutch_address
 from scraper.enums import Website
 from scraper.models import Listing
 from scraper.protocols import FetchStrategy
@@ -62,16 +63,20 @@ class VastgoedNLScraper(BaseScraper):
         image_el = card.select_one("img")
         image_url = str(image_el.get("src", "")) if image_el else None
 
+        city_el = card.select_one("span.city")
+        city = city_el.get_text(strip=True) if city_el else ""
+
+        street, house_number, suffix = parse_dutch_address(title)
+
         return Listing(
             detail_url=detail_url,
             title=title,
             price=price,
-            city=self._extract_city_from_title(title),
+            city=city or "unknown",
+            street=street,
+            house_number=house_number,
+            house_number_suffix=suffix,
+            postcode=None,
             image_url=image_url or None,
             website=self.website,
         )
-
-    @staticmethod
-    def _extract_city_from_title(title: str) -> str:
-        # Vastgoed NL titles often include street name; city extraction would need more data
-        return "unknown"

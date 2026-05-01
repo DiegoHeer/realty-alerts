@@ -182,6 +182,50 @@ def test_submit_results_marks_run_failed_when_error_message(client, api_key_head
     assert response.json()["status"] == ScrapeRunStatus.FAILED.value
 
 
+def test_submit_results_persists_structured_address_fields(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(
+        listings=[
+            listing_payload(
+                "https://example.com/listing/with-address",
+                street="Hoofdstraat",
+                house_number=12,
+                house_number_suffix="A",
+                postcode="1234 AB",
+                city="Amsterdam",
+            ),
+        ],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 200
+    listing = Listing.objects.get()
+    assert listing.street == "Hoofdstraat"
+    assert listing.house_number == 12
+    assert listing.house_number_suffix == "A"
+    assert listing.postcode == "1234 AB"
+    assert listing.city == "Amsterdam"
+
+
+def test_submit_results_address_fields_default_to_null(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(
+        listings=[listing_payload("https://example.com/listing/no-address")],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 200
+    listing = Listing.objects.get()
+    assert listing.street is None
+    assert listing.house_number is None
+    assert listing.house_number_suffix is None
+    assert listing.postcode is None
+
+
 def test_internal_endpoints_require_api_key(client, scrape_payload):
     last_run_url = f"/internal/v1/scrape-runs/{Website.FUNDA.value}/last-successful"
     results_url = f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results"
