@@ -19,7 +19,8 @@ def test_get_last_page_capped_at_max(funda_scraper):
         ('<a href="?page=3&utm_source=foo">3</a>', 3),  # extra query params
         ('<a href="/zoeken/koop?utm_source=foo&page=4">4</a>', 4),  # page not first param
         ('<a href="?page=abc">x</a><a href="?page=2">2</a>', 2),  # malformed entry skipped
-        ("<a>nothing</a>", 1),  # default when no pagination
+        # No hydrated pagination → speculatively scan up to MAX_PAGES (5).
+        ("<a>nothing</a>", 5),
     ],
 )
 def test_get_last_page_parses_query_string(html, expected):
@@ -57,19 +58,19 @@ def test_scrape_specific_card(funda_scraper, monkeypatch):
     monkeypatch.setattr(funda_scraper, "MAX_PAGES", 2)
     listings = funda_scraper.scrape(since=None)
 
-    haarlem = next(
+    heerhugowaard = next(
         listing
         for listing in listings
-        if listing.detail_url == "https://www.funda.nl/detail/koop/haarlem/huis-delftlaan-265/43063127/"
+        if listing.detail_url == "https://www.funda.nl/detail/koop/heerhugowaard/huis-madeliefstraat-5/43339393/"
     )
-    assert haarlem.title == "Delftlaan 265"
-    assert haarlem.price == "€ 850.000 k.k."
-    assert haarlem.street == "Delftlaan"
-    assert haarlem.house_number == 265
-    assert haarlem.house_number_suffix is None
-    assert haarlem.postcode == "2024 CB"
-    assert haarlem.city == "Haarlem"
-    assert haarlem.image_url == "https://cloud.funda.nl/valentina_media/150/090/054.jpg?options=width=228,height=228"
+    assert heerhugowaard.title == "Madeliefstraat 5"
+    assert heerhugowaard.price == "€ 720.000 k.k."
+    assert heerhugowaard.street == "Madeliefstraat"
+    assert heerhugowaard.house_number == 5
+    assert heerhugowaard.house_number_suffix is None
+    assert heerhugowaard.postcode == "1706 AN"
+    assert heerhugowaard.city == "Heerhugowaard"
+    assert heerhugowaard.image_url == "https://cloud.funda.nl/valentina_media/207/398/277.jpg?options=width=228"
 
 
 def test_is_scraping_detected_true_when_blocked(funda_scraper):

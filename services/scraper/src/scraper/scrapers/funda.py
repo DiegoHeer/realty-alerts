@@ -96,7 +96,11 @@ class FundaScraper(BaseScraper):
             page_str = parse_qs(urlparse(href).query).get("page", [""])[0]
             if page_str.isdigit():
                 page_numbers.append(int(page_str))
-        return min(max(page_numbers, default=1), self.MAX_PAGES)
+        if not page_numbers:
+            # Funda's pagination is hydrated by Nuxt; if it didn't render in time,
+            # speculatively scan up to MAX_PAGES rather than collapsing to 1 page.
+            return self.MAX_PAGES
+        return min(max(page_numbers), self.MAX_PAGES)
 
     @staticmethod
     def _append_page_number(url: str, page_number: int) -> str:
@@ -120,23 +124,25 @@ def _find_card_root(anchor: Tag, href: str) -> Tag | None:
 
 
 def _extract_price(card: Tag) -> str:
-    el = card.select_one("div.font-semibold.mt-2.mb-0")
+    el = card.select_one("div.font-semibold > div.truncate")
     if el and el.get_text(strip=True).startswith("€"):
         return el.get_text(strip=True)
+    # Fallback excludes "m²" so a wrapper that bundles price + area metadata
+    # (e.g. "€ 720.000 k.k.157 m²306 m²2A") is rejected.
     for div in card.find_all("div"):
         text = div.get_text(strip=True)
-        if text.startswith("€") and len(text) < 60:
+        if text.startswith("€") and "m²" not in text and len(text) < 60:
             return text
     return ""
 
 
 def _extract_image(card: Tag) -> str | None:
-    el = card.select_one('img[src*="cloud.funda.nl/valentina_media"]')
+    el = card.select_one('img[src*="cloud.funda.nl"]')
     if el is not None:
         src = str(el.get("src", ""))
         if src.startswith(("http://", "https://")):
             return src
-    fallback = card.select_one('img[data-src*="cloud.funda.nl/valentina_media"]')
+    fallback = card.select_one('img[data-src*="cloud.funda.nl"]')
     if fallback is not None:
         data_src = str(fallback.get("data-src", ""))
         if data_src.startswith(("http://", "https://")):
