@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from scraper.scrapers.funda import FundaScraper
+from scraper.scrapers.funda import FundaScraper, _CardAddress
 
 MOCK_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -34,23 +34,51 @@ def test_get_last_page_parses_query_string(html, expected):
     assert scraper._get_last_page() == expected
 
 
-def test_scrape_detail_urls_filters_to_detail_pattern(funda_scraper, monkeypatch):
+def test_scrape_listing_pages_yields_card_addresses(funda_scraper, monkeypatch):
     monkeypatch.setattr(funda_scraper, "MAX_PAGES", 2)
-    urls = funda_scraper._scrape_detail_urls()
+    cards = funda_scraper._scrape_listing_pages()
 
-    assert len(urls) > 0
-    assert all(url.startswith("https://www.funda.nl/detail/") for url in urls)
+    assert len(cards) > 0
+    for url, addr in cards.items():
+        assert url.startswith("https://www.funda.nl/detail/")
+        assert addr.street, f"missing street for {url}"
+        assert addr.house_number is not None, f"missing house_number for {url}"
+        assert addr.postcode, f"missing postcode for {url}"
+        assert addr.city and addr.city != "unknown", f"missing city for {url}"
 
 
-def test_scrape_detail_page_extracts_fields(funda_scraper):
+def test_scrape_listing_pages_specific_card(funda_scraper, monkeypatch):
+    monkeypatch.setattr(funda_scraper, "MAX_PAGES", 2)
+    cards = funda_scraper._scrape_listing_pages()
+
+    haarlem = cards["https://www.funda.nl/detail/koop/haarlem/huis-delftlaan-265/43063127/"]
+    assert haarlem.street == "Delftlaan"
+    assert haarlem.house_number == 265
+    assert haarlem.house_number_suffix is None
+    assert haarlem.postcode == "2024 CB"
+    assert haarlem.city == "Haarlem"
+
+
+def test_scrape_detail_page_merges_card_address(funda_scraper):
     detail_url = "https://www.funda.nl/detail/koop/blokker/huis-bangert-58/43063167/"
-    listing = funda_scraper._scrape_detail_page(detail_url)
+    address = _CardAddress(
+        street="Bangert",
+        house_number=58,
+        house_number_suffix=None,
+        postcode="1695 BB",
+        city="Blokker",
+    )
+
+    listing = funda_scraper._scrape_detail_page(detail_url, address)
 
     assert listing is not None
     assert listing.detail_url == detail_url
     assert listing.title == "Bangert 58"
     assert listing.price == "€ 775.000 k.k."
-    assert listing.city == "blokker"
+    assert listing.city == "Blokker"
+    assert listing.street == "Bangert"
+    assert listing.house_number == 58
+    assert listing.postcode == "1695 BB"
     assert listing.image_url and listing.image_url.startswith("https://")
     assert listing.website == "funda"
 
