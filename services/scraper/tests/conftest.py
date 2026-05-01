@@ -12,7 +12,6 @@ URL_TO_FILE = {
     "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22,%22apartment%22%5D": "funda_listing.html",
     "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22%2C%22apartment%22%5D&search_result=1": "funda_1.html",
     "https://www.funda.nl/zoeken/koop?object_type=%5B%22house%22%2C%22apartment%22%5D&search_result=2": "funda_2.html",
-    "https://www.funda.nl/detail/koop/blokker/huis-bangert-58/43063167/": "funda_detail.html",
     "https://www.funda.nl/scraper-detected": "funda_scraper_detected.html",
     "https://www.pararius.nl/koopwoningen/nederland": "pararius_listing.html",
     "https://www.pararius.nl/koopwoningen/nederland/page-1": "pararius_listing.html",
