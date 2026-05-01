@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from pathlib import PurePosixPath
 from urllib.parse import urlparse, urlunparse
@@ -5,10 +6,16 @@ from urllib.parse import urlparse, urlunparse
 from bs4 import Tag
 from loguru import logger
 
+from scraper.address import parse_dutch_address, parse_dutch_postcode
 from scraper.enums import Website
 from scraper.models import Listing
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
+
+# Pararius card subtitle format: "<postcode> <city> (<neighborhood>)"
+# e.g. "3067 ZV Rotterdam (Oosterflank)" — neighborhood is optional.
+_PARARIUS_POSTCODE_PREFIX = re.compile(r"^\s*\d{4}\s?[A-Z]{2}\s+", re.IGNORECASE)
+_PARARIUS_NEIGHBORHOOD_SUFFIX = re.compile(r"\s*\(.*\)\s*$")
 
 
 class ParariusScraper(BaseScraper):
@@ -63,17 +70,27 @@ class ParariusScraper(BaseScraper):
         # only accept real http(s) URLs to keep payloads under the API's varchar(500) cap.
         image_url = image_src if image_src.startswith(("http://", "https://")) else None
 
+        subtitle_el = card.select_one("div.listing-search-item__sub-title")
+        subtitle = subtitle_el.get_text(strip=True) if subtitle_el else ""
+        postcode, city = self._parse_subtitle(subtitle)
+        street, house_number, suffix = parse_dutch_address(title)
+
         return Listing(
             detail_url=detail_url,
             title=title,
             price=price,
-            city=self._extract_city_from_url(detail_url),
+            city=city or "unknown",
+            street=street,
+            house_number=house_number,
+            house_number_suffix=suffix,
+            postcode=postcode,
             image_url=image_url or None,
             website=self.website,
         )
 
     @staticmethod
-    def _extract_city_from_url(url: str) -> str:
-        parts = urlparse(url).path.strip("/").split("/")
-        # URL pattern: /huis-te-koop/<city>/<id>/<slug>
-        return parts[1] if len(parts) > 1 else "unknown"
+    def _parse_subtitle(text: str) -> tuple[str | None, str]:
+        postcode = parse_dutch_postcode(text)
+        without_postcode = _PARARIUS_POSTCODE_PREFIX.sub("", text)
+        city = _PARARIUS_NEIGHBORHOOD_SUFFIX.sub("", without_postcode).strip()
+        return postcode, city
