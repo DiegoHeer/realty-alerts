@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0003_alter_listing_image_url'),
+        ("scraping", "0003_alter_listing_image_url"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='house_number',
+            model_name="listing",
+            name="house_number",
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='house_number_suffix',
+            model_name="listing",
+            name="house_number_suffix",
             field=models.CharField(blank=True, max_length=20, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='postcode',
+            model_name="listing",
+            name="postcode",
             field=models.CharField(blank=True, max_length=10, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='street',
+            model_name="listing",
+            name="street",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]
