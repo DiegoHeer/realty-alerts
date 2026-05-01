@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from scraper.scrapers.funda import FundaScraper, _CardAddress
+from scraper.scrapers.funda import FundaScraper
 
 MOCK_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -34,53 +34,42 @@ def test_get_last_page_parses_query_string(html, expected):
     assert scraper._get_last_page() == expected
 
 
-def test_scrape_listing_pages_yields_card_addresses(funda_scraper, monkeypatch):
+def test_scrape_yields_listings(funda_scraper, monkeypatch):
     monkeypatch.setattr(funda_scraper, "MAX_PAGES", 2)
-    cards = funda_scraper._scrape_listing_pages()
+    listings = funda_scraper.scrape(since=None)
 
-    assert len(cards) > 0
-    for url, addr in cards.items():
-        assert url.startswith("https://www.funda.nl/detail/")
-        assert addr.street, f"missing street for {url}"
-        assert addr.house_number is not None, f"missing house_number for {url}"
-        assert addr.postcode, f"missing postcode for {url}"
-        assert addr.city and addr.city != "unknown", f"missing city for {url}"
+    assert len(listings) > 0
+    for listing in listings:
+        assert listing.detail_url.startswith("https://www.funda.nl/detail/")
+        assert listing.title, f"missing title for {listing.detail_url}"
+        assert listing.price.startswith("€"), f"unexpected price for {listing.detail_url}: {listing.price!r}"
+        assert listing.street, f"missing street for {listing.detail_url}"
+        assert listing.house_number is not None, f"missing house_number for {listing.detail_url}"
+        assert listing.postcode, f"missing postcode for {listing.detail_url}"
+        assert listing.city and listing.city != "unknown", f"missing city for {listing.detail_url}"
+        assert listing.image_url and listing.image_url.startswith("https://cloud.funda.nl"), (
+            f"unexpected image_url for {listing.detail_url}: {listing.image_url!r}"
+        )
+        assert listing.website == "funda"
 
 
-def test_scrape_listing_pages_specific_card(funda_scraper, monkeypatch):
+def test_scrape_specific_card(funda_scraper, monkeypatch):
     monkeypatch.setattr(funda_scraper, "MAX_PAGES", 2)
-    cards = funda_scraper._scrape_listing_pages()
+    listings = funda_scraper.scrape(since=None)
 
-    haarlem = cards["https://www.funda.nl/detail/koop/haarlem/huis-delftlaan-265/43063127/"]
+    haarlem = next(
+        listing
+        for listing in listings
+        if listing.detail_url == "https://www.funda.nl/detail/koop/haarlem/huis-delftlaan-265/43063127/"
+    )
+    assert haarlem.title == "Delftlaan 265"
+    assert haarlem.price == "€ 850.000 k.k."
     assert haarlem.street == "Delftlaan"
     assert haarlem.house_number == 265
     assert haarlem.house_number_suffix is None
     assert haarlem.postcode == "2024 CB"
     assert haarlem.city == "Haarlem"
-
-
-def test_scrape_detail_page_merges_card_address(funda_scraper):
-    detail_url = "https://www.funda.nl/detail/koop/blokker/huis-bangert-58/43063167/"
-    address = _CardAddress(
-        street="Bangert",
-        house_number=58,
-        house_number_suffix=None,
-        postcode="1695 BB",
-        city="Blokker",
-    )
-
-    listing = funda_scraper._scrape_detail_page(detail_url, address)
-
-    assert listing is not None
-    assert listing.detail_url == detail_url
-    assert listing.title == "Bangert 58"
-    assert listing.price == "€ 775.000 k.k."
-    assert listing.city == "Blokker"
-    assert listing.street == "Bangert"
-    assert listing.house_number == 58
-    assert listing.postcode == "1695 BB"
-    assert listing.image_url and listing.image_url.startswith("https://")
-    assert listing.website == "funda"
+    assert haarlem.image_url == "https://cloud.funda.nl/valentina_media/150/090/054.jpg?options=width=228,height=228"
 
 
 def test_is_scraping_detected_true_when_blocked(funda_scraper):
@@ -89,5 +78,5 @@ def test_is_scraping_detected_true_when_blocked(funda_scraper):
 
 
 def test_is_scraping_detected_false_for_normal_page(funda_scraper):
-    normal_html = (MOCK_DATA_DIR / "funda_detail.html").read_text(encoding="utf-8")
+    normal_html = (MOCK_DATA_DIR / "funda_listing.html").read_text(encoding="utf-8")
     assert funda_scraper.is_scraping_detected(normal_html) is False
