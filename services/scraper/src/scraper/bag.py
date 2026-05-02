@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Self
+from typing import Self, cast
 
 import polars as pl
 from loguru import logger
@@ -21,7 +21,7 @@ class ParquetBagLookup:
 
     def __init__(self, parquet_path: Path = BAG_DATA_PATH) -> None:
         self._path = parquet_path
-        self._df: pl.DataFrame | None = None
+        self._df: pl.LazyFrame | None = None
 
     def __enter__(self) -> Self:
         return self
@@ -64,12 +64,10 @@ class ParquetBagLookup:
         )
         return None
 
-    def _df_loaded(self) -> pl.DataFrame:
+    def _df_loaded(self) -> pl.LazyFrame:
         if self._df is None:
-            logger.info(f"Loading BAG parquet from {self._path}")
-            self._df = pl.read_parquet(self._path).with_columns(
-                pl.col("postcode").str.to_uppercase().str.replace_all(" ", "")
-            )
+            logger.info(f"Lazy-scanning BAG parquet from {self._path}")
+            self._df = pl.scan_parquet(self._path)
         return self._df
 
     def _find_candidates(
@@ -81,14 +79,16 @@ class ParquetBagLookup:
     ) -> pl.DataFrame:
         df = self._df_loaded()
         if postcode:
-            return df.filter(
+            collected = df.filter(
                 (pl.col("postcode") == _normalise_postcode(postcode)) & (pl.col("huisnummer") == house_number)
-            )
-        return df.filter(
-            (pl.col("straatnaam").str.to_lowercase() == (street or "").lower())
-            & (pl.col("huisnummer") == house_number)
-            & (pl.col("woonplaats").str.to_lowercase() == city.lower())
-        )
+            ).collect()
+        else:
+            collected = df.filter(
+                (pl.col("straatnaam").str.to_lowercase() == (street or "").lower())
+                & (pl.col("huisnummer") == house_number)
+                & (pl.col("woonplaats").str.to_lowercase() == city.lower())
+            ).collect()
+        return cast(pl.DataFrame, collected)
 
     @staticmethod
     def _filter_by_suffix(candidates: pl.DataFrame, suffix: str) -> pl.DataFrame:
