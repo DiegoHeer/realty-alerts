@@ -28,6 +28,7 @@ class ListingIn(Schema):
     house_number: int | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
+    bag_id: str | None = None
     property_type: str | None = None
     bedrooms: int | None = None
     area_sqm: float | None = None

@@ -224,6 +224,25 @@ def test_submit_results_address_fields_default_to_null(client, api_key_headers, 
     assert listing.house_number is None
     assert listing.house_number_suffix is None
     assert listing.postcode is None
+    assert listing.bag_id is None
+
+
+def test_submit_results_persists_bag_id(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(
+        listings=[
+            listing_payload(
+                "https://example.com/listing/with-bag",
+                bag_id="0003200000133985",
+            ),
+        ],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 200
+    assert Listing.objects.get().bag_id == "0003200000133985"
 
 
 def test_internal_endpoints_require_api_key(client, scrape_payload):
