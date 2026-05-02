@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0004_add_structured_address_fields'),
+        ("scraping", "0004_add_structured_address_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='bag_id',
+            model_name="listing",
+            name="bag_id",
             field=models.CharField(blank=True, db_index=True, max_length=16, null=True),
         ),
     ]
