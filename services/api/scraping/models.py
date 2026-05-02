@@ -29,6 +29,7 @@ class Listing(models.Model):
     house_number = models.PositiveIntegerField(null=True, blank=True)
     house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
     postcode = models.CharField(max_length=10, null=True, blank=True)
+    bag_id = models.CharField(max_length=16, null=True, blank=True, db_index=True)
     property_type = models.CharField(max_length=100, null=True, blank=True)
     bedrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqm = models.FloatField(null=True, blank=True)
