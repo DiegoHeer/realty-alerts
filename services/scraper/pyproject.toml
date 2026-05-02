@@ -9,6 +9,7 @@ dependencies = [
     "httpx>=0.28",
     "loguru>=0.7",
     "playwright>=1.58",
+    "polars>=1.18",
     "pydantic>=2.13",
     "pydantic-settings>=2.9",
     "requests>=2.32",
