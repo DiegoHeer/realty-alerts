@@ -29,9 +29,7 @@ def run() -> None:
     logger.info(f"Starting scraper for {website}")
 
     # Initialize backend client
-    client = BackendClient(
-        base_url=settings.backend_api_url, api_key=settings.realty_api_key
-    )
+    client = BackendClient(base_url=settings.backend_api_url, api_key=settings.realty_api_key)
     if not client.health_check():
         logger.error("Backend API is unreachable — aborting")
         sys.exit(1)

@@ -60,8 +60,7 @@ class ParquetBagLookup:
             return self._first_id(by_city)
 
         logger.warning(
-            f"Ambiguous BAG match for {postcode} {house_number}{suffix or ''} "
-            f"{city}: {candidates.height} candidates"
+            f"Ambiguous BAG match for {postcode} {house_number}{suffix or ''} {city}: {candidates.height} candidates"
         )
         return None
 
@@ -83,8 +82,7 @@ class ParquetBagLookup:
         df = self._df_loaded()
         if postcode:
             return df.filter(
-                (pl.col("postcode") == _normalise_postcode(postcode))
-                & (pl.col("huisnummer") == house_number)
+                (pl.col("postcode") == _normalise_postcode(postcode)) & (pl.col("huisnummer") == house_number)
             )
         return df.filter(
             (pl.col("straatnaam").str.to_lowercase() == (street or "").lower())
@@ -96,15 +94,12 @@ class ParquetBagLookup:
     def _filter_by_suffix(candidates: pl.DataFrame, suffix: str) -> pl.DataFrame:
         s = suffix.upper().strip()
         return candidates.filter(
-            (pl.col("huisletter").str.to_uppercase() == s)
-            | (pl.col("huisnummertoevoeging").str.to_uppercase() == s)
+            (pl.col("huisletter").str.to_uppercase() == s) | (pl.col("huisnummertoevoeging").str.to_uppercase() == s)
         )
 
     @staticmethod
     def _filter_by_city(candidates: pl.DataFrame, city: str) -> pl.DataFrame:
-        return candidates.filter(
-            pl.col("woonplaats").str.to_lowercase() == city.lower()
-        )
+        return candidates.filter(pl.col("woonplaats").str.to_lowercase() == city.lower())
 
     @staticmethod
     def _first_id(candidates: pl.DataFrame) -> str:
