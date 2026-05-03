@@ -1,6 +1,9 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.db.models import Q, QuerySet
+from django.http import HttpRequest
 
 from scraping.models import DeadListing, Listing, ListingUrl, ScrapeRun
+from scraping.services import DeadListingPromotionError, promote_dead_listing
 
 
 class ListingUrlInline(admin.TabularInline):
@@ -42,22 +45,75 @@ class ListingUrlAdmin(admin.ModelAdmin):
     readonly_fields = ("first_seen_at",)
 
 
+_PROMOTION_READY_Q = (
+    Q(bag_id__isnull=False) & ~Q(bag_id__exact="") & ~Q(title__exact="") & ~Q(price__exact="") & ~Q(city__exact="")
+)
+
+
+class PromotionReadyFilter(admin.SimpleListFilter):
+    title = "promotion ready"
+    parameter_name = "promotion_ready"
+
+    def lookups(self, request, model_admin):
+        return (("yes", "Yes"), ("no", "No"))
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.filter(_PROMOTION_READY_Q)
+        if self.value() == "no":
+            return queryset.exclude(_PROMOTION_READY_Q)
+        return queryset
+
+
 @admin.register(DeadListing)
 class DeadListingAdmin(admin.ModelAdmin):
     list_display = (
         "id",
+        "promotion_ready",
         "website",
         "reason",
         "city",
         "street",
         "house_number",
         "postcode",
+        "bag_id",
         "scraped_at",
     )
-    list_filter = ("website", "reason", "city")
-    search_fields = ("title", "detail_url", "street", "postcode")
+    list_filter = (PromotionReadyFilter, "website", "reason", "city")
+    search_fields = ("title", "detail_url", "street", "postcode", "bag_id")
     ordering = ("-scraped_at",)
     readonly_fields = ("created_at", "updated_at")
+    actions = ("promote_action",)
+
+    @admin.display(boolean=True, description="Ready", ordering="bag_id")
+    def promotion_ready(self, obj: DeadListing) -> bool:
+        return obj.is_promotion_ready
+
+    @admin.action(description="Promote to Listing")
+    def promote_action(self, request: HttpRequest, queryset: QuerySet[DeadListing]) -> None:
+        promoted = 0
+        skipped = 0
+        failed = 0
+
+        for dead in queryset:
+            if not dead.is_promotion_ready:
+                skipped += 1
+                self.message_user(
+                    request,
+                    f"DeadListing {dead.pk}: not ready — missing {', '.join(dead.missing_promotion_fields)}.",
+                    level=messages.WARNING,
+                )
+                continue
+            try:
+                promote_dead_listing(dead)
+                promoted += 1
+            except DeadListingPromotionError as exc:
+                failed += 1
+                self.message_user(request, f"DeadListing {dead.pk}: {exc}", level=messages.ERROR)
+
+        summary = f"Promoted {promoted}, skipped {skipped}, failed {failed}."
+        level = messages.SUCCESS if not skipped and not failed else messages.WARNING
+        self.message_user(request, summary, level=level)
 
 
 @admin.register(ScrapeRun)
