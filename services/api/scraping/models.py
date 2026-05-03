@@ -46,11 +46,7 @@ class Listing(models.Model):
     bedrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqm = models.FloatField(null=True, blank=True)
     image_url = models.URLField(max_length=2000, null=True, blank=True)
-    status = models.CharField(
-        max_length=10,
-        choices=ListingStatus.choices,
-        default=ListingStatus.ACTIVE,
-    )
+    status = models.CharField(max_length=10, choices=ListingStatus.choices, default=ListingStatus.ACTIVE)
     scraped_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

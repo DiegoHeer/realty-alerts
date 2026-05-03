@@ -76,26 +76,14 @@ def get_active_runs(request):
 
 @internal_router.post("/scrape-runs/{website}/results", response=ScrapeRunOut)
 def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
+    deduped = _dedup_by_bag_id(payload.listings)
+
+    now = datetime.now(UTC)
     duration = (payload.finished_at - payload.started_at).total_seconds()
     run_status = ScrapeRunStatus.FAILED if payload.error_message else ScrapeRunStatus.SUCCESS
 
-    # A single scrape can surface the same property twice (duplicate cards on a
-    # results page); collapse on bag_id so we don't fight ourselves on the upsert.
-    deduped = _dedup_by_bag_id(payload.listings)
-    payload_bag_ids = {item.bag_id for item in deduped}
-    payload_urls = {item.detail_url for item in deduped}
-    now = datetime.now(UTC)
-
     with transaction.atomic():
-        existing_bag_ids = set(Listing.objects.filter(bag_id__in=payload_bag_ids).values_list("bag_id", flat=True))
-        existing_urls = set(ListingUrl.objects.filter(url__in=payload_urls).values_list("url", flat=True))
-
-        for item in deduped:
-            _upsert_listing(item, scraped_at=now)
-
-        new_properties_count = len(payload_bag_ids - existing_bag_ids)
-        new_listing_urls_count = len(payload_urls - existing_urls)
-
+        new_properties_count, new_listing_urls_count = _ingest_listings(deduped, scraped_at=now)
         _upsert_dead_listings(payload.dead_listings, scraped_at=now)
 
         scrape_run = ScrapeRun.objects.create(
@@ -119,45 +107,40 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
 
 
 def _dedup_by_bag_id(listings: list[ListingIn]) -> list[ListingIn]:
-    """Keep the first occurrence of each bag_id within a single payload."""
+    """Keep the first occurrence of each bag_id within a single payload.
+    A single scrape can surface the same property twice (duplicate cards on a
+    results page); collapse on bag_id so we don't fight ourselves on the upsert.
+    """
     seen: dict[str, ListingIn] = {}
     for item in listings:
         seen.setdefault(item.bag_id, item)
     return list(seen.values())
 
 
+def _ingest_listings(listings: list[ListingIn], *, scraped_at: datetime) -> tuple[int, int]:
+    """Upsert listings, returning (new_properties_count, new_listing_urls_count).
+
+    The "existing" snapshot is taken before any writes so newly-created rows
+    aren't counted as pre-existing.
+    """
+    payload_bag_ids = {item.bag_id for item in listings}
+    payload_urls = {item.detail_url for item in listings}
+    existing_bag_ids = set(Listing.objects.filter(bag_id__in=payload_bag_ids).values_list("bag_id", flat=True))
+    existing_urls = set(ListingUrl.objects.filter(url__in=payload_urls).values_list("url", flat=True))
+
+    for item in listings:
+        _upsert_listing(item, scraped_at=scraped_at)
+
+    return len(payload_bag_ids - existing_bag_ids), len(payload_urls - existing_urls)
+
+
 def _upsert_listing(item: ListingIn, *, scraped_at: datetime) -> Listing:
     listing, created = Listing.objects.get_or_create(
         bag_id=item.bag_id,
-        defaults={
-            "title": item.title,
-            "price": item.price,
-            "price_eur": _parse_price_eur(item.price),
-            "city": item.city,
-            "street": item.street,
-            "house_number": item.house_number,
-            "house_letter": item.house_letter,
-            "house_number_suffix": item.house_number_suffix,
-            "postcode": item.postcode,
-            "property_type": item.property_type,
-            "bedrooms": item.bedrooms,
-            "area_sqm": item.area_sqm,
-            "image_url": item.image_url,
-            "scraped_at": scraped_at,
-        },
+        defaults=_listing_defaults(item, scraped_at=scraped_at),
     )
-
     if not created:
-        # Always-update fields: capture price drops and freshness.
-        listing.price = item.price
-        listing.price_eur = _parse_price_eur(item.price)
-        listing.scraped_at = scraped_at
-        # Complement-only fields: fill columns currently NULL but never
-        # overwrite a value that's already present (including 0 / "").
-        for field in _COMPLEMENT_FIELDS:
-            if getattr(listing, field) is None and (incoming := getattr(item, field)) is not None:
-                setattr(listing, field, incoming)
-        listing.save()
+        _apply_listing_update(listing, item, scraped_at=scraped_at)
 
     # If the URL is already attached to a different Listing (e.g. a parser fix
     # changed the BAG match across runs), keep the existing FK. Re-wiring URLs
@@ -170,28 +153,66 @@ def _upsert_listing(item: ListingIn, *, scraped_at: datetime) -> Listing:
     return listing
 
 
+def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
+    return {
+        "title": item.title,
+        "price": item.price,
+        "price_eur": _parse_price_eur(item.price),
+        "city": item.city,
+        "street": item.street,
+        "house_number": item.house_number,
+        "house_letter": item.house_letter,
+        "house_number_suffix": item.house_number_suffix,
+        "postcode": item.postcode,
+        "property_type": item.property_type,
+        "bedrooms": item.bedrooms,
+        "area_sqm": item.area_sqm,
+        "image_url": item.image_url,
+        "scraped_at": scraped_at,
+    }
+
+
+# TODO: figure out a more elegant way of doing this
+def _apply_listing_update(listing: Listing, item: ListingIn, *, scraped_at: datetime) -> None:
+    # Always-update fields: capture price drops and freshness.
+    listing.price = item.price
+    listing.price_eur = _parse_price_eur(item.price)
+    listing.scraped_at = scraped_at
+    # Complement-only fields: fill columns currently NULL but never
+    # overwrite a value that's already present (including 0 / "").
+    for field in _COMPLEMENT_FIELDS:
+        if getattr(listing, field) is None and (incoming := getattr(item, field)) is not None:
+            setattr(listing, field, incoming)
+    listing.save()
+
+
 def _upsert_dead_listings(dead: list[DeadListingIn], *, scraped_at: datetime) -> None:
-    # Re-categorisation is allowed across runs (e.g. a typo source that gets
-    # fixed and now matches BAG would be removed from listings on next ingest;
-    # if it's still broken we just refresh the row's reason and timestamp).
+    """Re-categorisation is allowed across runs (e.g. a typo source that gets
+    fixed and now matches BAG would be removed from listings on next ingest;
+    if it's still broken we just refresh the row's reason and timestamp).
+    """
     for item in dead:
         DeadListing.objects.update_or_create(
             detail_url=item.detail_url,
-            defaults={
-                "website": item.website,
-                "title": item.title,
-                "price": item.price,
-                "city": item.city,
-                "street": item.street,
-                "house_number": item.house_number,
-                "house_letter": item.house_letter,
-                "house_number_suffix": item.house_number_suffix,
-                "postcode": item.postcode,
-                "image_url": item.image_url,
-                "reason": item.reason,
-                "scraped_at": scraped_at,
-            },
+            defaults=_dead_listing_defaults(item, scraped_at=scraped_at),
         )
+
+
+def _dead_listing_defaults(item: DeadListingIn, *, scraped_at: datetime) -> dict:
+    return {
+        "website": item.website,
+        "title": item.title,
+        "price": item.price,
+        "city": item.city,
+        "street": item.street,
+        "house_number": item.house_number,
+        "house_letter": item.house_letter,
+        "house_number_suffix": item.house_number_suffix,
+        "postcode": item.postcode,
+        "image_url": item.image_url,
+        "reason": item.reason,
+        "scraped_at": scraped_at,
+    }
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
