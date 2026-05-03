@@ -20,6 +20,18 @@ def _coalesce_suffix(huisletter: str | None, huisnummertoevoeging: str | None) -
     return huisnummertoevoeging or None
 
 
+def _format_address(
+    *,
+    postcode: str | None,
+    street: str | None,
+    house_number: int,
+    suffix: str | None,
+    city: str | None,
+) -> str:
+    number = f"{house_number}-{suffix}" if suffix else str(house_number)
+    return f"{postcode or '-'} {street or '-'} {number} {city or '-'}"
+
+
 @dataclass(frozen=True, slots=True)
 class BagMatch:
     bag_id: str
@@ -58,9 +70,10 @@ class ParquetBagLookup:
         if house_number is None:
             return None
 
+        address = _format_address(postcode=postcode, street=street, house_number=house_number, suffix=suffix, city=city)
         candidates = self._find_candidates(street, house_number, postcode, city)
         if candidates.height == 0:
-            logger.warning(f"No BAG match for {postcode or '-'} {street or '-'} {house_number}{suffix or ''} {city}")
+            logger.warning(f"No BAG match for {address}")
             return None
         if candidates.height == 1:
             return self._to_match(candidates)
@@ -74,9 +87,7 @@ class ParquetBagLookup:
         if by_city.height == 1:
             return self._to_match(by_city)
 
-        logger.warning(
-            f"Ambiguous BAG match for {postcode} {house_number}{suffix or ''} {city}: {candidates.height} candidates"
-        )
+        logger.warning(f"Ambiguous BAG match for {address}: {candidates.height} candidates")
         return None
 
     def _df_loaded(self) -> pl.DataFrame:
