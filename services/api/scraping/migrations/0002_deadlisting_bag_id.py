@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0001_initial'),
+        ("scraping", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='deadlisting',
-            name='bag_id',
+            model_name="deadlisting",
+            name="bag_id",
             field=models.CharField(blank=True, max_length=16, null=True),
         ),
     ]

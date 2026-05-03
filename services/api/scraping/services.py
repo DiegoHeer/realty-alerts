@@ -32,13 +32,9 @@ def promote_dead_listing(dead: DeadListing) -> Listing:
         missing = ", ".join(dead.missing_promotion_fields)
         raise DeadListingPromotionError(f"Not ready for promotion. Missing: {missing}")
 
-    has_conflict = (
-        ListingUrl.objects.filter(url=dead.detail_url).exclude(listing__bag_id=dead.bag_id).exists()
-    )
+    has_conflict = ListingUrl.objects.filter(url=dead.detail_url).exclude(listing__bag_id=dead.bag_id).exists()
     if has_conflict:
-        raise DeadListingPromotionError(
-            f"URL {dead.detail_url} is already attached to a different listing"
-        )
+        raise DeadListingPromotionError(f"URL {dead.detail_url} is already attached to a different listing")
 
     with transaction.atomic():
         listing, created = Listing.objects.get_or_create(
