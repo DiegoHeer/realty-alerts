@@ -548,6 +548,49 @@ def test_lookup_silent_when_house_number_missing(bag_parquet: Path, loguru_caplo
     assert not any("No BAG match" in record.message for record in loguru_caplog.records)
 
 
+def test_postcode_typo_falls_back_to_street_number_city(bag_parquet: Path) -> None:
+    """A one-character postcode typo on the source ('9901AB' instead of '9901AA')
+    must not dead-letter the listing — fall back to street + number + city."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Snelgersmastraat",
+            house_number=3,
+            house_letter=None,
+            house_number_suffix=None,
+            postcode="9901 AB",
+            city="Appingedam",
+        )
+    assert _bag_id(match) == "0003200000133985"
+
+
+def test_postcode_miss_without_street_returns_no_match(bag_parquet: Path) -> None:
+    """Fallback needs street to fire — without it, postcode miss stays NO_MATCH."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street=None,
+            house_number=3,
+            house_letter=None,
+            house_number_suffix=None,
+            postcode="9901 AB",
+            city="Appingedam",
+        )
+    assert match is BagMissReason.NO_MATCH
+
+
+def test_postcode_miss_without_city_returns_no_match(bag_parquet: Path) -> None:
+    """Fallback needs city to fire — without it, postcode miss stays NO_MATCH."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Snelgersmastraat",
+            house_number=3,
+            house_letter=None,
+            house_number_suffix=None,
+            postcode="9901 AB",
+            city="",
+        )
+    assert match is BagMissReason.NO_MATCH
+
+
 def test_den_haag_alias_resolves_via_no_postcode_fallback(bag_parquet: Path) -> None:
     """A VastgoedNL-style listing without a postcode lookups by street + city;
     "Den Haag" must alias to BAG's canonical "'s-Gravenhage" or the row is missed."""
