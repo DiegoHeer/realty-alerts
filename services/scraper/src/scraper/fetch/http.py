@@ -1,3 +1,5 @@
+from typing import Self
+
 import requests
 from loguru import logger
 
@@ -19,6 +21,12 @@ class HttpFetch:
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update(_BROWSER_HEADERS)
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
 
     def fetch(self, url: str) -> str:
         logger.debug(f"HTTP fetch: {url}")

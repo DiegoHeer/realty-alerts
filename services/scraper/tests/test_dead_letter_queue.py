@@ -1,7 +1,6 @@
 from typing import Any
 
 from scraper.bag import BagMissReason
-from scraper.client import _dead_listing_payload
 from scraper.enums import Website
 from scraper.models import DeadListing, Listing
 from scraper.runner import _classify_dead_reason
@@ -33,26 +32,24 @@ def test_classify_dead_reason_passes_through_bag_ambiguous() -> None:
     assert _classify_dead_reason(listing, BagMissReason.AMBIGUOUS) == "bag_ambiguous"
 
 
-def test_dead_listing_payload_drops_enrichment_fields() -> None:
-    """The API's DeadListingIn schema only accepts pre-enrichment fields plus
-    `reason` — bag_id and the property metadata are populated by the matcher
-    and have no place on a row that didn't match."""
-    dead = DeadListing(
-        listing=_listing(
-            street="Klaterweg",
-            house_number=9,
-            house_letter="R",
-            house_number_suffix="A59",
-            postcode="1271KE",
-            bag_id="0501100000000001",
-            property_type="apartment",
-            bedrooms=2,
-            area_sqm=70.0,
-            image_url="https://example.com/img.jpg",
-        ),
-        reason="bag_no_match",
+def test_from_listing_drops_enrichment_fields() -> None:
+    """DeadListing mirrors the API's DeadListingIn schema 1:1 — bag_id and the
+    property metadata are populated by the matcher and have no place on a row
+    that didn't match."""
+    listing = _listing(
+        street="Klaterweg",
+        house_number=9,
+        house_letter="R",
+        house_number_suffix="A59",
+        postcode="1271KE",
+        bag_id="0501100000000001",
+        property_type="apartment",
+        bedrooms=2,
+        area_sqm=70.0,
+        image_url="https://example.com/img.jpg",
     )
-    payload = _dead_listing_payload(dead)
+    dead = DeadListing.from_listing(listing, reason="bag_no_match")
+    payload = dead.model_dump()
     assert payload["reason"] == "bag_no_match"
     assert payload["street"] == "Klaterweg"
     assert payload["house_letter"] == "R"

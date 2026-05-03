@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Self
 
 import pytest
 
@@ -31,6 +32,12 @@ class MockFetch:
 
     def close(self) -> None:
         pass
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
 
 
 @pytest.fixture

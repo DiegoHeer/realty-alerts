@@ -1,3 +1,5 @@
+from typing import Self
+
 from loguru import logger
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
@@ -8,6 +10,12 @@ class PlaywrightFetch:
         self.browser_url = browser_url
         self._pw = None
         self._browser = None
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
 
     def fetch(self, url: str) -> str:
         logger.debug(f"Playwright fetch: {url}")
