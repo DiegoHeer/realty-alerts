@@ -7,6 +7,11 @@ import re
 # carry both.
 _BASE_RE = re.compile(r"^\s*(?P<street>.+?)\s+(?P<number>\d+)\s*(?P<rest>.*?)\s*$")
 
+# Single-token "C4"-style suffix: one leading letter + digits, no separator.
+# Splits into (huisletter, huisnummertoevoeging) so "Laan van Vlaanderen 141C4"
+# binds to BAG's (huisletter="C", huisnummertoevoeging="4").
+_LETTER_DIGITS_RE = re.compile(r"([A-Za-z])(\d+)")
+
 # Dutch postcode: 4 digits + 2 uppercase letters, optional space.
 _POSTCODE_RE = re.compile(r"\b(\d{4})\s?([A-Z]{2})\b")
 
@@ -31,6 +36,8 @@ def _split_suffix(rest: str) -> tuple[str | None, str | None]:
     tokens = [token for token in re.split(r"[-\s]+", rest.strip()) if token]
     if not tokens:
         return None, None
+    if len(tokens) == 1 and (m := _LETTER_DIGITS_RE.fullmatch(tokens[0])):
+        return m.group(1), m.group(2)
     if len(tokens[0]) == 1 and tokens[0].isalpha():
         remaining = " ".join(tokens[1:]) if len(tokens) > 1 else None
         return tokens[0], remaining
