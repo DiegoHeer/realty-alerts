@@ -29,19 +29,39 @@ class ListingIn(Schema):
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
-    bag_id: str | None = None
+    bag_id: str
     property_type: str | None = None
     bedrooms: int | None = None
     area_sqm: float | None = None
     image_url: ImageUrl | None = None
 
 
-class ListingOut(ListingIn):
+class ListingUrlOut(Schema):
+    url: str
+    website: Website
+    first_seen_at: datetime
+
+
+class ListingOut(Schema):
     id: int
+    bag_id: str
+    title: str
+    price: str
     price_eur: int | None = None
+    city: str
+    street: str | None = None
+    house_number: int | None = None
+    house_letter: str | None = None
+    house_number_suffix: str | None = None
+    postcode: str | None = None
+    property_type: str | None = None
+    bedrooms: int | None = None
+    area_sqm: float | None = None
+    image_url: str | None = None
     status: ListingStatus
     scraped_at: datetime
     created_at: datetime
+    listing_urls: list[ListingUrlOut]
 
 
 class ScrapeRunOut(Schema):
@@ -51,7 +71,8 @@ class ScrapeRunOut(Schema):
     finished_at: datetime | None
     status: ScrapeRunStatus
     listings_found: int
-    listings_new: int
+    new_properties_count: int
+    new_listing_urls_count: int
     error_message: str | None
     duration_seconds: float | None
 

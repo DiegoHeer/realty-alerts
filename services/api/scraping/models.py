@@ -26,8 +26,13 @@ class DeadListingReason(models.TextChoices):
 
 
 class Listing(models.Model):
-    website = models.CharField(max_length=20, choices=Website.choices)
-    detail_url = models.URLField(max_length=500, unique=True)
+    """One row per physical property, keyed on its BAG ID. Per-portal URLs live
+    in `ListingUrl` so the same property listed on Funda + Pararius collapses
+    to a single row. Status is `ACTIVE` while at least one URL is active and
+    flips to `ARCHIVED` only when every portal drops it (auto-archival logic
+    not yet implemented)."""
+
+    bag_id = models.CharField(max_length=16, unique=True)
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
     price_eur = models.BigIntegerField(null=True, blank=True)
@@ -37,7 +42,6 @@ class Listing(models.Model):
     house_letter = models.CharField(max_length=5, null=True, blank=True)
     house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
     postcode = models.CharField(max_length=10, null=True, blank=True)
-    bag_id = models.CharField(max_length=16, null=True, blank=True, db_index=True)
     property_type = models.CharField(max_length=100, null=True, blank=True)
     bedrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqm = models.FloatField(null=True, blank=True)
@@ -55,11 +59,26 @@ class Listing(models.Model):
         db_table = "listings"
         indexes = [
             models.Index(fields=["city", "property_type", "price_eur"], name="idx_listings_filters"),
-            models.Index(fields=["website", "created_at"], name="idx_listings_website_created"),
         ]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.city})"
+
+
+class ListingUrl(models.Model):
+    listing = models.ForeignKey(Listing, related_name="listing_urls", on_delete=models.CASCADE)
+    website = models.CharField(max_length=20, choices=Website.choices)
+    url = models.URLField(max_length=500, unique=True)
+    first_seen_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "listing_urls"
+        indexes = [
+            models.Index(fields=["website", "first_seen_at"], name="idx_listing_urls_website"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.website}: {self.url}"
 
 
 class DeadListing(models.Model):
@@ -101,7 +120,8 @@ class ScrapeRun(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=ScrapeRunStatus.choices)
     listings_found = models.PositiveIntegerField(default=0)
-    listings_new = models.PositiveIntegerField(default=0)
+    new_properties_count = models.PositiveIntegerField(default=0)
+    new_listing_urls_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(null=True, blank=True)
     duration_seconds = models.FloatField(null=True, blank=True)
 

@@ -49,7 +49,9 @@ class BackendClient:
         response.raise_for_status()
         result = response.json()
         logger.info(
-            f"Submitted {result['listings_found']} listings ({result['listings_new']} new) "
+            f"Submitted {result['listings_found']} listings "
+            f"({result['new_properties_count']} new properties, "
+            f"{result['new_listing_urls_count']} new urls) "
             f"and {len(dead_listings)} dead for {website}"
         )
         return result
