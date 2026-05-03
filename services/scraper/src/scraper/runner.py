@@ -3,11 +3,12 @@ from datetime import UTC, datetime
 
 from loguru import logger
 
-from scraper.bag import ParquetBagLookup, apply_bag_match
+from scraper.bag import BagMatch, BagMissReason, ParquetBagLookup, apply_bag_match
 from scraper.client import BackendClient
 from scraper.enums import Website
 from scraper.fetch.http import HttpFetch
 from scraper.fetch.playwright import PlaywrightFetch
+from scraper.models import DeadListing, Listing
 from scraper.scrapers.funda import FundaScraper
 from scraper.scrapers.pararius import ParariusScraper
 from scraper.scrapers.vastgoed_nl import VastgoedNLScraper
@@ -50,7 +51,8 @@ def run() -> None:
 
     started_at = datetime.now(UTC)
     error_message = None
-    listings = []
+    matched_listings: list[Listing] = []
+    dead_listings: list[DeadListing] = []
 
     try:
         listings = scraper.scrape(since=since)
@@ -58,7 +60,7 @@ def run() -> None:
 
         with ParquetBagLookup() as bag:
             for listing in listings:
-                match = bag.lookup(
+                result = bag.lookup(
                     street=listing.street,
                     house_number=listing.house_number,
                     house_letter=listing.house_letter,
@@ -66,7 +68,11 @@ def run() -> None:
                     postcode=listing.postcode,
                     city=listing.city,
                 )
-                apply_bag_match(listing, match)
+                if isinstance(result, BagMatch):
+                    apply_bag_match(listing, result)
+                    matched_listings.append(listing)
+                else:
+                    dead_listings.append(DeadListing(listing=listing, reason=_classify_dead_reason(listing, result)))
     except Exception as e:
         error_message = str(e)
         logger.exception(f"Scraping failed for {website}")
@@ -78,7 +84,8 @@ def run() -> None:
     try:
         client.submit_results(
             website=website,
-            listings=listings,
+            listings=matched_listings,
+            dead_listings=dead_listings,
             started_at=started_at,
             finished_at=finished_at,
             error_message=error_message,
@@ -91,3 +98,13 @@ def run() -> None:
         sys.exit(1)
 
     logger.info(f"Scraper for {website} completed successfully")
+
+
+def _classify_dead_reason(listing: Listing, bag_reason: BagMissReason) -> str:
+    # house_number is mandatory for any successful parse — when it's missing
+    # the parser didn't recognise the title at all, which is a different
+    # failure mode than "BAG didn't have the address". Surface that
+    # distinction in the DLQ so triage can focus on the right source.
+    if listing.house_number is None:
+        return "parse_failed"
+    return bag_reason.value

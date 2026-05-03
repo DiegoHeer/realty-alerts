@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Self, cast
 
@@ -6,6 +7,18 @@ import polars as pl
 from loguru import logger
 
 from scraper.models import Listing
+
+
+class BagMissReason(StrEnum):
+    """Why the BAG matcher couldn't return a single row. Mirrors the API's
+    `DeadListingReason` for the reasons the matcher itself emits — input
+    quality reasons (parse failure, missing postcode AND street) are
+    classified upstream by the runner."""
+
+    MISSING_HOUSE_NUMBER = "missing_house_number"
+    NO_MATCH = "bag_no_match"
+    AMBIGUOUS = "bag_ambiguous"
+
 
 BAG_DATA_PATH = Path(__file__).resolve().parent / "data" / "bag_addresses.parquet"
 
@@ -81,9 +94,9 @@ class ParquetBagLookup:
         house_number_suffix: str | None,
         postcode: str | None,
         city: str,
-    ) -> BagMatch | None:
+    ) -> BagMatch | BagMissReason:
         if house_number is None:
-            return None
+            return BagMissReason.MISSING_HOUSE_NUMBER
 
         address = _format_address(
             postcode=postcode,
@@ -96,7 +109,7 @@ class ParquetBagLookup:
         candidates = self._find_candidates(street, house_number, postcode, city)
         if candidates.height == 0:
             logger.warning(f"No BAG match for {address}")
-            return None
+            return BagMissReason.NO_MATCH
         if candidates.height == 1:
             return self._to_match(candidates)
         return self._disambiguate(candidates, house_letter, house_number_suffix, city, address)
@@ -108,7 +121,7 @@ class ParquetBagLookup:
         house_number_suffix: str | None,
         city: str,
         address: str,
-    ) -> BagMatch | None:
+    ) -> BagMatch | BagMissReason:
         exact = self._filter_exact_pair(candidates, house_letter, house_number_suffix)
         if exact.height == 1:
             return self._to_match(exact)
@@ -128,7 +141,7 @@ class ParquetBagLookup:
             return self._to_match(main)
 
         logger.warning(f"Ambiguous BAG match for {address}: {candidates.height} candidates")
-        return None
+        return BagMissReason.AMBIGUOUS
 
     def _df_loaded(self) -> pl.LazyFrame:
         if self._df is None:
