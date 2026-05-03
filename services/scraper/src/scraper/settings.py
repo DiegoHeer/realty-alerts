@@ -7,7 +7,6 @@ class Settings(BaseSettings):
 
     # Job-specific
     website: str = Field(...)
-    scrape_scope: str = "all"
 
     # Infrastructure
     backend_api_url: str = "http://localhost:8000"
