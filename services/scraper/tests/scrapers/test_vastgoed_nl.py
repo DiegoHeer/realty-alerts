@@ -1,3 +1,6 @@
+from scraper.enums import ListingStatus
+
+
 def test_scrape_first_page(vastgoed_nl_scraper):
     listings = vastgoed_nl_scraper._scrape_page(page_number=1)
 
@@ -5,6 +8,7 @@ def test_scrape_first_page(vastgoed_nl_scraper):
     assert all(listing.website == "vastgoed_nl" for listing in listings)
     assert all(listing.detail_url for listing in listings)
     assert all(listing.title for listing in listings)
+    assert all(listing.status == ListingStatus.NEW for listing in listings)
 
 
 def test_address_fields_populated(vastgoed_nl_scraper):

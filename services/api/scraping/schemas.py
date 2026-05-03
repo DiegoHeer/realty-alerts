@@ -34,6 +34,7 @@ class ListingIn(Schema):
     bedrooms: int | None = None
     area_sqm: float | None = None
     image_url: ImageUrl | None = None
+    status: ListingStatus = ListingStatus.NEW
 
 
 class ListingUrlOut(Schema):

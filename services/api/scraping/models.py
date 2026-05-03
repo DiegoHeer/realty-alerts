@@ -8,8 +8,9 @@ class Website(models.TextChoices):
 
 
 class ListingStatus(models.TextChoices):
-    ACTIVE = "active", "Active"
-    ARCHIVED = "archived", "Archived"
+    NEW = "new", "Nieuw"
+    SALE_PENDING = "sale_pending", "Verkocht onder voorbehoud"
+    SOLD = "sold", "Verkocht"
 
 
 class ScrapeRunStatus(models.TextChoices):
@@ -28,9 +29,8 @@ class DeadListingReason(models.TextChoices):
 class Listing(models.Model):
     """One row per physical property, keyed on its BAG ID. Per-portal URLs live
     in `ListingUrl` so the same property listed on Funda + Pararius collapses
-    to a single row. Status is `ACTIVE` while at least one URL is active and
-    flips to `ARCHIVED` only when every portal drops it (auto-archival logic
-    not yet implemented)."""
+    to a single row. Status mirrors the portal's own badge (`Nieuw` /
+    `Verkocht onder voorbehoud` / `Verkocht`) and updates on every scrape."""
 
     bag_id = models.CharField(max_length=16, unique=True)
     title = models.CharField(max_length=500)
@@ -46,7 +46,7 @@ class Listing(models.Model):
     bedrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqm = models.FloatField(null=True, blank=True)
     image_url = models.URLField(max_length=2000, null=True, blank=True)
-    status = models.CharField(max_length=10, choices=ListingStatus.choices, default=ListingStatus.ACTIVE)
+    status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
     scraped_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

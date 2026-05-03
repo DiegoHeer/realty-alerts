@@ -2,7 +2,7 @@ from typing import Self
 
 from pydantic import BaseModel
 
-from scraper.enums import Website
+from scraper.enums import ListingStatus, Website
 
 
 class Listing(BaseModel):
@@ -21,6 +21,7 @@ class Listing(BaseModel):
     area_sqm: float | None = None
     image_url: str | None = None
     website: Website
+    status: ListingStatus = ListingStatus.NEW
 
 
 # Mirrors the API's DeadListingIn schema 1:1 — pre-enrichment fields

@@ -6,6 +6,7 @@ from scraping.models import (
     DeadListing,
     DeadListingReason,
     Listing,
+    ListingStatus,
     ListingUrl,
     ScrapeRun,
     ScrapeRunStatus,
@@ -259,6 +260,32 @@ def test_submit_results_always_updates_price_and_scraped_at(client, api_key_head
     assert listing.price == "€ 420.000 k.k."
     assert listing.price_eur == 420_000
     assert listing.scraped_at > first_scraped_at
+
+
+def test_submit_results_persists_status_and_updates_on_repeat(client, api_key_headers, scrape_payload, listing_payload):
+    first = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://example.com/listing/status",
+                bag_id="0003200000000099",
+                status=ListingStatus.SALE_PENDING.value,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+    assert Listing.objects.get(bag_id="0003200000000099").status == ListingStatus.SALE_PENDING
+
+    second = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://example.com/listing/status",
+                bag_id="0003200000000099",
+                status=ListingStatus.SOLD.value,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
+    assert Listing.objects.get(bag_id="0003200000000099").status == ListingStatus.SOLD
 
 
 def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
