@@ -1,3 +1,5 @@
+from typing import Self
+
 import pytest
 
 from scraper.scrapers.base import BaseScraper, ScrapingException
@@ -12,6 +14,12 @@ class _StubFetch:
 
     def close(self) -> None:
         pass
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
 
 
 def test_no_markers_never_flags_block():

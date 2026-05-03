@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Self
 
 import pytest
 
@@ -30,6 +31,12 @@ def test_get_last_page_parses_query_string(html, expected):
 
         def close(self) -> None:
             pass
+
+        def __enter__(self) -> Self:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            self.close()
 
     scraper = FundaScraper(fetch=_Fetch(), base_url="https://www.funda.nl/zoeken/koop")
     assert scraper._get_last_page() == expected
