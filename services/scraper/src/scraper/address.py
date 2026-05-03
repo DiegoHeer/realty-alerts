@@ -30,10 +30,10 @@ def parse_dutch_address(text: str | None) -> tuple[str | None, int | None, str |
 
 
 def parse_dutch_postcode(text: str | None) -> str | None:
-    """Extract a Dutch postcode from text, normalised to 'NNNN AA' form."""
+    """Extract a Dutch postcode from text, normalised to 'NNNNAA' form (BAG canonical)."""
     if not text:
         return None
     match = _POSTCODE_RE.search(text)
     if not match:
         return None
-    return f"{match.group(1)} {match.group(2)}"
+    return f"{match.group(1)}{match.group(2)}"

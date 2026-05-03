@@ -68,7 +68,7 @@ def test_scrape_specific_card(funda_scraper, monkeypatch):
     assert heerhugowaard.street == "Madeliefstraat"
     assert heerhugowaard.house_number == 5
     assert heerhugowaard.house_number_suffix is None
-    assert heerhugowaard.postcode == "1706 AN"
+    assert heerhugowaard.postcode == "1706AN"
     assert heerhugowaard.city == "Heerhugowaard"
     assert heerhugowaard.image_url == "https://cloud.funda.nl/valentina_media/207/398/277.jpg?options=width=228"
 

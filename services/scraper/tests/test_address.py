@@ -33,10 +33,10 @@ def test_parse_dutch_address_unparseable(text: str | None) -> None:
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("3067 ZV Rotterdam (Oosterflank)", "3067 ZV"),
-        ("2024 CB Haarlem", "2024 CB"),
-        ("3067ZV Rotterdam", "3067 ZV"),
-        ("Living at 1234 AB Amsterdam", "1234 AB"),
+        ("3067 ZV Rotterdam (Oosterflank)", "3067ZV"),
+        ("2024 CB Haarlem", "2024CB"),
+        ("3067ZV Rotterdam", "3067ZV"),
+        ("Living at 1234 AB Amsterdam", "1234AB"),
     ],
 )
 def test_parse_dutch_postcode(text: str, expected: str) -> None:

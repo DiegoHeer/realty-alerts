@@ -17,7 +17,7 @@ def test_scrape_first_page(pararius_scraper):
     assert first.street == "Alpen"
     assert first.house_number == 10
     assert first.house_number_suffix is None
-    assert first.postcode == "7007 LV"
+    assert first.postcode == "7007LV"
     assert first.website == "pararius"
 
 
