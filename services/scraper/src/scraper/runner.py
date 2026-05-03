@@ -72,7 +72,7 @@ def run() -> None:
                         matched_listings.append(listing)
                     else:
                         reason = _classify_dead_reason(listing, result)
-                        dead_listings.append(DeadListing(listing=listing, reason=reason))
+                        dead_listings.append(DeadListing.from_listing(listing, reason))
     except Exception as e:
         error_message = str(e)
         logger.exception(f"Scraping failed for {website}")

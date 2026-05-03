@@ -5,23 +5,6 @@ from loguru import logger
 
 from scraper.models import DeadListing, Listing
 
-# Subset of Listing fields the API's DeadListingIn schema accepts. Excludes
-# enrichment fields (bag_id, property_type, bedrooms, area_sqm) — a dead
-# listing by definition didn't reach BAG enrichment.
-_DEAD_LISTING_FIELDS = {
-    "website",
-    "detail_url",
-    "title",
-    "price",
-    "city",
-    "street",
-    "house_number",
-    "house_letter",
-    "house_number_suffix",
-    "postcode",
-    "image_url",
-}
-
 
 class BackendClient:
     def __init__(self, base_url: str, api_key: str) -> None:
@@ -60,7 +43,7 @@ class BackendClient:
             "finished_at": finished_at.isoformat(),
             "error_message": error_message,
             "listings": [listing.model_dump() for listing in listings],
-            "dead_listings": [_dead_listing_payload(dead) for dead in dead_listings],
+            "dead_listings": [dead.model_dump() for dead in dead_listings],
         }
         response = self.client.post(f"/internal/v1/scrape-runs/{website}/results", json=payload)
         response.raise_for_status()
@@ -70,7 +53,3 @@ class BackendClient:
             f"and {len(dead_listings)} dead for {website}"
         )
         return result
-
-
-def _dead_listing_payload(dead: DeadListing) -> dict:
-    return {**dead.listing.model_dump(include=_DEAD_LISTING_FIELDS), "reason": dead.reason}
