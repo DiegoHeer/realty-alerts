@@ -85,6 +85,7 @@ class DeadListing(models.Model):
 
     website = models.CharField(max_length=20, choices=Website.choices)
     detail_url = models.URLField(max_length=500, unique=True)
+    bag_id = models.CharField(max_length=16, null=True, blank=True)
     title = models.CharField(max_length=500)
     price = models.CharField(max_length=100)
     city = models.CharField(max_length=255)
@@ -108,6 +109,23 @@ class DeadListing(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} ({self.reason})"
+
+    @property
+    def is_promotion_ready(self) -> bool:
+        return not self.missing_promotion_fields
+
+    @property
+    def missing_promotion_fields(self) -> list[str]:
+        return [
+            name
+            for name, value in (
+                ("bag_id", self.bag_id),
+                ("title", self.title),
+                ("price", self.price),
+                ("city", self.city),
+            )
+            if not value
+        ]
 
 
 class ScrapeRun(models.Model):

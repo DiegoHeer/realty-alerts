@@ -190,8 +190,21 @@ def _upsert_dead_listings(dead: list[DeadListingIn], *, scraped_at: datetime) ->
     """Re-categorisation is allowed across runs (e.g. a typo source that gets
     fixed and now matches BAG would be removed from listings on next ingest;
     if it's still broken we just refresh the row's reason and timestamp).
+
+    URLs already attached to a real `Listing` are skipped — they were promoted
+    out of the DLQ via /admin and shouldn't bounce back when BAG resolution
+    keeps failing upstream in the scraper.
     """
+    if not dead:
+        return
+
+    urls = [item.detail_url for item in dead]
+    promoted_urls = set(ListingUrl.objects.filter(url__in=urls).values_list("url", flat=True))
+
     for item in dead:
+        if item.detail_url in promoted_urls:
+            continue
+
         DeadListing.objects.update_or_create(
             detail_url=item.detail_url,
             defaults=_dead_listing_defaults(item, scraped_at=scraped_at),
