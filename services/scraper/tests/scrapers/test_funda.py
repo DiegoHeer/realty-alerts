@@ -3,6 +3,7 @@ from typing import Self
 
 import pytest
 
+from scraper.enums import ListingStatus
 from scraper.scrapers.funda import FundaScraper
 
 MOCK_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -59,6 +60,7 @@ def test_scrape_yields_listings(funda_scraper, monkeypatch):
             f"unexpected image_url for {listing.detail_url}: {listing.image_url!r}"
         )
         assert listing.website == "funda"
+        assert listing.status == ListingStatus.NEW
 
 
 def test_scrape_specific_card(funda_scraper, monkeypatch):

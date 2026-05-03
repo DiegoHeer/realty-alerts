@@ -1,3 +1,6 @@
+from scraper.enums import ListingStatus
+
+
 def test_scrape_last_page_number(pararius_scraper):
     last_page = pararius_scraper._get_last_page()
     assert last_page == 5  # capped by MAX_PAGES
@@ -27,6 +30,7 @@ def test_titles_are_non_empty(pararius_scraper):
     assert listings, "fixture should yield listings"
     for listing in listings:
         assert listing.title, f"empty title for {listing.detail_url}"
+        assert listing.status == ListingStatus.NEW
 
 
 def test_image_urls_are_http_or_none(pararius_scraper):

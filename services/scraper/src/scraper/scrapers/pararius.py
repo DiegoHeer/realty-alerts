@@ -11,6 +11,7 @@ from scraper.enums import Website
 from scraper.models import Listing
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
+from scraper.status import detect_status
 
 # Pararius card subtitle format: "<postcode> <city> (<neighborhood>)"
 # e.g. "3067 ZV Rotterdam (Oosterflank)" — neighborhood is optional.
@@ -87,6 +88,7 @@ class ParariusScraper(BaseScraper):
             postcode=postcode,
             image_url=image_url or None,
             website=self.website,
+            status=detect_status(card),
         )
 
     @staticmethod

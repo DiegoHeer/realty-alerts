@@ -11,6 +11,7 @@ from scraper.enums import Website
 from scraper.models import Listing
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
+from scraper.status import detect_status
 
 # Funda card subtitle is "<postcode> <city>" inside div.truncate.text-neutral-80,
 # e.g. "2024 CB Haarlem".
@@ -87,6 +88,7 @@ class FundaScraper(BaseScraper):
             postcode=postcode,
             image_url=_extract_image(card),
             website=self.website,
+            status=detect_status(card),
         )
 
     def _get_last_page(self) -> int:
