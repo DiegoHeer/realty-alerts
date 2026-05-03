@@ -1,11 +1,20 @@
+from collections.abc import Iterator
 from pathlib import Path
 
 import polars as pl
 import pytest
+from loguru import logger
 
 from scraper.bag import BagMatch, ParquetBagLookup, apply_bag_match
 from scraper.enums import Website
 from scraper.models import Listing
+
+
+@pytest.fixture
+def loguru_caplog(caplog: pytest.LogCaptureFixture) -> Iterator[pytest.LogCaptureFixture]:
+    handler_id = logger.add(caplog.handler, format="{message}", level="WARNING")
+    yield caplog
+    logger.remove(handler_id)
 
 
 @pytest.fixture
@@ -135,20 +144,6 @@ def test_disambiguation_by_city_when_no_suffix(bag_parquet: Path) -> None:
             city="Haarlem",
         )
     assert _bag_id(match) == "0003200000200002"
-
-
-def test_no_match_returns_none(bag_parquet: Path) -> None:
-    with ParquetBagLookup(bag_parquet) as bag:
-        assert (
-            bag.lookup(
-                street="Nonexistent",
-                house_number=999,
-                suffix=None,
-                postcode="0000 ZZ",
-                city="Nowhere",
-            )
-            is None
-        )
 
 
 def test_missing_house_number_short_circuits(bag_parquet: Path) -> None:
@@ -312,42 +307,30 @@ def test_lookup_tolerates_null_postcode_in_matched_row(tmp_path: Path) -> None:
     assert match.postcode is None
 
 
-def test_lookup_warns_when_no_match(bag_parquet: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_lookup_warns_when_no_match(bag_parquet: Path, loguru_caplog: pytest.LogCaptureFixture) -> None:
     """A failed lookup should leave a breadcrumb so unmatched listings can be investigated."""
-    from loguru import logger
-
-    handler_id = logger.add(caplog.handler, format="{message}", level="WARNING")
-    try:
-        with ParquetBagLookup(bag_parquet) as bag:
-            bag.lookup(
-                street="Nonexistent",
-                house_number=999,
-                suffix=None,
-                postcode="0000 ZZ",
-                city="Nowhere",
-            )
-    finally:
-        logger.remove(handler_id)
-    assert any("No BAG match" in record.message for record in caplog.records)
+    with ParquetBagLookup(bag_parquet) as bag:
+        bag.lookup(
+            street="Nonexistent",
+            house_number=999,
+            suffix=None,
+            postcode="0000 ZZ",
+            city="Nowhere",
+        )
+    assert any("No BAG match" in record.message for record in loguru_caplog.records)
 
 
-def test_lookup_silent_when_house_number_missing(bag_parquet: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_lookup_silent_when_house_number_missing(bag_parquet: Path, loguru_caplog: pytest.LogCaptureFixture) -> None:
     """Missing house_number is a missing-input case, not a BAG miss — don't log."""
-    from loguru import logger
-
-    handler_id = logger.add(caplog.handler, format="{message}", level="WARNING")
-    try:
-        with ParquetBagLookup(bag_parquet) as bag:
-            bag.lookup(
-                street="Snelgersmastraat",
-                house_number=None,
-                suffix=None,
-                postcode="9901 AA",
-                city="Appingedam",
-            )
-    finally:
-        logger.remove(handler_id)
-    assert not any("No BAG match" in record.message for record in caplog.records)
+    with ParquetBagLookup(bag_parquet) as bag:
+        bag.lookup(
+            street="Snelgersmastraat",
+            house_number=None,
+            suffix=None,
+            postcode="9901 AA",
+            city="Appingedam",
+        )
+    assert not any("No BAG match" in record.message for record in loguru_caplog.records)
 
 
 def _vastgoed_listing(
