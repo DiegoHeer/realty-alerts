@@ -66,7 +66,7 @@ class VastgoedNLScraper(BaseScraper):
         city_el = card.select_one("span.city")
         city = city_el.get_text(strip=True) if city_el else ""
 
-        street, house_number, huisletter, huisnummertoevoeging = parse_dutch_address(title)
+        street, house_number, house_letter, house_number_suffix = parse_dutch_address(title)
 
         return Listing(
             detail_url=detail_url,
@@ -75,8 +75,8 @@ class VastgoedNLScraper(BaseScraper):
             city=city or "unknown",
             street=street,
             house_number=house_number,
-            house_letter=huisletter,
-            house_number_suffix=huisnummertoevoeging,
+            house_letter=house_letter,
+            house_number_suffix=house_number_suffix,
             postcode=None,
             image_url=image_url or None,
             website=self.website,

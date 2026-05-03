@@ -73,7 +73,7 @@ class FundaScraper(BaseScraper):
         postcode = parse_dutch_postcode(subtitle)
         city = _FUNDA_POSTCODE_PREFIX.sub("", subtitle).strip() or "unknown"
 
-        street, house_number, huisletter, huisnummertoevoeging = parse_dutch_address(title)
+        street, house_number, house_letter, house_number_suffix = parse_dutch_address(title)
 
         return Listing(
             detail_url=detail_url,
@@ -82,8 +82,8 @@ class FundaScraper(BaseScraper):
             city=city,
             street=street,
             house_number=house_number,
-            house_letter=huisletter,
-            house_number_suffix=huisnummertoevoeging,
+            house_letter=house_letter,
+            house_number_suffix=house_number_suffix,
             postcode=postcode,
             image_url=_extract_image(card),
             website=self.website,
