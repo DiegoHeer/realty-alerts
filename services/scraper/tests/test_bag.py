@@ -46,8 +46,12 @@ def bag_parquet(tmp_path: Path) -> Path:
                 # 2-column exact match (not just huisletter) wins.
                 "0501100000000001",
                 "0501100000000002",
+                # 's-Gravenhage row reachable from a "Den Haag" query — covers
+                # both the alias map (woonplaats filter) and the canonical-city
+                # writeback in apply_bag_match.
+                "0518100000000001",
             ],
-            "huisnummer": pl.Series([3, 5, 5, 5, 12, 12, 7, 2, 2, 2, 2, 20, 20, 9, 9], dtype=pl.Int32),
+            "huisnummer": pl.Series([3, 5, 5, 5, 12, 12, 7, 2, 2, 2, 2, 20, 20, 9, 9, 1], dtype=pl.Int32),
             "huisletter": [
                 None,
                 None,
@@ -64,6 +68,7 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "B",
                 "R",
                 "R",
+                None,
             ],
             "huisnummertoevoeging": [
                 None,
@@ -81,6 +86,7 @@ def bag_parquet(tmp_path: Path) -> Path:
                 None,
                 "A59",
                 "A60",
+                None,
             ],
             "postcode": [
                 "9901AA",
@@ -98,6 +104,7 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "9901AA",
                 "1271KE",
                 "1271KE",
+                "2511AA",
             ],
             "straatnaam": [
                 "Snelgersmastraat",
@@ -115,6 +122,7 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "Snelgersmastraat",
                 "Klaterweg",
                 "Klaterweg",
+                "Plein",
             ],
             "woonplaats": [
                 "Appingedam",
@@ -132,6 +140,7 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "Appingedam",
                 "Huizen",
                 "Huizen",
+                "'s-Gravenhage",
             ],
         }
     )
@@ -539,6 +548,23 @@ def test_lookup_silent_when_house_number_missing(bag_parquet: Path, loguru_caplo
     assert not any("No BAG match" in record.message for record in loguru_caplog.records)
 
 
+def test_den_haag_alias_resolves_via_no_postcode_fallback(bag_parquet: Path) -> None:
+    """A VastgoedNL-style listing without a postcode lookups by street + city;
+    "Den Haag" must alias to BAG's canonical "'s-Gravenhage" or the row is missed."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Plein",
+            house_number=1,
+            house_letter=None,
+            house_number_suffix=None,
+            postcode=None,
+            city="Den Haag",
+        )
+    assert match is not None
+    assert match.bag_id == "0518100000000001"
+    assert match.city == "'s-Gravenhage"
+
+
 def _vastgoed_listing(
     *,
     postcode: str | None = None,
@@ -615,3 +641,30 @@ def test_apply_bag_match_does_not_overwrite_scraped_house_letter() -> None:
     apply_bag_match(listing, _example_match(huisletter="X", house_number_suffix="X99"))
     assert listing.house_letter == "R"
     assert listing.house_number_suffix == "A59"
+
+
+def test_apply_bag_match_overwrites_city_to_canonical() -> None:
+    """BAG is the canonical source for woonplaats — apply_bag_match always
+    overwrites listing.city, even when the scraper emitted the colloquial form."""
+    listing = Listing(
+        detail_url="https://example.com/123",
+        title="Plein 1",
+        price="€ 250.000",
+        city="Den Haag",
+        street="Plein",
+        house_number=1,
+        postcode="2511AA",
+        image_url=None,
+        website=Website.PARARIUS,
+    )
+    match = BagMatch(
+        bag_id="0518100000000001",
+        postcode="2511AA",
+        street="Plein",
+        house_number=1,
+        huisletter=None,
+        house_number_suffix=None,
+        city="'s-Gravenhage",
+    )
+    apply_bag_match(listing, match)
+    assert listing.city == "'s-Gravenhage"
