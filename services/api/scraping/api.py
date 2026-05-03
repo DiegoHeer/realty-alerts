@@ -168,15 +168,17 @@ def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
         "bedrooms": item.bedrooms,
         "area_sqm": item.area_sqm,
         "image_url": item.image_url,
+        "status": item.status,
         "scraped_at": scraped_at,
     }
 
 
 # TODO: figure out a more elegant way of doing this
 def _apply_listing_update(listing: Listing, item: ListingIn, *, scraped_at: datetime) -> None:
-    # Always-update fields: capture price drops and freshness.
+    # Always-update fields: capture price drops, status transitions, and freshness.
     listing.price = item.price
     listing.price_eur = _parse_price_eur(item.price)
+    listing.status = item.status
     listing.scraped_at = scraped_at
     # Complement-only fields: fill columns currently NULL but never
     # overwrite a value that's already present (including 0 / "").
