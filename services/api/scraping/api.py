@@ -11,8 +11,12 @@ from ninja.security import APIKeyHeader
 from scraping.models import DeadListing, Listing, ListingUrl, ScrapeRun, ScrapeRunStatus, Website
 from scraping.schemas import DeadListingIn, ListingIn, ScrapeResultsIn, ScrapeRunOut
 
-# Fields to fill on existing listings only when the stored value is null/empty.
-# Volatile fields (price, scraped_at) are always overwritten — see the upsert below.
+# Fields to fill on existing listings only when the stored value is NULL.
+# We treat 0 / "" as real values, not blanks — bedrooms=0 (studio) and
+# area_sqm=0.0 (junk parse) are distinct from "we never had this column set".
+# Volatile fields (price, scraped_at) are always overwritten — see the upsert
+# below. `city` is intentionally absent: it's NOT NULL and set on create, so
+# there's nothing to complement.
 _COMPLEMENT_FIELDS = (
     "title",
     "street",
@@ -148,15 +152,17 @@ def _upsert_listing(item: ListingIn, *, scraped_at: datetime) -> Listing:
         listing.price = item.price
         listing.price_eur = _parse_price_eur(item.price)
         listing.scraped_at = scraped_at
-        # Complement-only fields: fill blanks left by an earlier scrape but
-        # don't clobber values that are already there.
+        # Complement-only fields: fill columns currently NULL but never
+        # overwrite a value that's already present (including 0 / "").
         for field in _COMPLEMENT_FIELDS:
-            if not getattr(listing, field):
-                incoming = getattr(item, field)
-                if incoming not in (None, ""):
-                    setattr(listing, field, incoming)
+            if getattr(listing, field) is None and (incoming := getattr(item, field)) is not None:
+                setattr(listing, field, incoming)
         listing.save()
 
+    # If the URL is already attached to a different Listing (e.g. a parser fix
+    # changed the BAG match across runs), keep the existing FK. Re-wiring URLs
+    # between listings is intentionally a manual /admin operation, not the
+    # auto-ingest path.
     ListingUrl.objects.get_or_create(
         url=item.detail_url,
         defaults={"listing": listing, "website": item.website},

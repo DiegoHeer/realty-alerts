@@ -195,6 +195,42 @@ def test_submit_results_complements_missing_fields(client, api_key_headers, scra
     assert listing.bedrooms == 3  # was None, filled by second scrape
 
 
+def test_submit_results_complement_does_not_overwrite_zero_bedrooms(
+    client, api_key_headers, scrape_payload, listing_payload
+):
+    """A studio (bedrooms=0) is a real value, not a blank. The complement-only
+    merge must not treat 0 as missing and overwrite it with a later scrape's
+    non-zero count."""
+    first = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://example.com/listing/studio",
+                bag_id="0003200000000030",
+                bedrooms=0,
+                area_sqm=0.0,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+
+    second = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://pararius.nl/listing/studio",
+                website=Website.PARARIUS.value,
+                bag_id="0003200000000030",
+                bedrooms=3,
+                area_sqm=88.0,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results", json=second, headers=api_key_headers)
+
+    listing = Listing.objects.get(bag_id="0003200000000030")
+    assert listing.bedrooms == 0
+    assert listing.area_sqm == 0.0
+
+
 def test_submit_results_always_updates_price_and_scraped_at(client, api_key_headers, scrape_payload, listing_payload):
     first = scrape_payload(
         listings=[
