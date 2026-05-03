@@ -425,7 +425,7 @@ def test_lookup_returns_bag_match_with_address_fields(bag_parquet: Path) -> None
         postcode="9901AA",
         street="Snelgersmastraat",
         house_number=3,
-        huisletter=None,
+        house_letter=None,
         house_number_suffix=None,
         city="Appingedam",
     )
@@ -446,7 +446,7 @@ def test_lookup_no_match_returns_none(bag_parquet: Path) -> None:
         )
 
 
-def test_bag_match_exposes_huisletter_and_toevoeging_separately(tmp_path: Path) -> None:
+def test_bag_match_exposes_house_letter_and_suffix_separately(tmp_path: Path) -> None:
     """A BAG row with both columns set surfaces both on BagMatch — no coalesce."""
     df = pl.DataFrame(
         {
@@ -471,7 +471,7 @@ def test_bag_match_exposes_huisletter_and_toevoeging_separately(tmp_path: Path) 
             city="Testdorp",
         )
     assert match is not None
-    assert match.huisletter == "B"
+    assert match.house_letter == "B"
     assert match.house_number_suffix == "bis"
 
 
@@ -487,7 +487,7 @@ def test_lookup_suffix_falls_back_to_huisnummertoevoeging(bag_parquet: Path) -> 
             city="Appingedam",
         )
     assert match is not None
-    assert match.huisletter is None
+    assert match.house_letter is None
     assert match.house_number_suffix == "bis"
 
 
@@ -591,7 +591,7 @@ def _vastgoed_listing(
 
 def _example_match(
     *,
-    huisletter: str | None = None,
+    house_letter: str | None = None,
     house_number_suffix: str | None = None,
 ) -> BagMatch:
     return BagMatch(
@@ -599,7 +599,7 @@ def _example_match(
         postcode="9901AA",
         street="Snelgersmastraat",
         house_number=3,
-        huisletter=huisletter,
+        house_letter=house_letter,
         house_number_suffix=house_number_suffix,
         city="Appingedam",
     )
@@ -631,14 +631,14 @@ def test_apply_bag_match_writes_back_house_letter_and_toevoeging() -> None:
     """When the listing didn't carry these fields, the matched BAG row's
     canonical pair is propagated through so the persisted row shows both."""
     listing = _vastgoed_listing()
-    apply_bag_match(listing, _example_match(huisletter="R", house_number_suffix="A59"))
+    apply_bag_match(listing, _example_match(house_letter="R", house_number_suffix="A59"))
     assert listing.house_letter == "R"
     assert listing.house_number_suffix == "A59"
 
 
 def test_apply_bag_match_does_not_overwrite_scraped_house_letter() -> None:
     listing = _vastgoed_listing(house_letter="R", house_number_suffix="A59")
-    apply_bag_match(listing, _example_match(huisletter="X", house_number_suffix="X99"))
+    apply_bag_match(listing, _example_match(house_letter="X", house_number_suffix="X99"))
     assert listing.house_letter == "R"
     assert listing.house_number_suffix == "A59"
 
@@ -662,7 +662,7 @@ def test_apply_bag_match_overwrites_city_to_canonical() -> None:
         postcode="2511AA",
         street="Plein",
         house_number=1,
-        huisletter=None,
+        house_letter=None,
         house_number_suffix=None,
         city="'s-Gravenhage",
     )

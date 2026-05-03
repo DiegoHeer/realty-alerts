@@ -32,15 +32,15 @@ def _format_address(
     postcode: str | None,
     street: str | None,
     house_number: int,
-    huisletter: str | None,
-    huisnummertoevoeging: str | None,
+    house_letter: str | None,
+    house_number_suffix: str | None,
     city: str | None,
 ) -> str:
     parts = [str(house_number)]
-    if huisletter:
-        parts.append(huisletter)
-    if huisnummertoevoeging:
-        parts.append(huisnummertoevoeging)
+    if house_letter:
+        parts.append(house_letter)
+    if house_number_suffix:
+        parts.append(house_number_suffix)
     number = "-".join(parts)
     return f"{postcode or '-'} {street or '-'} {number} {city or '-'}"
 
@@ -51,7 +51,7 @@ class BagMatch:
     postcode: str | None
     street: str | None
     house_number: int
-    huisletter: str | None
+    house_letter: str | None
     house_number_suffix: str | None
     city: str | None
 
@@ -89,8 +89,8 @@ class ParquetBagLookup:
             postcode=postcode,
             street=street,
             house_number=house_number,
-            huisletter=house_letter,
-            huisnummertoevoeging=house_number_suffix,
+            house_letter=house_letter,
+            house_number_suffix=house_number_suffix,
             city=city,
         )
         candidates = self._find_candidates(street, house_number, postcode, city)
@@ -104,17 +104,17 @@ class ParquetBagLookup:
     def _disambiguate(
         self,
         candidates: pl.DataFrame,
-        huisletter: str | None,
-        toevoeging: str | None,
+        house_letter: str | None,
+        house_number_suffix: str | None,
         city: str,
         address: str,
     ) -> BagMatch | None:
-        exact = self._filter_exact_pair(candidates, huisletter, toevoeging)
+        exact = self._filter_exact_pair(candidates, house_letter, house_number_suffix)
         if exact.height == 1:
             return self._to_match(exact)
 
-        if exact.height == 0 and toevoeging and toevoeging.isdigit():
-            by_digits = self._filter_by_toevoeging_digits(candidates, huisletter, toevoeging)
+        if exact.height == 0 and house_number_suffix and house_number_suffix.isdigit():
+            by_digits = self._filter_by_toevoeging_digits(candidates, house_letter, house_number_suffix)
             if by_digits.height == 1:
                 return self._to_match(by_digits)
 
@@ -159,31 +159,31 @@ class ParquetBagLookup:
     @staticmethod
     def _filter_exact_pair(
         candidates: pl.DataFrame,
-        huisletter: str | None,
-        toevoeging: str | None,
+        house_letter: str | None,
+        house_number_suffix: str | None,
     ) -> pl.DataFrame:
         # Treats a None input as "match the NULL row" — that's how a
-        # "Hoofdstraat 12 bis" listing (huisletter=None, toevoeging="bis")
+        # "Hoofdstraat 12 bis" listing (house_letter=None, suffix="bis")
         # binds to the unique BAG row with huisletter NULL and
         # huisnummertoevoeging "bis", and how a bare "Neuweg 14" listing
         # (both None) collapses onto the building's main NULL/NULL row.
         return candidates.filter(
-            _column_matches("huisletter", huisletter) & _column_matches("huisnummertoevoeging", toevoeging)
+            _column_matches("huisletter", house_letter) & _column_matches("huisnummertoevoeging", house_number_suffix)
         )
 
     @staticmethod
     def _filter_by_toevoeging_digits(
         candidates: pl.DataFrame,
-        huisletter: str | None,
-        toevoeging: str,
+        house_letter: str | None,
+        house_number_suffix: str,
     ) -> pl.DataFrame:
-        # Conservative retry: only fires when toevoeging is purely numeric so
+        # Conservative retry: only fires when the suffix is purely numeric so
         # "302" can collapse onto BAG's "V302" without "A302" doing the same.
-        # The huisletter side is still strict — V302 has huisletter NULL, so
-        # an input huisletter of "A" must NOT pull V302 in.
+        # The house_letter side is still strict — V302 has huisletter NULL, so
+        # an input house_letter of "A" must NOT pull V302 in.
         return candidates.filter(
-            _column_matches("huisletter", huisletter)
-            & (pl.col("huisnummertoevoeging").str.replace_all(r"\D", "") == toevoeging)
+            _column_matches("huisletter", house_letter)
+            & (pl.col("huisnummertoevoeging").str.replace_all(r"\D", "") == house_number_suffix)
         )
 
     @staticmethod
@@ -202,7 +202,7 @@ class ParquetBagLookup:
             postcode=row["postcode"],
             street=row["straatnaam"],
             house_number=row["huisnummer"],
-            huisletter=row["huisletter"],
+            house_letter=row["huisletter"],
             house_number_suffix=row["huisnummertoevoeging"],
             city=row["woonplaats"],
         )
@@ -225,7 +225,7 @@ def apply_bag_match(listing: Listing, match: BagMatch | None) -> None:
     if listing.house_number is None:
         listing.house_number = match.house_number
     if listing.house_letter is None:
-        listing.house_letter = match.huisletter
+        listing.house_letter = match.house_letter
     if listing.house_number_suffix is None:
         listing.house_number_suffix = match.house_number_suffix
     if match.city:
