@@ -22,13 +22,18 @@ def api_key_headers() -> dict[str, str]:
 
 @pytest.fixture
 def listing_payload() -> Callable[..., dict[str, Any]]:
-    def _build(detail_url: str = "https://example.com/listing/new", **overrides: Any) -> dict[str, Any]:
+    counter = {"n": 0}
+
+    def _build(detail_url: str | None = None, **overrides: Any) -> dict[str, Any]:
+        counter["n"] += 1
+        n = counter["n"]
         data: dict[str, Any] = {
             "website": Website.FUNDA.value,
-            "detail_url": detail_url,
+            "detail_url": detail_url or f"https://example.com/listing/{n}",
             "title": "Cozy apartment",
             "price": "€ 350.000 k.k.",
             "city": "Amsterdam",
+            "bag_id": f"00032000{n:08d}",
             "property_type": "apartment",
             "bedrooms": 2,
             "area_sqm": 70.0,

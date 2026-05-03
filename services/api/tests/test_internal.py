@@ -2,9 +2,17 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
-from scraping.models import DeadListing, DeadListingReason, Listing, ScrapeRun, ScrapeRunStatus, Website
+from scraping.models import (
+    DeadListing,
+    DeadListingReason,
+    Listing,
+    ListingUrl,
+    ScrapeRun,
+    ScrapeRunStatus,
+    Website,
+)
 
-from tests.factories import ListingFactory, ScrapeRunFactory
+from tests.factories import ListingFactory, ListingUrlFactory, ScrapeRunFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -50,8 +58,8 @@ def test_active_runs_lists_only_running(client, api_key_headers):
 def test_submit_results_creates_run_and_listings(client, api_key_headers, scrape_payload, listing_payload, website):
     payload = scrape_payload(
         listings=[
-            listing_payload("https://example.com/listing/1", website=website.value),
-            listing_payload("https://example.com/listing/2", website=website.value),
+            listing_payload(website=website.value),
+            listing_payload(website=website.value),
         ]
     )
 
@@ -61,18 +69,22 @@ def test_submit_results_creates_run_and_listings(client, api_key_headers, scrape
     body = response.json()
     assert body["website"] == website.value
     assert body["listings_found"] == 2
-    assert body["listings_new"] == 2
+    assert body["new_properties_count"] == 2
+    assert body["new_listing_urls_count"] == 2
     assert body["status"] == ScrapeRunStatus.SUCCESS.value
     assert ScrapeRun.objects.count() == 1
     assert Listing.objects.count() == 2
+    assert ListingUrl.objects.count() == 2
 
 
 def test_submit_results_dedups_existing_listings(client, api_key_headers, scrape_payload, listing_payload):
-    ListingFactory(detail_url="https://example.com/listing/1")
+    existing = ListingFactory(bag_id="0003200000000001")
+    ListingUrlFactory(listing=existing, url="https://example.com/listing/existing", website=Website.FUNDA)
+
     payload = scrape_payload(
         listings=[
-            listing_payload("https://example.com/listing/1"),
-            listing_payload("https://example.com/listing/2"),
+            listing_payload(detail_url="https://example.com/listing/existing", bag_id="0003200000000001"),
+            listing_payload(detail_url="https://example.com/listing/new", bag_id="0003200000000002"),
         ]
     )
 
@@ -83,16 +95,18 @@ def test_submit_results_dedups_existing_listings(client, api_key_headers, scrape
     assert response.status_code == 200
     body = response.json()
     assert body["listings_found"] == 2
-    assert body["listings_new"] == 1
+    assert body["new_properties_count"] == 1
+    assert body["new_listing_urls_count"] == 1
     assert Listing.objects.count() == 2
+    assert ListingUrl.objects.count() == 2
 
 
-def test_submit_results_idempotent_for_duplicate_urls(client, api_key_headers, scrape_payload, listing_payload):
+def test_submit_results_dedups_within_payload_by_bag_id(client, api_key_headers, scrape_payload, listing_payload):
     payload = scrape_payload(
         listings=[
-            listing_payload("https://example.com/listing/1"),
-            listing_payload("https://example.com/listing/1"),
-            listing_payload("https://example.com/listing/2"),
+            listing_payload(detail_url="https://example.com/listing/1", bag_id="0003200000000001"),
+            listing_payload(detail_url="https://example.com/listing/2", bag_id="0003200000000001"),
+            listing_payload(detail_url="https://example.com/listing/3", bag_id="0003200000000002"),
         ]
     )
 
@@ -103,8 +117,112 @@ def test_submit_results_idempotent_for_duplicate_urls(client, api_key_headers, s
     assert response.status_code == 200
     body = response.json()
     assert body["listings_found"] == 3
-    assert body["listings_new"] == 2
+    assert body["new_properties_count"] == 2
     assert Listing.objects.count() == 2
+
+
+def test_submit_results_merges_cross_portal_listing(client, api_key_headers, scrape_payload, listing_payload):
+    funda_payload = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://funda.nl/listing/abc",
+                website=Website.FUNDA.value,
+                bag_id="0003200000133985",
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=funda_payload, headers=api_key_headers)
+
+    pararius_payload = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://pararius.nl/listing/xyz",
+                website=Website.PARARIUS.value,
+                bag_id="0003200000133985",
+            ),
+        ],
+    )
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results",
+        json=pararius_payload,
+        headers=api_key_headers,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["new_properties_count"] == 0
+    assert body["new_listing_urls_count"] == 1
+    assert Listing.objects.count() == 1
+    listing = Listing.objects.get()
+    urls = list(listing.listing_urls.values_list("website", "url").order_by("website"))
+    assert urls == [
+        (Website.FUNDA.value, "https://funda.nl/listing/abc"),
+        (Website.PARARIUS.value, "https://pararius.nl/listing/xyz"),
+    ]
+
+
+def test_submit_results_complements_missing_fields(client, api_key_headers, scrape_payload, listing_payload):
+    first = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://example.com/listing/1",
+                bag_id="0003200000000010",
+                title="Original title",
+                area_sqm=None,
+                bedrooms=None,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+
+    second = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://pararius.nl/listing/1",
+                website=Website.PARARIUS.value,
+                bag_id="0003200000000010",
+                title="Different title from second portal",
+                area_sqm=88.0,
+                bedrooms=3,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results", json=second, headers=api_key_headers)
+
+    listing = Listing.objects.get(bag_id="0003200000000010")
+    assert listing.title == "Original title"  # complement-only: existing wins
+    assert listing.area_sqm == 88.0  # was None, filled by second scrape
+    assert listing.bedrooms == 3  # was None, filled by second scrape
+
+
+def test_submit_results_always_updates_price_and_scraped_at(client, api_key_headers, scrape_payload, listing_payload):
+    first = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://example.com/listing/1",
+                bag_id="0003200000000020",
+                price="€ 450.000 k.k.",
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+    first_scraped_at = Listing.objects.get(bag_id="0003200000000020").scraped_at
+
+    second = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://example.com/listing/1",
+                bag_id="0003200000000020",
+                price="€ 420.000 k.k.",
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
+
+    listing = Listing.objects.get(bag_id="0003200000000020")
+    assert listing.price == "€ 420.000 k.k."
+    assert listing.price_eur == 420_000
+    assert listing.scraped_at > first_scraped_at
 
 
 def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
@@ -118,6 +236,20 @@ def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scr
     assert response.status_code == 422
 
 
+def test_submit_results_rejects_listing_without_bag_id(client, api_key_headers, scrape_payload, listing_payload):
+    item = listing_payload()
+    del item["bag_id"]
+    payload = scrape_payload(listings=[item])
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 422
+    assert "bag_id" in response.content.decode()
+    assert Listing.objects.count() == 0
+
+
 @pytest.mark.parametrize(
     "image_url",
     [
@@ -128,7 +260,7 @@ def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scr
 )
 def test_submit_results_rejects_invalid_image_url(client, api_key_headers, scrape_payload, listing_payload, image_url):
     payload = scrape_payload(
-        listings=[listing_payload("https://example.com/listing/1", image_url=image_url)],
+        listings=[listing_payload(image_url=image_url)],
     )
 
     response = client.post(
@@ -146,7 +278,7 @@ def test_submit_results_accepts_long_signed_image_url(client, api_key_headers, s
     # source of the production 500. 1500 chars must round-trip end-to-end.
     long_url = "https://cdn.example.com/img/" + ("a" * 1500)
     payload = scrape_payload(
-        listings=[listing_payload("https://example.com/listing/long-image", image_url=long_url)],
+        listings=[listing_payload(image_url=long_url)],
     )
 
     response = client.post(
@@ -159,7 +291,7 @@ def test_submit_results_accepts_long_signed_image_url(client, api_key_headers, s
 
 def test_submit_results_rejects_empty_title(client, api_key_headers, scrape_payload, listing_payload):
     payload = scrape_payload(
-        listings=[listing_payload("https://example.com/listing/1", title="")],
+        listings=[listing_payload(title="")],
     )
 
     response = client.post(
@@ -186,7 +318,6 @@ def test_submit_results_persists_structured_address_fields(client, api_key_heade
     payload = scrape_payload(
         listings=[
             listing_payload(
-                "https://example.com/listing/with-address",
                 street="Klaterweg",
                 house_number=9,
                 house_letter="R",
@@ -213,7 +344,7 @@ def test_submit_results_persists_structured_address_fields(client, api_key_heade
 
 def test_submit_results_address_fields_default_to_null(client, api_key_headers, scrape_payload, listing_payload):
     payload = scrape_payload(
-        listings=[listing_payload("https://example.com/listing/no-address")],
+        listings=[listing_payload()],
     )
 
     response = client.post(
@@ -227,17 +358,11 @@ def test_submit_results_address_fields_default_to_null(client, api_key_headers, 
     assert listing.house_letter is None
     assert listing.house_number_suffix is None
     assert listing.postcode is None
-    assert listing.bag_id is None
 
 
 def test_submit_results_persists_bag_id(client, api_key_headers, scrape_payload, listing_payload):
     payload = scrape_payload(
-        listings=[
-            listing_payload(
-                "https://example.com/listing/with-bag",
-                bag_id="0003200000133985",
-            ),
-        ],
+        listings=[listing_payload(bag_id="0003200000133985")],
     )
 
     response = client.post(
