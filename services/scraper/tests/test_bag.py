@@ -5,7 +5,7 @@ import polars as pl
 import pytest
 from loguru import logger
 
-from scraper.bag import BagMatch, ParquetBagLookup, apply_bag_match
+from scraper.bag import BagMatch, BagMissReason, ParquetBagLookup, apply_bag_match
 from scraper.enums import Website
 from scraper.models import Listing
 
@@ -149,8 +149,8 @@ def bag_parquet(tmp_path: Path) -> Path:
     return path
 
 
-def _bag_id(match: BagMatch | None) -> str | None:
-    return match.bag_id if match else None
+def _bag_id(match: BagMatch | BagMissReason) -> str | None:
+    return match.bag_id if isinstance(match, BagMatch) else None
 
 
 def test_exact_postcode_match(bag_parquet: Path) -> None:
@@ -244,7 +244,7 @@ def test_missing_house_number_short_circuits(bag_parquet: Path) -> None:
                 postcode="9901 AA",
                 city="Appingedam",
             )
-            is None
+            is BagMissReason.MISSING_HOUSE_NUMBER
         )
 
 
@@ -262,8 +262,8 @@ def test_postcode_missing_falls_back_to_street_city(bag_parquet: Path) -> None:
     assert _bag_id(match) == "0003200000300001"
 
 
-def test_ambiguous_returns_none(bag_parquet: Path) -> None:
-    """Multiple suffixed candidates and no main row to fall back on → None."""
+def test_ambiguous_returns_reason(bag_parquet: Path) -> None:
+    """Multiple suffixed candidates and no main row to fall back on → AMBIGUOUS."""
     with ParquetBagLookup(bag_parquet) as bag:
         # huisnummer=20 at 9901AA has 2 candidates (huisletter A and B) and
         # no NULL/NULL main row; house_letter "X" matches neither.
@@ -276,7 +276,7 @@ def test_ambiguous_returns_none(bag_parquet: Path) -> None:
                 postcode="9901 AA",
                 city="Appingedam",
             )
-            is None
+            is BagMissReason.AMBIGUOUS
         )
 
 
@@ -376,7 +376,7 @@ def test_unmatched_suffix_without_main_row_still_warns(
             postcode="9901 AA",
             city="Appingedam",
         )
-    assert match is None
+    assert match is BagMissReason.AMBIGUOUS
     assert any("Ambiguous BAG match" in record.message for record in loguru_caplog.records)
 
 
@@ -425,13 +425,13 @@ def test_lookup_returns_bag_match_with_address_fields(bag_parquet: Path) -> None
         postcode="9901AA",
         street="Snelgersmastraat",
         house_number=3,
-        huisletter=None,
+        house_letter=None,
         house_number_suffix=None,
         city="Appingedam",
     )
 
 
-def test_lookup_no_match_returns_none(bag_parquet: Path) -> None:
+def test_lookup_returns_no_match_reason_for_unknown_address(bag_parquet: Path) -> None:
     with ParquetBagLookup(bag_parquet) as bag:
         assert (
             bag.lookup(
@@ -442,11 +442,11 @@ def test_lookup_no_match_returns_none(bag_parquet: Path) -> None:
                 postcode="0000 ZZ",
                 city="Nowhere",
             )
-            is None
+            is BagMissReason.NO_MATCH
         )
 
 
-def test_bag_match_exposes_huisletter_and_toevoeging_separately(tmp_path: Path) -> None:
+def test_bag_match_exposes_house_letter_and_suffix_separately(tmp_path: Path) -> None:
     """A BAG row with both columns set surfaces both on BagMatch — no coalesce."""
     df = pl.DataFrame(
         {
@@ -470,8 +470,8 @@ def test_bag_match_exposes_huisletter_and_toevoeging_separately(tmp_path: Path) 
             postcode="2000 AA",
             city="Testdorp",
         )
-    assert match is not None
-    assert match.huisletter == "B"
+    assert isinstance(match, BagMatch)
+    assert match.house_letter == "B"
     assert match.house_number_suffix == "bis"
 
 
@@ -486,8 +486,8 @@ def test_lookup_suffix_falls_back_to_huisnummertoevoeging(bag_parquet: Path) -> 
             postcode="9901 AA",
             city="Appingedam",
         )
-    assert match is not None
-    assert match.huisletter is None
+    assert isinstance(match, BagMatch)
+    assert match.house_letter is None
     assert match.house_number_suffix == "bis"
 
 
@@ -515,7 +515,7 @@ def test_lookup_tolerates_null_postcode_in_matched_row(tmp_path: Path) -> None:
             postcode=None,
             city="Nulldorp",
         )
-    assert match is not None
+    assert isinstance(match, BagMatch)
     assert match.bag_id == "0003200000500001"
     assert match.postcode is None
 
@@ -560,7 +560,7 @@ def test_den_haag_alias_resolves_via_no_postcode_fallback(bag_parquet: Path) -> 
             postcode=None,
             city="Den Haag",
         )
-    assert match is not None
+    assert isinstance(match, BagMatch)
     assert match.bag_id == "0518100000000001"
     assert match.city == "'s-Gravenhage"
 
@@ -591,7 +591,7 @@ def _vastgoed_listing(
 
 def _example_match(
     *,
-    huisletter: str | None = None,
+    house_letter: str | None = None,
     house_number_suffix: str | None = None,
 ) -> BagMatch:
     return BagMatch(
@@ -599,7 +599,7 @@ def _example_match(
         postcode="9901AA",
         street="Snelgersmastraat",
         house_number=3,
-        huisletter=huisletter,
+        house_letter=house_letter,
         house_number_suffix=house_number_suffix,
         city="Appingedam",
     )
@@ -631,14 +631,14 @@ def test_apply_bag_match_writes_back_house_letter_and_toevoeging() -> None:
     """When the listing didn't carry these fields, the matched BAG row's
     canonical pair is propagated through so the persisted row shows both."""
     listing = _vastgoed_listing()
-    apply_bag_match(listing, _example_match(huisletter="R", house_number_suffix="A59"))
+    apply_bag_match(listing, _example_match(house_letter="R", house_number_suffix="A59"))
     assert listing.house_letter == "R"
     assert listing.house_number_suffix == "A59"
 
 
 def test_apply_bag_match_does_not_overwrite_scraped_house_letter() -> None:
     listing = _vastgoed_listing(house_letter="R", house_number_suffix="A59")
-    apply_bag_match(listing, _example_match(huisletter="X", house_number_suffix="X99"))
+    apply_bag_match(listing, _example_match(house_letter="X", house_number_suffix="X99"))
     assert listing.house_letter == "R"
     assert listing.house_number_suffix == "A59"
 
@@ -662,7 +662,7 @@ def test_apply_bag_match_overwrites_city_to_canonical() -> None:
         postcode="2511AA",
         street="Plein",
         house_number=1,
-        huisletter=None,
+        house_letter=None,
         house_number_suffix=None,
         city="'s-Gravenhage",
     )

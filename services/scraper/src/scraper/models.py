@@ -19,3 +19,12 @@ class Listing(BaseModel):
     area_sqm: float | None = None
     image_url: str | None = None
     website: Website
+
+
+class DeadListing(BaseModel):
+    """A listing that failed BAG enrichment terminally — pairs the scraped
+    Listing with the structured reason the runner derived from the matcher's
+    outcome and the listing's own input quality."""
+
+    listing: Listing
+    reason: str

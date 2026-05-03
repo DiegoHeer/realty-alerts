@@ -41,9 +41,31 @@ def listing_payload() -> Callable[..., dict[str, Any]]:
 
 
 @pytest.fixture
+def dead_listing_payload() -> Callable[..., dict[str, Any]]:
+    def _build(
+        detail_url: str = "https://example.com/dead/new",
+        reason: str = "bag_no_match",
+        **overrides: Any,
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "website": Website.FUNDA.value,
+            "detail_url": detail_url,
+            "title": "Garbage address listing",
+            "price": "€ 250.000",
+            "city": "Amsterdam",
+            "reason": reason,
+        }
+        data.update(overrides)
+        return data
+
+    return _build
+
+
+@pytest.fixture
 def scrape_payload() -> Callable[..., dict[str, Any]]:
     def _build(
         listings: list[dict[str, Any]] | None = None,
+        dead_listings: list[dict[str, Any]] | None = None,
         error_message: str | None = None,
     ) -> dict[str, Any]:
         started = datetime.now(UTC) - timedelta(minutes=5)
@@ -53,6 +75,7 @@ def scrape_payload() -> Callable[..., dict[str, Any]]:
             "finished_at": finished.isoformat(),
             "error_message": error_message,
             "listings": listings or [],
+            "dead_listings": dead_listings or [],
         }
 
     return _build
