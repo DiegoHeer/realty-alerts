@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from loguru import logger
 
-from scraper.bag import ParquetBagLookup
+from scraper.bag import ParquetBagLookup, apply_bag_match
 from scraper.client import BackendClient
 from scraper.enums import Website
 from scraper.fetch.http import HttpFetch
@@ -58,13 +58,14 @@ def run() -> None:
 
         with ParquetBagLookup() as bag:
             for listing in listings:
-                listing.bag_id = bag.lookup_bag_id(
+                match = bag.lookup(
                     street=listing.street,
                     house_number=listing.house_number,
                     suffix=listing.house_number_suffix,
                     postcode=listing.postcode,
                     city=listing.city,
                 )
+                apply_bag_match(listing, match)
     except Exception as e:
         error_message = str(e)
         logger.exception(f"Scraping failed for {website}")
