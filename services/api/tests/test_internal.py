@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
-from scraping.models import Listing, ScrapeRun, ScrapeRunStatus, Website
+from scraping.models import DeadListing, DeadListingReason, Listing, ScrapeRun, ScrapeRunStatus, Website
 
 from tests.factories import ListingFactory, ScrapeRunFactory
 
@@ -246,6 +246,79 @@ def test_submit_results_persists_bag_id(client, api_key_headers, scrape_payload,
 
     assert response.status_code == 200
     assert Listing.objects.get().bag_id == "0003200000133985"
+
+
+def test_submit_results_persists_dead_listings(client, api_key_headers, scrape_payload, dead_listing_payload):
+    payload = scrape_payload(
+        listings=[],
+        dead_listings=[
+            dead_listing_payload(
+                "https://example.com/dead/typo-postcode",
+                reason=DeadListingReason.BAG_NO_MATCH.value,
+                title="Probably typoed postcode",
+                postcode="ZZZZ ZZ",
+            ),
+            dead_listing_payload(
+                "https://example.com/dead/parse-failed",
+                reason=DeadListingReason.PARSE_FAILED.value,
+                title="No number to parse",
+            ),
+        ],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 200
+    assert DeadListing.objects.count() == 2
+    by_reason = {d.reason: d for d in DeadListing.objects.all()}
+    assert set(by_reason) == {DeadListingReason.BAG_NO_MATCH.value, DeadListingReason.PARSE_FAILED.value}
+    assert by_reason[DeadListingReason.BAG_NO_MATCH.value].postcode == "ZZZZ ZZ"
+
+
+def test_submit_results_dead_listings_re_categorise_on_repeat(
+    client, api_key_headers, scrape_payload, dead_listing_payload
+):
+    """A dead listing that reappears in a later run with a different reason
+    must update_or_create on detail_url instead of inserting a duplicate."""
+    first = scrape_payload(
+        dead_listings=[
+            dead_listing_payload(
+                "https://example.com/dead/repeat",
+                reason=DeadListingReason.BAG_AMBIGUOUS.value,
+            ),
+        ],
+    )
+    second = scrape_payload(
+        dead_listings=[
+            dead_listing_payload(
+                "https://example.com/dead/repeat",
+                reason=DeadListingReason.BAG_NO_MATCH.value,
+            ),
+        ],
+    )
+
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
+
+    assert DeadListing.objects.count() == 1
+    assert DeadListing.objects.get().reason == DeadListingReason.BAG_NO_MATCH.value
+
+
+def test_submit_results_rejects_unknown_dead_listing_reason(
+    client, api_key_headers, scrape_payload, dead_listing_payload
+):
+    payload = scrape_payload(
+        dead_listings=[dead_listing_payload(reason="not_a_real_reason")],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 422
+    assert DeadListing.objects.count() == 0
 
 
 def test_internal_endpoints_require_api_key(client, scrape_payload):

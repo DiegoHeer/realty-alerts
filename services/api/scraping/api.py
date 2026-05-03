@@ -8,8 +8,8 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import Listing, ScrapeRun, ScrapeRunStatus, Website
-from scraping.schemas import ScrapeResultsIn, ScrapeRunOut
+from scraping.models import DeadListing, Listing, ScrapeRun, ScrapeRunStatus, Website
+from scraping.schemas import DeadListingIn, ScrapeResultsIn, ScrapeRunOut
 
 
 class HealthOut(Schema):
@@ -91,6 +91,7 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
             Listing.objects.bulk_create(candidates, ignore_conflicts=True)
         existing_count_after = Listing.objects.filter(detail_url__in=detail_urls).count()
         listings_new = existing_count_after - existing_count_before
+        _upsert_dead_listings(payload.dead_listings)
         scrape_run = ScrapeRun.objects.create(
             website=website,
             started_at=payload.started_at,
@@ -102,8 +103,35 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
             duration_seconds=duration,
         )
 
-    logger.info(f"Scrape run for {website}: {listings_new} new / {len(payload.listings)} found in {duration:.1f}s")
+    logger.info(
+        f"Scrape run for {website}: {listings_new} new / {len(payload.listings)} found, "
+        f"{len(payload.dead_listings)} dead in {duration:.1f}s"
+    )
     return scrape_run
+
+
+def _upsert_dead_listings(dead: list[DeadListingIn]) -> None:
+    # Re-categorisation is allowed across runs (e.g. a typo source that gets
+    # fixed and now matches BAG would be removed from listings on next ingest;
+    # if it's still broken we just refresh the row's reason and timestamp).
+    for item in dead:
+        DeadListing.objects.update_or_create(
+            detail_url=item.detail_url,
+            defaults={
+                "website": item.website,
+                "title": item.title,
+                "price": item.price,
+                "city": item.city,
+                "street": item.street,
+                "house_number": item.house_number,
+                "house_letter": item.house_letter,
+                "house_number_suffix": item.house_number_suffix,
+                "postcode": item.postcode,
+                "image_url": item.image_url,
+                "reason": item.reason,
+                "scraped_at": datetime.now(UTC),
+            },
+        )
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
