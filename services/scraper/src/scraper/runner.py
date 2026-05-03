@@ -41,13 +41,9 @@ def run() -> None:
 
     # Initialize fetch strategy
     if website in [Website.FUNDA, Website.PARARIUS]:
-        fetch = PlaywrightFetch(browser_url=settings.browser_url)
+        fetch: HttpFetch | PlaywrightFetch = PlaywrightFetch(browser_url=settings.browser_url)
     else:
         fetch = HttpFetch()
-
-    # Create scraper and run
-    scraper_class = SCRAPER_MAP[website]
-    scraper = scraper_class(fetch=fetch)
 
     started_at = datetime.now(UTC)
     error_message = None
@@ -55,30 +51,33 @@ def run() -> None:
     dead_listings: list[DeadListing] = []
 
     try:
-        listings = scraper.scrape(since=since)
-        logger.info(f"Scraped {len(listings)} listings from {website}")
+        with fetch:
+            scraper_class = SCRAPER_MAP[website]
+            scraper = scraper_class(fetch=fetch)
+            listings = scraper.scrape(since=since)
+            logger.info(f"Scraped {len(listings)} listings from {website}")
 
-        with ParquetBagLookup() as bag:
-            for listing in listings:
-                result = bag.lookup(
-                    street=listing.street,
-                    house_number=listing.house_number,
-                    house_letter=listing.house_letter,
-                    house_number_suffix=listing.house_number_suffix,
-                    postcode=listing.postcode,
-                    city=listing.city,
-                )
-                if isinstance(result, BagMatch):
-                    apply_bag_match(listing, result)
-                    matched_listings.append(listing)
-                else:
-                    dead_listings.append(DeadListing(listing=listing, reason=_classify_dead_reason(listing, result)))
+            with ParquetBagLookup() as bag:
+                for listing in listings:
+                    result = bag.lookup(
+                        street=listing.street,
+                        house_number=listing.house_number,
+                        house_letter=listing.house_letter,
+                        house_number_suffix=listing.house_number_suffix,
+                        postcode=listing.postcode,
+                        city=listing.city,
+                    )
+                    if isinstance(result, BagMatch):
+                        apply_bag_match(listing, result)
+                        matched_listings.append(listing)
+                    else:
+                        reason = _classify_dead_reason(listing, result)
+                        dead_listings.append(DeadListing(listing=listing, reason=reason))
     except Exception as e:
         error_message = str(e)
         logger.exception(f"Scraping failed for {website}")
     finally:
         finished_at = datetime.now(UTC)
-        fetch.close()
 
     # Submit results to backend API
     try:
