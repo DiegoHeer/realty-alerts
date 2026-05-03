@@ -2,8 +2,8 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
-
 from scraping.models import Listing, ScrapeRun, ScrapeRunStatus, Website
+
 from tests.factories import ListingFactory, ScrapeRunFactory
 
 pytestmark = pytest.mark.django_db
@@ -109,7 +109,7 @@ def test_submit_results_idempotent_for_duplicate_urls(client, api_key_headers, s
 
 def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
     payload = scrape_payload(listings=[])
-    payload["started_at"], payload["finished_at"] = payload["finished_at"], payload["started_at"]
+    payload["started_at"], payload["finished_at"] = (payload["finished_at"], payload["started_at"])
 
     response = client.post(
         f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
@@ -187,12 +187,13 @@ def test_submit_results_persists_structured_address_fields(client, api_key_heade
         listings=[
             listing_payload(
                 "https://example.com/listing/with-address",
-                street="Hoofdstraat",
-                house_number=12,
-                house_number_suffix="A",
-                postcode="1234 AB",
-                city="Amsterdam",
-            ),
+                street="Klaterweg",
+                house_number=9,
+                house_letter="R",
+                house_number_suffix="A59",
+                postcode="1271 KE",
+                city="Huizen",
+            )
         ],
     )
 
@@ -202,11 +203,12 @@ def test_submit_results_persists_structured_address_fields(client, api_key_heade
 
     assert response.status_code == 200
     listing = Listing.objects.get()
-    assert listing.street == "Hoofdstraat"
-    assert listing.house_number == 12
-    assert listing.house_number_suffix == "A"
-    assert listing.postcode == "1234 AB"
-    assert listing.city == "Amsterdam"
+    assert listing.street == "Klaterweg"
+    assert listing.house_number == 9
+    assert listing.house_letter == "R"
+    assert listing.house_number_suffix == "A59"
+    assert listing.postcode == "1271 KE"
+    assert listing.city == "Huizen"
 
 
 def test_submit_results_address_fields_default_to_null(client, api_key_headers, scrape_payload, listing_payload):
@@ -222,6 +224,7 @@ def test_submit_results_address_fields_default_to_null(client, api_key_headers, 
     listing = Listing.objects.get()
     assert listing.street is None
     assert listing.house_number is None
+    assert listing.house_letter is None
     assert listing.house_number_suffix is None
     assert listing.postcode is None
     assert listing.bag_id is None

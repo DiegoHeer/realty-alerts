@@ -56,4 +56,5 @@ def test_house_number_with_letter_suffix(pararius_scraper):
     listing = by_title["Baarlosestraat 31 a"]
     assert listing.street == "Baarlosestraat"
     assert listing.house_number == 31
-    assert listing.house_number_suffix == "a"
+    assert listing.house_letter == "a"
+    assert listing.house_number_suffix is None

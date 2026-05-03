@@ -73,7 +73,7 @@ class ParariusScraper(BaseScraper):
         subtitle_el = card.select_one("div.listing-search-item__sub-title")
         subtitle = subtitle_el.get_text(strip=True) if subtitle_el else ""
         postcode, city = self._parse_subtitle(subtitle)
-        street, house_number, suffix = parse_dutch_address(title)
+        street, house_number, house_letter, house_number_suffix = parse_dutch_address(title)
 
         return Listing(
             detail_url=detail_url,
@@ -82,7 +82,8 @@ class ParariusScraper(BaseScraper):
             city=city or "unknown",
             street=street,
             house_number=house_number,
-            house_number_suffix=suffix,
+            house_letter=house_letter,
+            house_number_suffix=house_number_suffix,
             postcode=postcode,
             image_url=image_url or None,
             website=self.website,

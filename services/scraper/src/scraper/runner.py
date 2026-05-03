@@ -61,7 +61,8 @@ def run() -> None:
                 match = bag.lookup(
                     street=listing.street,
                     house_number=listing.house_number,
-                    suffix=listing.house_number_suffix,
+                    house_letter=listing.house_letter,
+                    house_number_suffix=listing.house_number_suffix,
                     postcode=listing.postcode,
                     city=listing.city,
                 )
