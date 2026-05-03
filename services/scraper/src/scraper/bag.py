@@ -10,8 +10,21 @@ from scraper.models import Listing
 BAG_DATA_PATH = Path(__file__).resolve().parent / "data" / "bag_addresses.parquet"
 
 
+# Map of common colloquial Dutch city names to BAG's canonical woonplaats.
+# Pararius/Funda surface "Den Haag" / "Den Bosch" while BAG stores the older
+# 's-X form. Keys are lowercased for case-insensitive lookup.
+_CITY_ALIASES: dict[str, str] = {
+    "den haag": "'s-Gravenhage",
+    "den bosch": "'s-Hertogenbosch",
+}
+
+
 def _normalise_postcode(postcode: str) -> str:
     return postcode.upper().replace(" ", "")
+
+
+def _canonicalise_city(city: str) -> str:
+    return _CITY_ALIASES.get(city.lower(), city)
 
 
 def _format_address(
@@ -139,7 +152,7 @@ class ParquetBagLookup:
             collected = df.filter(
                 (pl.col("straatnaam").str.to_lowercase() == (street or "").lower())
                 & (pl.col("huisnummer") == house_number)
-                & (pl.col("woonplaats").str.to_lowercase() == city.lower())
+                & (pl.col("woonplaats").str.to_lowercase() == _canonicalise_city(city).lower())
             ).collect()
         return cast(pl.DataFrame, collected)
 
@@ -175,7 +188,7 @@ class ParquetBagLookup:
 
     @staticmethod
     def _filter_by_city(candidates: pl.DataFrame, city: str) -> pl.DataFrame:
-        return candidates.filter(pl.col("woonplaats").str.to_lowercase() == city.lower())
+        return candidates.filter(pl.col("woonplaats").str.to_lowercase() == _canonicalise_city(city).lower())
 
     @staticmethod
     def _filter_main_address(candidates: pl.DataFrame) -> pl.DataFrame:
@@ -215,3 +228,5 @@ def apply_bag_match(listing: Listing, match: BagMatch | None) -> None:
         listing.house_letter = match.huisletter
     if listing.house_number_suffix is None:
         listing.house_number_suffix = match.house_number_suffix
+    if match.city:
+        listing.city = match.city
