@@ -67,7 +67,6 @@ class PromotionReadyFilter(admin.SimpleListFilter):
 
 @admin.register(DeadListing)
 class DeadListingAdmin(admin.ModelAdmin):
-    change_form_template = "admin/scraping/deadlisting/change_form.html"
     list_display = (
         "id",
         "promotion_ready",
@@ -90,34 +89,31 @@ class DeadListingAdmin(admin.ModelAdmin):
     def promotion_ready(self, obj: DeadListing) -> bool:
         return obj.is_promotion_ready
 
-    def render_change_form(self, request, context, *args, **kwargs):
-        obj: DeadListing | None = context.get("original")
-        if obj is not None:
-            context["promotion_ready"] = obj.is_promotion_ready
-            context["promotion_missing_fields"] = obj.missing_promotion_fields
-        return super().render_change_form(request, context, *args, **kwargs)
-
     @admin.action(description="Promote to Listing")
     def promote_action(self, request: HttpRequest, queryset: QuerySet[DeadListing]) -> None:
-        promoted: list[int] = []
-        skipped: list[int] = []
-        failed: list[tuple[int, str]] = []
+        promoted = 0
+        skipped = 0
+        failed = 0
 
         for dead in queryset:
             if not dead.is_promotion_ready:
-                skipped.append(dead.pk)
+                skipped += 1
+                self.message_user(
+                    request,
+                    f"DeadListing {dead.pk}: not ready — missing {', '.join(dead.missing_promotion_fields)}.",
+                    level=messages.WARNING,
+                )
                 continue
             try:
                 promote_dead_listing(dead)
-                promoted.append(dead.pk)
+                promoted += 1
             except DeadListingPromotionError as exc:
-                failed.append((dead.pk, str(exc)))
+                failed += 1
+                self.message_user(request, f"DeadListing {dead.pk}: {exc}", level=messages.ERROR)
 
-        summary = f"Promoted {len(promoted)}, skipped {len(skipped)} (not ready), failed {len(failed)}."
+        summary = f"Promoted {promoted}, skipped {skipped}, failed {failed}."
         level = messages.SUCCESS if not skipped and not failed else messages.WARNING
         self.message_user(request, summary, level=level)
-        for pk, reason in failed:
-            self.message_user(request, f"DeadListing {pk}: {reason}", level=messages.ERROR)
 
 
 @admin.register(ScrapeRun)

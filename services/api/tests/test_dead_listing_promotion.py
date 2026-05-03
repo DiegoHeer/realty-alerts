@@ -239,6 +239,7 @@ def test_promote_action_promotes_ready_skips_not_ready(admin_client):
         DeadListing,
         DeadListingFactory(
             bag_id=None,
+            title="",
             detail_url="https://example.com/dead/not-ready",
         ),
     )
@@ -249,10 +250,16 @@ def test_promote_action_promotes_ready_skips_not_ready(admin_client):
     assert not DeadListing.objects.filter(pk=ready.pk).exists()
     assert DeadListing.objects.filter(pk=not_ready.pk).exists()
     assert Listing.objects.filter(bag_id="0003200000000010").exists()
-    summary = next(m for m in response.context["messages"] if "Promoted" in m.message)
-    assert "Promoted 1" in summary.message
-    assert "skipped 1" in summary.message
-    assert "failed 0" in summary.message
+
+    messages_text = [m.message for m in response.context["messages"]]
+    summary = next(m for m in messages_text if "Promoted" in m)
+    assert "Promoted 1" in summary
+    assert "skipped 1" in summary
+    assert "failed 0" in summary
+    not_ready_warning = next(m for m in messages_text if f"DeadListing {not_ready.pk}" in m)
+    assert "not ready" in not_ready_warning
+    assert "bag_id" in not_ready_warning
+    assert "title" in not_ready_warning
 
 
 def test_promote_action_continues_after_per_row_error(admin_client):
