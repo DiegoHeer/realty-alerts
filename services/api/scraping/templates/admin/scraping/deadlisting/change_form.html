@@ -5,7 +5,8 @@
     {% if promotion_ready %}
       <div class="messagelist" style="margin-bottom: 1rem;">
         <div class="success" style="padding: 10px 15px; border-radius: 4px;">
-          Ready to promote — fill in or correct any fields, then click <strong>Promote to Listing</strong> below.
+          Ready to promote — return to the list view and run the
+          <strong>Promote to Listing</strong> action.
         </div>
       </div>
     {% else %}
@@ -16,21 +17,6 @@
         </div>
       </div>
     {% endif %}
-  {% endif %}
-  {{ block.super }}
-{% endblock %}
-
-{% block submit_buttons_bottom %}
-  {% if original %}
-    <div class="submit-row">
-      <input
-        type="submit"
-        name="_promote"
-        value="Promote to Listing"
-        class="default"
-        {% if not promotion_ready %}disabled title="Save the missing fields first."{% endif %}
-      />
-    </div>
   {% endif %}
   {{ block.super }}
 {% endblock %}

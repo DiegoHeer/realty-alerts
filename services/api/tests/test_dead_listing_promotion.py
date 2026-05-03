@@ -207,3 +207,86 @@ def test_upsert_dead_listings_skips_url_already_a_listing_url(
 
     assert response.status_code == 200
     assert DeadListing.objects.count() == 0
+
+
+_DEAD_LISTING_CHANGELIST_URL = "/admin/scraping/deadlisting/"
+
+
+def _run_promote_action(admin_client, dead_listing_pks: list[int]):
+    return admin_client.post(
+        _DEAD_LISTING_CHANGELIST_URL,
+        data={
+            "action": "promote_action",
+            "_selected_action": [str(pk) for pk in dead_listing_pks],
+            "index": "0",
+        },
+        follow=True,
+    )
+
+
+def test_promote_action_promotes_ready_skips_not_ready(admin_client):
+    ready = cast(
+        DeadListing,
+        DeadListingFactory(
+            bag_id="0003200000000010",
+            detail_url="https://example.com/dead/ready",
+            title="Ready row",
+            price="€ 300.000 k.k.",
+            city="Amsterdam",
+        ),
+    )
+    not_ready = cast(
+        DeadListing,
+        DeadListingFactory(
+            bag_id=None,
+            detail_url="https://example.com/dead/not-ready",
+        ),
+    )
+
+    response = _run_promote_action(admin_client, [ready.pk, not_ready.pk])
+
+    assert response.status_code == 200
+    assert not DeadListing.objects.filter(pk=ready.pk).exists()
+    assert DeadListing.objects.filter(pk=not_ready.pk).exists()
+    assert Listing.objects.filter(bag_id="0003200000000010").exists()
+    summary = next(m for m in response.context["messages"] if "Promoted" in m.message)
+    assert "Promoted 1" in summary.message
+    assert "skipped 1" in summary.message
+    assert "failed 0" in summary.message
+
+
+def test_promote_action_continues_after_per_row_error(admin_client):
+    """A URL conflict on one row must not block promotion of the others."""
+    occupied = cast(Listing, ListingFactory(bag_id="0003200000000020"))
+    ListingUrlFactory(listing=occupied, url="https://example.com/dead/conflicting-url")
+
+    conflicting = cast(
+        DeadListing,
+        DeadListingFactory(
+            bag_id="0003200000000021",  # different bag_id from occupied
+            detail_url="https://example.com/dead/conflicting-url",
+            title="Conflicting row",
+            price="€ 200.000 k.k.",
+            city="Amsterdam",
+        ),
+    )
+    ok = cast(
+        DeadListing,
+        DeadListingFactory(
+            bag_id="0003200000000022",
+            detail_url="https://example.com/dead/ok",
+            title="OK row",
+            price="€ 250.000 k.k.",
+            city="Amsterdam",
+        ),
+    )
+
+    response = _run_promote_action(admin_client, [conflicting.pk, ok.pk])
+
+    assert response.status_code == 200
+    assert DeadListing.objects.filter(pk=conflicting.pk).exists()
+    assert not DeadListing.objects.filter(pk=ok.pk).exists()
+    assert Listing.objects.filter(bag_id="0003200000000022").exists()
+    messages_text = [m.message for m in response.context["messages"]]
+    assert any("Promoted 1" in m and "failed 1" in m for m in messages_text)
+    assert any(f"DeadListing {conflicting.pk}" in m and "different listing" in m for m in messages_text)

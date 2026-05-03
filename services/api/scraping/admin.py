@@ -1,8 +1,6 @@
 from django.contrib import admin, messages
-from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect
-from django.urls import reverse
+from django.db.models import Q, QuerySet
+from django.http import HttpRequest
 
 from scraping.models import DeadListing, Listing, ListingUrl, ScrapeRun
 from scraping.services import DeadListingPromotionError, promote_dead_listing
@@ -86,6 +84,7 @@ class DeadListingAdmin(admin.ModelAdmin):
     search_fields = ("title", "detail_url", "street", "postcode", "bag_id")
     ordering = ("-scraped_at",)
     readonly_fields = ("created_at", "updated_at")
+    actions = ("promote_action",)
 
     @admin.display(boolean=True, description="Ready", ordering="bag_id")
     def promotion_ready(self, obj: DeadListing) -> bool:
@@ -98,24 +97,27 @@ class DeadListingAdmin(admin.ModelAdmin):
             context["promotion_missing_fields"] = obj.missing_promotion_fields
         return super().render_change_form(request, context, *args, **kwargs)
 
-    def response_change(self, request: HttpRequest, obj: DeadListing) -> HttpResponse:
-        if "_promote" in request.POST:
-            return self._handle_promote(request, obj)
-        return super().response_change(request, obj)
+    @admin.action(description="Promote to Listing")
+    def promote_action(self, request: HttpRequest, queryset: QuerySet[DeadListing]) -> None:
+        promoted: list[int] = []
+        skipped: list[int] = []
+        failed: list[tuple[int, str]] = []
 
-    def _handle_promote(self, request: HttpRequest, obj: DeadListing) -> HttpResponse:
-        try:
-            listing = promote_dead_listing(obj)
-        except DeadListingPromotionError as exc:
-            self.message_user(request, str(exc), level=messages.ERROR)
-            return redirect(request.path)
+        for dead in queryset:
+            if not dead.is_promotion_ready:
+                skipped.append(dead.pk)
+                continue
+            try:
+                promote_dead_listing(dead)
+                promoted.append(dead.pk)
+            except DeadListingPromotionError as exc:
+                failed.append((dead.pk, str(exc)))
 
-        self.message_user(
-            request,
-            f"Promoted dead listing {obj.pk} to listing {listing.pk} ({listing.bag_id}).",
-            level=messages.SUCCESS,
-        )
-        return redirect(reverse("admin:scraping_listing_change", args=[listing.pk]))
+        summary = f"Promoted {len(promoted)}, skipped {len(skipped)} (not ready), failed {len(failed)}."
+        level = messages.SUCCESS if not skipped and not failed else messages.WARNING
+        self.message_user(request, summary, level=level)
+        for pk, reason in failed:
+            self.message_user(request, f"DeadListing {pk}: {reason}", level=messages.ERROR)
 
 
 @admin.register(ScrapeRun)
