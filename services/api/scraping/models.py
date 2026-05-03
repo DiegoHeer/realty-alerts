@@ -27,6 +27,7 @@ class Listing(models.Model):
     city = models.CharField(max_length=255, db_index=True)
     street = models.CharField(max_length=255, null=True, blank=True)
     house_number = models.PositiveIntegerField(null=True, blank=True)
+    house_letter = models.CharField(max_length=5, null=True, blank=True)
     house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
     postcode = models.CharField(max_length=10, null=True, blank=True)
     bag_id = models.CharField(max_length=16, null=True, blank=True, db_index=True)

@@ -71,6 +71,7 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
             city=listing.city,
             street=listing.street,
             house_number=listing.house_number,
+            house_letter=listing.house_letter,
             house_number_suffix=listing.house_number_suffix,
             postcode=listing.postcode,
             bag_id=listing.bag_id,
