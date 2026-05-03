@@ -284,6 +284,34 @@ def test_lookup_suffix_falls_back_to_huisnummertoevoeging(bag_parquet: Path) -> 
     assert match.house_number_suffix == "bis"
 
 
+def test_lookup_tolerates_null_postcode_in_matched_row(tmp_path: Path) -> None:
+    """~3% of BAG rows have null postcode — must not raise during BagMatch construction."""
+    df = pl.DataFrame(
+        {
+            "nummeraanduiding_id": ["0003200000500001"],
+            "huisnummer": pl.Series([1], dtype=pl.Int32),
+            "huisletter": pl.Series([None], dtype=pl.String),
+            "huisnummertoevoeging": pl.Series([None], dtype=pl.String),
+            "postcode": pl.Series([None], dtype=pl.String),
+            "straatnaam": ["Nullstraat"],
+            "woonplaats": ["Nulldorp"],
+        }
+    )
+    path = tmp_path / "bag-null-postcode.parquet"
+    df.write_parquet(path)
+    with ParquetBagLookup(path) as bag:
+        match = bag.lookup(
+            street="Nullstraat",
+            house_number=1,
+            suffix=None,
+            postcode=None,
+            city="Nulldorp",
+        )
+    assert match is not None
+    assert match.bag_id == "0003200000500001"
+    assert match.postcode is None
+
+
 def test_lookup_warns_when_no_match(bag_parquet: Path, caplog: pytest.LogCaptureFixture) -> None:
     """A failed lookup should leave a breadcrumb so unmatched listings can be investigated."""
     from loguru import logger

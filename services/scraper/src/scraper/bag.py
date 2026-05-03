@@ -1,9 +1,9 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Self
 
 import polars as pl
 from loguru import logger
-from pydantic import BaseModel
 
 from scraper.models import Listing
 
@@ -15,27 +15,23 @@ def _normalise_postcode(postcode: str) -> str:
 
 
 def _coalesce_suffix(huisletter: str | None, huisnummertoevoeging: str | None) -> str | None:
-    """Pick a single suffix from BAG's two suffix columns. Prefer huisletter."""
     if huisletter:
         return huisletter
     return huisnummertoevoeging or None
 
 
-class BagMatch(BaseModel):
+@dataclass(frozen=True, slots=True)
+class BagMatch:
     bag_id: str
-    postcode: str
-    street: str
+    postcode: str | None
+    street: str | None
     house_number: int
     house_number_suffix: str | None
-    city: str
+    city: str | None
 
 
 class ParquetBagLookup:
-    """Temporary BAG lookup backed by a local parquet snapshot.
-
-    The future HTTP-backed client will conform to this same return shape
-    (BagMatch | None) so runner.py only changes its constructor call.
-    """
+    """BAG lookup backed by a local parquet snapshot."""
 
     def __init__(self, parquet_path: Path = BAG_DATA_PATH) -> None:
         self._path = parquet_path
@@ -134,11 +130,6 @@ class ParquetBagLookup:
 
 
 def apply_bag_match(listing: Listing, match: BagMatch | None) -> None:
-    """Backfill any address field on the listing that the scraper left as None.
-
-    bag_id is always assigned from the match. Other fields are only filled
-    when the listing's value is None — scraped values are never overwritten.
-    """
     if match is None:
         return
     listing.bag_id = match.bag_id
