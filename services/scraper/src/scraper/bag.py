@@ -157,17 +157,39 @@ class ParquetBagLookup:
         city: str,
     ) -> pl.DataFrame:
         df = self._df_loaded()
-        if postcode:
-            collected = df.filter(
+        if not postcode:
+            return self._collect_by_street_number_city(df, street, house_number, city)
+        collected = cast(
+            pl.DataFrame,
+            df.filter(
                 (pl.col("postcode") == _normalise_postcode(postcode)) & (pl.col("huisnummer") == house_number)
-            ).collect()
-        else:
-            collected = df.filter(
+            ).collect(),
+        )
+        if collected.height == 0 and street and city:
+            # Source-side postcode typos (one bad character) were dropping otherwise-valid
+            # listings into the DLQ — retry on the same fields the no-postcode branch uses.
+            logger.debug(
+                f"Postcode {postcode} matched no BAG rows; retrying with street+number+city "
+                f"({street} {house_number}, {city})"
+            )
+            return self._collect_by_street_number_city(df, street, house_number, city)
+        return collected
+
+    @staticmethod
+    def _collect_by_street_number_city(
+        df: pl.LazyFrame,
+        street: str | None,
+        house_number: int,
+        city: str,
+    ) -> pl.DataFrame:
+        return cast(
+            pl.DataFrame,
+            df.filter(
                 (pl.col("straatnaam").str.to_lowercase() == (street or "").lower())
                 & (pl.col("huisnummer") == house_number)
                 & (pl.col("woonplaats").str.to_lowercase() == _canonicalise_city(city).lower())
-            ).collect()
-        return cast(pl.DataFrame, collected)
+            ).collect(),
+        )
 
     @staticmethod
     def _filter_exact_pair(
