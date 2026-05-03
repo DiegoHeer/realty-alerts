@@ -12,7 +12,8 @@ from scraper.models import Listing
 
 @pytest.fixture
 def loguru_caplog(caplog: pytest.LogCaptureFixture) -> Iterator[pytest.LogCaptureFixture]:
-    handler_id = logger.add(caplog.handler, format="{message}", level="WARNING")
+    handler_id = logger.add(caplog.handler, format="{message}", level="INFO")
+    caplog.set_level("INFO")
     yield caplog
     logger.remove(handler_id)
 
@@ -30,10 +31,48 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "0003200000200001",
                 "0003200000200002",
                 "0003200000300001",
+                # Parkweg-style cluster: 1 main row + V-prefixed unit numbers.
+                "0402200000600001",
+                "0402200000600101",
+                "0402200000600302",
+                "0402200000600521",
+                # No-main-row cluster: only letter/toevoeging suffixes, used to
+                # exercise the truly-ambiguous case where the building-level
+                # fallback can't find a NULL/NULL row.
+                "0003200000700001",
+                "0003200000700002",
             ],
-            "huisnummer": pl.Series([3, 5, 5, 5, 12, 12, 7], dtype=pl.Int32),
-            "huisletter": [None, None, "A", None, None, None, None],
-            "huisnummertoevoeging": [None, None, None, "bis", None, None, None],
+            "huisnummer": pl.Series([3, 5, 5, 5, 12, 12, 7, 2, 2, 2, 2, 20, 20], dtype=pl.Int32),
+            "huisletter": [
+                None,
+                None,
+                "A",
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                "A",
+                "B",
+            ],
+            "huisnummertoevoeging": [
+                None,
+                None,
+                None,
+                "bis",
+                None,
+                None,
+                None,
+                None,
+                "V101",
+                "V302",
+                "V521",
+                None,
+                None,
+            ],
             "postcode": [
                 "9901AA",
                 "9901AA",
@@ -42,6 +81,12 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "1011AB",
                 "1011AB",
                 "1234CD",
+                "3221LV",
+                "3221LV",
+                "3221LV",
+                "3221LV",
+                "9901AA",
+                "9901AA",
             ],
             "straatnaam": [
                 "Snelgersmastraat",
@@ -51,6 +96,12 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "Damrak",
                 "Damrak",
                 "Hoofdstraat",
+                "Parkweg",
+                "Parkweg",
+                "Parkweg",
+                "Parkweg",
+                "Snelgersmastraat",
+                "Snelgersmastraat",
             ],
             "woonplaats": [
                 "Appingedam",
@@ -60,6 +111,12 @@ def bag_parquet(tmp_path: Path) -> Path:
                 "Amsterdam",
                 "Haarlem",
                 "Utrecht",
+                "Hellevoetsluis",
+                "Hellevoetsluis",
+                "Hellevoetsluis",
+                "Hellevoetsluis",
+                "Appingedam",
+                "Appingedam",
             ],
         }
     )
@@ -174,19 +231,96 @@ def test_postcode_missing_falls_back_to_street_city(bag_parquet: Path) -> None:
 
 
 def test_ambiguous_returns_none(bag_parquet: Path) -> None:
-    """Multiple matches that suffix and city can't disambiguate."""
+    """Multiple suffixed candidates and no main row to fall back on → None."""
     with ParquetBagLookup(bag_parquet) as bag:
-        # huisnummer=5 at 9901AA has 3 candidates (no suffix, "A", "bis"); suffix doesn't match any
+        # huisnummer=20 at 9901AA has 2 candidates (huisletter A and B) and
+        # no NULL/NULL main row; suffix "X" matches neither.
         assert (
             bag.lookup(
                 street="Snelgersmastraat",
-                house_number=5,
+                house_number=20,
                 suffix="X",
                 postcode="9901 AA",
                 city="Appingedam",
             )
             is None
         )
+
+
+def test_no_suffix_prefers_main_row_among_siblings(bag_parquet: Path) -> None:
+    """Pararius "Neuweg 14" case: no suffix scraped, multiple candidates share
+    postcode and city, but only one is the bare main address."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Snelgersmastraat",
+            house_number=5,
+            suffix=None,
+            postcode="9901 AA",
+            city="Appingedam",
+        )
+    assert _bag_id(match) == "0003200000133986"
+
+
+def test_digit_suffix_matches_v_prefixed_huisnummertoevoeging(bag_parquet: Path) -> None:
+    """Pararius "Parkweg 2 302" case: suffix "302" must match BAG's "V302"."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Parkweg",
+            house_number=2,
+            suffix="302",
+            postcode="3221 LV",
+            city="Hellevoetsluis",
+        )
+    assert _bag_id(match) == "0402200000600302"
+
+
+def test_digit_suffix_does_not_apply_when_input_has_letters(bag_parquet: Path) -> None:
+    """Digit-only normalisation must not pick V302 for an input like "A302"."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Parkweg",
+            house_number=2,
+            suffix="A302",
+            postcode="3221 LV",
+            city="Hellevoetsluis",
+        )
+    assert _bag_id(match) == "0402200000600001"
+
+
+def test_falls_back_to_main_row_for_unmatched_suffix(
+    bag_parquet: Path,
+    loguru_caplog: pytest.LogCaptureFixture,
+) -> None:
+    """When suffix is provided but matches no candidate, return the building's
+    bare main row and log at info level so loose matches stay distinguishable."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Snelgersmastraat",
+            house_number=5,
+            suffix="X",
+            postcode="9901 AA",
+            city="Appingedam",
+        )
+    assert _bag_id(match) == "0003200000133986"
+    assert any("BAG fallback to building-level match" in record.message for record in loguru_caplog.records)
+
+
+def test_unmatched_suffix_without_main_row_still_warns(
+    bag_parquet: Path,
+    loguru_caplog: pytest.LogCaptureFixture,
+) -> None:
+    """If neither digit normalisation, city, nor a NULL/NULL row resolves the
+    candidate set, the matcher returns None with the existing warning."""
+    with ParquetBagLookup(bag_parquet) as bag:
+        match = bag.lookup(
+            street="Snelgersmastraat",
+            house_number=20,
+            suffix="X",
+            postcode="9901 AA",
+            city="Appingedam",
+        )
+    assert match is None
+    assert any("Ambiguous BAG match" in record.message for record in loguru_caplog.records)
 
 
 def test_close_clears_cached_frame(bag_parquet: Path) -> None:

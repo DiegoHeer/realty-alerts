@@ -77,18 +77,47 @@ class ParquetBagLookup:
             return None
         if candidates.height == 1:
             return self._to_match(candidates)
+        return self._disambiguate(candidates, suffix, city, address)
 
+    def _disambiguate(
+        self,
+        candidates: pl.DataFrame,
+        suffix: str | None,
+        city: str,
+        address: str,
+    ) -> BagMatch | None:
         if suffix:
-            disambiguated = self._filter_by_suffix(candidates, suffix)
-            if disambiguated.height == 1:
-                return self._to_match(disambiguated)
+            picked = self._match_by_suffix(candidates, suffix)
+        else:
+            picked = self._match_main_row(candidates)
+        if picked is not None:
+            return picked
 
         by_city = self._filter_by_city(candidates, city)
         if by_city.height == 1:
             return self._to_match(by_city)
 
+        fallback = self._match_main_row(candidates)
+        if fallback is not None:
+            logger.info(f"BAG fallback to building-level match for {address}")
+            return fallback
+
         logger.warning(f"Ambiguous BAG match for {address}: {candidates.height} candidates")
         return None
+
+    def _match_by_suffix(self, candidates: pl.DataFrame, suffix: str) -> BagMatch | None:
+        exact = self._filter_by_suffix(candidates, suffix)
+        if exact.height == 1:
+            return self._to_match(exact)
+        if exact.height == 0:
+            by_digits = self._filter_by_suffix_digits(candidates, suffix)
+            if by_digits.height == 1:
+                return self._to_match(by_digits)
+        return None
+
+    def _match_main_row(self, candidates: pl.DataFrame) -> BagMatch | None:
+        main = self._filter_main_address(candidates)
+        return self._to_match(main) if main.height == 1 else None
 
     def _df_loaded(self) -> pl.LazyFrame:
         if self._df is None:
@@ -124,8 +153,21 @@ class ParquetBagLookup:
         )
 
     @staticmethod
+    def _filter_by_suffix_digits(candidates: pl.DataFrame, suffix: str) -> pl.DataFrame:
+        # Conservative: only fires for purely numeric input so "A302" can't
+        # accidentally collapse onto "V302".
+        s = suffix.strip()
+        if not s.isdigit():
+            return candidates.head(0)
+        return candidates.filter(pl.col("huisnummertoevoeging").str.replace_all(r"\D", "") == s)
+
+    @staticmethod
     def _filter_by_city(candidates: pl.DataFrame, city: str) -> pl.DataFrame:
         return candidates.filter(pl.col("woonplaats").str.to_lowercase() == city.lower())
+
+    @staticmethod
+    def _filter_main_address(candidates: pl.DataFrame) -> pl.DataFrame:
+        return candidates.filter(pl.col("huisletter").is_null() & pl.col("huisnummertoevoeging").is_null())
 
     @staticmethod
     def _to_match(candidates: pl.DataFrame) -> BagMatch:
