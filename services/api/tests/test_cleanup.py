@@ -11,6 +11,7 @@ from tests.factories import ListingFactory
 def _make(**kwargs) -> Listing:
     return cast(Listing, ListingFactory(**kwargs))
 
+
 NOW = datetime(2026, 5, 4, 12, 0, tzinfo=UTC)
 PAST_TTL = NOW - timedelta(days=LISTING_TERMINAL_TTL_DAYS + 1)
 WITHIN_TTL = NOW - timedelta(days=LISTING_TERMINAL_TTL_DAYS - 1)
