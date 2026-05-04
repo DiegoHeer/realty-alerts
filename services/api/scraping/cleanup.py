@@ -13,14 +13,9 @@ def delete_expired_terminal_listings(*, now: datetime) -> int:
     sale_pending) for longer than LISTING_TERMINAL_TTL_DAYS. Listings whose
     `status_changed_at` is NULL are excluded (SQL `<` is unknown for NULL)."""
     cutoff = now - timedelta(days=LISTING_TERMINAL_TTL_DAYS)
-    deleted, _ = Listing.objects.filter(
-        status__in=TERMINAL_STATUSES,
-        status_changed_at__lt=cutoff,
-    ).delete()
+
+    deleted, _ = Listing.objects.filter(status__in=TERMINAL_STATUSES, status_changed_at__lt=cutoff).delete()
     if deleted:
-        logger.info(
-            "listing_ttl_deleted",
-            deleted=deleted,
-            cutoff=cutoff.isoformat(),
-        )
+        logger.info("listing_ttl_deleted", deleted=deleted, cutoff=cutoff.isoformat())
+
     return deleted

@@ -72,7 +72,7 @@ class FundaScraper(BaseScraper):
         subtitle_el = card.select_one("div.truncate.text-neutral-80")
         subtitle = subtitle_el.get_text(strip=True) if subtitle_el else ""
         postcode = parse_dutch_postcode(subtitle)
-        city = _FUNDA_POSTCODE_PREFIX.sub("", subtitle).strip() or "unknown"
+        city = _FUNDA_POSTCODE_PREFIX.sub("", subtitle).strip() or ""
 
         street, house_number, house_letter, house_number_suffix = parse_dutch_address(title)
 

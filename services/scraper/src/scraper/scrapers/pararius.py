@@ -30,7 +30,7 @@ class ParariusScraper(BaseScraper):
     def scrape(self, since: datetime | None) -> list[Listing]:
         logger.info(f"Scraping Pararius (since={since})")
         last_page = self._get_last_page()
-        listings = []
+        listings: list[Listing] = []
         for page_number in range(1, last_page + 1):
             listings.extend(self._scrape_page(page_number))
         logger.info(f"Found {len(listings)} listings across {last_page} pages")
@@ -74,13 +74,14 @@ class ParariusScraper(BaseScraper):
         subtitle_el = card.select_one("div.listing-search-item__sub-title")
         subtitle = subtitle_el.get_text(strip=True) if subtitle_el else ""
         postcode, city = self._parse_subtitle(subtitle)
+
         street, house_number, house_letter, house_number_suffix = parse_dutch_address(title)
 
         return Listing(
             detail_url=detail_url,
             title=title,
             price=price,
-            city=city or "unknown",
+            city=city or "",
             street=street,
             house_number=house_number,
             house_letter=house_letter,
