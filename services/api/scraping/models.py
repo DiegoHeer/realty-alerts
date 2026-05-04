@@ -27,10 +27,11 @@ class DeadResidenceReason(models.TextChoices):
 
 
 class Residence(models.Model):
-    """One row per physical property, keyed on its BAG ID. Per-portal URLs live
-    in `ListingUrl` so the same property listed on Funda + Pararius collapses
-    to a single row. Status mirrors the portal's own badge (`Nieuw` /
-    `Verkocht onder voorbehoud` / `Verkocht`) and updates on every scrape."""
+    """One row per physical property, keyed on its BAG ID. Per-portal listings
+    live in `Listing` so the same property advertised on Funda + Pararius
+    collapses to a single residence row. Status mirrors the portal's own badge
+    (`Nieuw` / `Verkocht onder voorbehoud` / `Verkocht`) and updates on every
+    scrape."""
 
     bag_id = models.CharField(max_length=16, unique=True)
     title = models.CharField(max_length=500)
@@ -62,16 +63,19 @@ class Residence(models.Model):
         return f"{self.title} ({self.city})"
 
 
-class ListingUrl(models.Model):
-    listing = models.ForeignKey(Residence, related_name="listing_urls", on_delete=models.CASCADE)
+class Listing(models.Model):
+    """One row per portal advertisement. Multiple `Listing`s may point at the
+    same `Residence` when the property is advertised across portals."""
+
+    residence = models.ForeignKey(Residence, related_name="listings", on_delete=models.CASCADE)
     website = models.CharField(max_length=20, choices=Website.choices)
     url = models.URLField(max_length=500, unique=True)
     first_seen_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "listing_urls"
+        db_table = "listings"
         indexes = [
-            models.Index(fields=["website", "first_seen_at"], name="idx_listing_urls_website"),
+            models.Index(fields=["website", "first_seen_at"], name="idx_listings_website"),
         ]
 
     def __str__(self) -> str:
@@ -136,7 +140,7 @@ class ScrapeRun(models.Model):
     status = models.CharField(max_length=10, choices=ScrapeRunStatus.choices)
     listings_found = models.PositiveIntegerField(default=0)
     new_residences_count = models.PositiveIntegerField(default=0)
-    new_listing_urls_count = models.PositiveIntegerField(default=0)
+    new_listings_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(null=True, blank=True)
     duration_seconds = models.FloatField(null=True, blank=True)
 

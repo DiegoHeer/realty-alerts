@@ -9,7 +9,7 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import DeadResidence, ListingUrl, Residence, ScrapeRun, ScrapeRunStatus, Website
+from scraping.models import DeadResidence, Listing, Residence, ScrapeRun, ScrapeRunStatus, Website
 from scraping.schemas import DeadResidenceIn, ResidenceIn, ScrapeResultsIn, ScrapeRunOut
 
 # Fields to fill on existing residences only when the stored value is NULL.
@@ -84,7 +84,7 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
     run_status = ScrapeRunStatus.FAILED if payload.error_message else ScrapeRunStatus.SUCCESS
 
     with transaction.atomic():
-        new_residences_count, new_listing_urls_count = _ingest_residences(deduped, scraped_at=now)
+        new_residences_count, new_listings_count = _ingest_residences(deduped, scraped_at=now)
         _upsert_dead_residences(payload.dead_listings, scraped_at=now)
 
         scrape_run = ScrapeRun.objects.create(
@@ -94,14 +94,14 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
             status=run_status,
             listings_found=len(payload.listings),
             new_residences_count=new_residences_count,
-            new_listing_urls_count=new_listing_urls_count,
+            new_listings_count=new_listings_count,
             error_message=payload.error_message,
             duration_seconds=duration,
         )
 
     logger.info(
         f"Scrape run for {website}: {new_residences_count} new residences / "
-        f"{new_listing_urls_count} new urls / {len(payload.listings)} found, "
+        f"{new_listings_count} new listings / {len(payload.listings)} found, "
         f"{len(payload.dead_listings)} dead in {duration:.1f}s"
     )
     return scrape_run
@@ -119,7 +119,7 @@ def _dedup_by_bag_id(items: list[ResidenceIn]) -> list[ResidenceIn]:
 
 
 def _ingest_residences(items: list[ResidenceIn], *, scraped_at: datetime) -> tuple[int, int]:
-    """Upsert residences, returning (new_residences_count, new_listing_urls_count).
+    """Upsert residences, returning (new_residences_count, new_listings_count).
 
     The "existing" snapshot is taken before any writes so newly-created rows
     aren't counted as pre-existing.
@@ -127,7 +127,7 @@ def _ingest_residences(items: list[ResidenceIn], *, scraped_at: datetime) -> tup
     payload_bag_ids = {item.bag_id for item in items}
     payload_urls = {item.detail_url for item in items}
     existing_bag_ids = set(Residence.objects.filter(bag_id__in=payload_bag_ids).values_list("bag_id", flat=True))
-    existing_urls = set(ListingUrl.objects.filter(url__in=payload_urls).values_list("url", flat=True))
+    existing_urls = set(Listing.objects.filter(url__in=payload_urls).values_list("url", flat=True))
 
     for item in items:
         _upsert_residence(item, scraped_at=scraped_at)
@@ -145,11 +145,11 @@ def _upsert_residence(item: ResidenceIn, *, scraped_at: datetime) -> Residence:
 
     # If the URL is already attached to a different Residence (e.g. a parser
     # fix changed the BAG match across runs), keep the existing FK. Re-wiring
-    # URLs between residences is intentionally a manual /admin operation, not
-    # the auto-ingest path.
-    ListingUrl.objects.get_or_create(
+    # listings between residences is intentionally a manual /admin operation,
+    # not the auto-ingest path.
+    Listing.objects.get_or_create(
         url=item.detail_url,
-        defaults={"listing": residence, "website": item.website},
+        defaults={"residence": residence, "website": item.website},
     )
     return residence
 
@@ -205,7 +205,7 @@ def _upsert_dead_residences(dead: list[DeadResidenceIn], *, scraped_at: datetime
         return
 
     urls = [item.detail_url for item in dead]
-    promoted_urls = set(ListingUrl.objects.filter(url__in=urls).values_list("url", flat=True))
+    promoted_urls = set(Listing.objects.filter(url__in=urls).values_list("url", flat=True))
 
     for item in dead:
         if item.detail_url in promoted_urls:

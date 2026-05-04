@@ -37,7 +37,7 @@ class ResidenceIn(Schema):
     status: ListingStatus = ListingStatus.NEW
 
 
-class ListingUrlOut(Schema):
+class ListingOut(Schema):
     url: str
     website: Website
     first_seen_at: datetime
@@ -62,7 +62,7 @@ class ResidenceOut(Schema):
     status: ListingStatus
     scraped_at: datetime
     created_at: datetime
-    listing_urls: list[ListingUrlOut]
+    listings: list[ListingOut]
 
 
 class ScrapeRunOut(Schema):
@@ -73,7 +73,7 @@ class ScrapeRunOut(Schema):
     status: ScrapeRunStatus
     listings_found: int
     new_residences_count: int
-    new_listing_urls_count: int
+    new_listings_count: int
     error_message: str | None
     duration_seconds: float | None
 
