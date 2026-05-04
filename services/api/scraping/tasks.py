@@ -3,8 +3,10 @@ import uuid
 import httpx
 from celery import shared_task
 from django.conf import settings
+from django.utils import timezone
 from loguru import logger
 
+from scraping.cleanup import delete_expired_terminal_listings
 from scraping.models import Website
 from scraping.schemas import ScrapeDispatchPayload
 
@@ -51,3 +53,10 @@ def dispatch_scrape(website: str, run_id: str | None = None) -> str:
 
     logger.info("Dispatched scrape for {} (run_id={})", payload.website, payload.run_id)
     return payload.run_id
+
+
+@shared_task(name="scraping.cleanup_expired_listings")
+def cleanup_expired_listings() -> int:
+    """Hard-delete listings that have been in a terminal status (sold or
+    sale_pending) past the TTL. Schedule via a PeriodicTask in Django admin."""
+    return delete_expired_terminal_listings(now=timezone.now())

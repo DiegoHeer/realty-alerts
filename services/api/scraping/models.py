@@ -47,6 +47,7 @@ class Listing(models.Model):
     area_sqm = models.FloatField(null=True, blank=True)
     image_url = models.URLField(max_length=2000, null=True, blank=True)
     status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
+    status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
     scraped_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
