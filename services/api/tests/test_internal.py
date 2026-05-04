@@ -290,6 +290,78 @@ def test_submit_results_persists_status_and_updates_on_repeat(
     assert Residence.objects.get(bag_id="0003200000000099").status == ListingStatus.SOLD
 
 
+def test_submit_results_sets_status_changed_at_on_create(client, api_key_headers, scrape_payload, residence_payload):
+    payload = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url="https://example.com/listing/anchor",
+                bag_id="0003200000000201",
+                status=ListingStatus.SOLD.value,
+            ),
+        ],
+    )
+    before = datetime.now(UTC)
+
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers)
+
+    residence = Residence.objects.get(bag_id="0003200000000201")
+    assert residence.status_changed_at is not None
+    assert residence.status_changed_at >= before
+
+
+def test_submit_results_does_not_bump_status_changed_at_when_status_unchanged(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    detail_url = "https://example.com/listing/no-bump"
+    bag_id = "0003200000000202"
+    first = scrape_payload(
+        listings=[
+            residence_payload(detail_url=detail_url, bag_id=bag_id, status=ListingStatus.NEW.value),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+    initial_anchor = Residence.objects.get(bag_id=bag_id).status_changed_at
+
+    second = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url=detail_url,
+                bag_id=bag_id,
+                status=ListingStatus.NEW.value,
+                price="€ 410.000 k.k.",
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
+
+    assert Residence.objects.get(bag_id=bag_id).status_changed_at == initial_anchor
+
+
+def test_submit_results_bumps_status_changed_at_on_transition(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    detail_url = "https://example.com/listing/transition"
+    bag_id = "0003200000000203"
+    first = scrape_payload(
+        listings=[
+            residence_payload(detail_url=detail_url, bag_id=bag_id, status=ListingStatus.NEW.value),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+    initial_anchor = Residence.objects.get(bag_id=bag_id).status_changed_at
+
+    second = scrape_payload(
+        listings=[
+            residence_payload(detail_url=detail_url, bag_id=bag_id, status=ListingStatus.SOLD.value),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
+
+    updated = Residence.objects.get(bag_id=bag_id)
+    assert updated.status == ListingStatus.SOLD
+    assert updated.status_changed_at > initial_anchor
+
+
 def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
     payload = scrape_payload(listings=[])
     payload["started_at"], payload["finished_at"] = (payload["finished_at"], payload["started_at"])

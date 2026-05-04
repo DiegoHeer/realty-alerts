@@ -5,7 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("scraping", "0003_listing_status_values"),
+        ("scraping", "0004_listing_status_changed_at"),
     ]
 
     operations = [

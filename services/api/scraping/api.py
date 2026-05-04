@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
+from django.utils import timezone
 from loguru import logger
 from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
@@ -169,6 +170,7 @@ def _residence_defaults(item: ResidenceIn, *, scraped_at: datetime) -> dict:
         "area_sqm": item.area_sqm,
         "image_url": item.image_url,
         "status": item.status,
+        "status_changed_at": timezone.now(),
         "scraped_at": scraped_at,
     }
 
@@ -178,7 +180,9 @@ def _apply_residence_update(residence: Residence, item: ResidenceIn, *, scraped_
     # Always-update fields: capture price drops, status transitions, and freshness.
     residence.price = item.price
     residence.price_eur = _parse_price_eur(item.price)
-    residence.status = item.status
+    if residence.status != item.status:
+        residence.status = item.status
+        residence.status_changed_at = timezone.now()
     residence.scraped_at = scraped_at
     # Complement-only fields: fill columns currently NULL but never
     # overwrite a value that's already present (including 0 / "").
