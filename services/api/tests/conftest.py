@@ -21,7 +21,7 @@ def api_key_headers() -> dict[str, str]:
 
 
 @pytest.fixture
-def listing_payload() -> Callable[..., dict[str, Any]]:
+def residence_payload() -> Callable[..., dict[str, Any]]:
     counter = {"n": 0}
 
     def _build(detail_url: str | None = None, **overrides: Any) -> dict[str, Any]:
@@ -46,7 +46,7 @@ def listing_payload() -> Callable[..., dict[str, Any]]:
 
 
 @pytest.fixture
-def dead_listing_payload() -> Callable[..., dict[str, Any]]:
+def dead_residence_payload() -> Callable[..., dict[str, Any]]:
     def _build(
         detail_url: str = "https://example.com/dead/new",
         reason: str = "bag_no_match",

@@ -4,23 +4,23 @@ import factory
 from factory.django import DjangoModelFactory
 
 from scraping.models import (
-    DeadListing,
-    DeadListingReason,
-    Listing,
+    DeadResidence,
+    DeadResidenceReason,
     ListingStatus,
     ListingUrl,
+    Residence,
     ScrapeRun,
     ScrapeRunStatus,
     Website,
 )
 
 
-class ListingFactory(DjangoModelFactory):
+class ResidenceFactory(DjangoModelFactory):
     class Meta:
-        model = Listing
+        model = Residence
 
     bag_id = factory.Sequence(lambda n: f"00032000{n:08d}")
-    title = factory.Sequence(lambda n: f"Listing {n}")
+    title = factory.Sequence(lambda n: f"Residence {n}")
     price = "€ 500.000 k.k."
     price_eur = 500_000
     city = "Amsterdam"
@@ -37,21 +37,21 @@ class ListingUrlFactory(DjangoModelFactory):
     class Meta:
         model = ListingUrl
 
-    listing = factory.SubFactory(ListingFactory)
+    listing = factory.SubFactory(ResidenceFactory)
     website = Website.FUNDA
     url = factory.Sequence(lambda n: f"https://example.com/listing/{n}")
 
 
-class DeadListingFactory(DjangoModelFactory):
+class DeadResidenceFactory(DjangoModelFactory):
     class Meta:
-        model = DeadListing
+        model = DeadResidence
 
     website = Website.FUNDA
     detail_url = factory.Sequence(lambda n: f"https://example.com/dead/{n}")
-    title = factory.Sequence(lambda n: f"Dead listing {n}")
+    title = factory.Sequence(lambda n: f"Dead residence {n}")
     price = "€ 250.000 k.k."
     city = "Amsterdam"
-    reason = DeadListingReason.BAG_NO_MATCH
+    reason = DeadResidenceReason.BAG_NO_MATCH
     scraped_at = factory.LazyFunction(lambda: datetime.now(UTC))
 
 
@@ -64,6 +64,6 @@ class ScrapeRunFactory(DjangoModelFactory):
     finished_at = factory.LazyFunction(lambda: datetime.now(UTC))
     status = ScrapeRunStatus.SUCCESS
     listings_found = 0
-    new_properties_count = 0
+    new_residences_count = 0
     new_listing_urls_count = 0
     duration_seconds = 300.0

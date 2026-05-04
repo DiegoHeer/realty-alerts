@@ -29,19 +29,19 @@ describe("ApiClient", () => {
     it("issues a GET against the base URL with JSON headers", async () => {
       fetchMock.mockResolvedValue(okJson({ id: 1 }));
 
-      const result = await api.get<{ id: number }>("/listings/1");
+      const result = await api.get<{ id: number }>("/residences/1");
 
       expect(result).toEqual({ id: 1 });
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, init] = fetchMock.mock.calls[0];
-      expect(url).toBe(`${API_BASE_URL}/listings/1`);
+      expect(url).toBe(`${API_BASE_URL}/residences/1`);
       expect((init as RequestInit).headers).toEqual({ "Content-Type": "application/json" });
     });
 
     it("appends query params to the URL", async () => {
       fetchMock.mockResolvedValue(okJson([]));
 
-      await api.get("/listings", { city: "Amsterdam", min_price: "500" });
+      await api.get("/residences", { city: "Amsterdam", min_price: "500" });
 
       const [url] = fetchMock.mock.calls[0];
       const parsed = new URL(url as string);

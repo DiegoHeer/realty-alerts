@@ -19,14 +19,14 @@ class ScrapeRunStatus(models.TextChoices):
     FAILED = "failed", "Failed"
 
 
-class DeadListingReason(models.TextChoices):
+class DeadResidenceReason(models.TextChoices):
     PARSE_FAILED = "parse_failed", "Parse failed"
     MISSING_POSTCODE_AND_STREET = "missing_postcode_and_street", "Missing postcode and street"
     BAG_NO_MATCH = "bag_no_match", "BAG no match"
     BAG_AMBIGUOUS = "bag_ambiguous", "BAG ambiguous"
 
 
-class Listing(models.Model):
+class Residence(models.Model):
     """One row per physical property, keyed on its BAG ID. Per-portal URLs live
     in `ListingUrl` so the same property listed on Funda + Pararius collapses
     to a single row. Status mirrors the portal's own badge (`Nieuw` /
@@ -53,9 +53,9 @@ class Listing(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "listings"
+        db_table = "residences"
         indexes = [
-            models.Index(fields=["city", "property_type", "price_eur"], name="idx_listings_filters"),
+            models.Index(fields=["city", "property_type", "price_eur"], name="idx_residences_filters"),
         ]
 
     def __str__(self) -> str:
@@ -63,7 +63,7 @@ class Listing(models.Model):
 
 
 class ListingUrl(models.Model):
-    listing = models.ForeignKey(Listing, related_name="listing_urls", on_delete=models.CASCADE)
+    listing = models.ForeignKey(Residence, related_name="listing_urls", on_delete=models.CASCADE)
     website = models.CharField(max_length=20, choices=Website.choices)
     url = models.URLField(max_length=500, unique=True)
     first_seen_at = models.DateTimeField(auto_now_add=True)
@@ -78,10 +78,10 @@ class ListingUrl(models.Model):
         return f"{self.website}: {self.url}"
 
 
-class DeadListing(models.Model):
-    """Listings that fail BAG enrichment terminally — bad input from the
+class DeadResidence(models.Model):
+    """Residences that fail BAG enrichment terminally — bad input from the
     source (typo postcode, garbage address) or a BAG miss we can't recover.
-    Kept separate from `listings` so notification/matching never sees them
+    Kept separate from `residences` so notification/matching never sees them
     and they're easy to triage from /admin."""
 
     website = models.CharField(max_length=20, choices=Website.choices)
@@ -96,16 +96,16 @@ class DeadListing(models.Model):
     house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
     postcode = models.CharField(max_length=10, null=True, blank=True)
     image_url = models.URLField(max_length=2000, null=True, blank=True)
-    reason = models.CharField(max_length=40, choices=DeadListingReason.choices)
+    reason = models.CharField(max_length=40, choices=DeadResidenceReason.choices)
     scraped_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "dead_listings"
+        db_table = "dead_residences"
         indexes = [
-            models.Index(fields=["website", "created_at"], name="idx_dead_listings_website"),
-            models.Index(fields=["reason", "created_at"], name="idx_dead_listings_reason"),
+            models.Index(fields=["website", "created_at"], name="idx_dead_residences_website"),
+            models.Index(fields=["reason", "created_at"], name="idx_dead_residences_reason"),
         ]
 
     def __str__(self) -> str:
@@ -135,7 +135,7 @@ class ScrapeRun(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=ScrapeRunStatus.choices)
     listings_found = models.PositiveIntegerField(default=0)
-    new_properties_count = models.PositiveIntegerField(default=0)
+    new_residences_count = models.PositiveIntegerField(default=0)
     new_listing_urls_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(null=True, blank=True)
     duration_seconds = models.FloatField(null=True, blank=True)

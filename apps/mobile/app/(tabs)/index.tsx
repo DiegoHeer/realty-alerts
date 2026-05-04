@@ -1,9 +1,9 @@
 import { FlatList, View, Text, RefreshControl, ActivityIndicator } from "react-native";
-import { useListings } from "@/hooks/useListings";
-import { ListingCard } from "@/components/ListingCard";
+import { useResidences } from "@/hooks/useResidences";
+import { ResidenceCard } from "@/components/ResidenceCard";
 
 export default function HomeScreen() {
-  const { data: listings, isLoading, refetch, isRefetching } = useListings();
+  const { data: residences, isLoading, refetch, isRefetching } = useResidences();
 
   if (isLoading) {
     return (
@@ -15,9 +15,9 @@ export default function HomeScreen() {
 
   return (
     <FlatList
-      data={listings}
+      data={residences}
       keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <ListingCard listing={item} />}
+      renderItem={({ item }) => <ResidenceCard residence={item} />}
       contentContainerStyle={{ padding: 16 }}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
       ListEmptyComponent={
