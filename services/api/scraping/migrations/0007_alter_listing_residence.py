@@ -5,15 +5,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0006_rename_listingurl_to_listing'),
+        ("scraping", "0006_rename_listingurl_to_listing"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='listing',
-            name='residence',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='listings', to='scraping.residence'),
+            model_name="listing",
+            name="residence",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="listings",
+                to="scraping.residence",
+            ),
         ),
     ]
