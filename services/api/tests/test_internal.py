@@ -5,15 +5,15 @@ import pytest
 from scraping.models import (
     DeadResidence,
     DeadResidenceReason,
+    Listing,
     ListingStatus,
-    ListingUrl,
     Residence,
     ScrapeRun,
     ScrapeRunStatus,
     Website,
 )
 
-from tests.factories import ListingUrlFactory, ResidenceFactory, ScrapeRunFactory
+from tests.factories import ListingFactory, ResidenceFactory, ScrapeRunFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -71,16 +71,16 @@ def test_submit_results_creates_run_and_residences(client, api_key_headers, scra
     assert body["website"] == website.value
     assert body["listings_found"] == 2
     assert body["new_residences_count"] == 2
-    assert body["new_listing_urls_count"] == 2
+    assert body["new_listings_count"] == 2
     assert body["status"] == ScrapeRunStatus.SUCCESS.value
     assert ScrapeRun.objects.count() == 1
     assert Residence.objects.count() == 2
-    assert ListingUrl.objects.count() == 2
+    assert Listing.objects.count() == 2
 
 
 def test_submit_results_dedups_existing_residences(client, api_key_headers, scrape_payload, residence_payload):
     existing = ResidenceFactory(bag_id="0003200000000001")
-    ListingUrlFactory(listing=existing, url="https://example.com/listing/existing", website=Website.FUNDA)
+    ListingFactory(residence=existing, url="https://example.com/listing/existing", website=Website.FUNDA)
 
     payload = scrape_payload(
         listings=[
@@ -97,9 +97,9 @@ def test_submit_results_dedups_existing_residences(client, api_key_headers, scra
     body = response.json()
     assert body["listings_found"] == 2
     assert body["new_residences_count"] == 1
-    assert body["new_listing_urls_count"] == 1
+    assert body["new_listings_count"] == 1
     assert Residence.objects.count() == 2
-    assert ListingUrl.objects.count() == 2
+    assert Listing.objects.count() == 2
 
 
 def test_submit_results_dedups_within_payload_by_bag_id(client, api_key_headers, scrape_payload, residence_payload):
@@ -152,10 +152,10 @@ def test_submit_results_merges_cross_portal_residence(client, api_key_headers, s
     assert response.status_code == 200
     body = response.json()
     assert body["new_residences_count"] == 0
-    assert body["new_listing_urls_count"] == 1
+    assert body["new_listings_count"] == 1
     assert Residence.objects.count() == 1
     residence = Residence.objects.get()
-    urls = list(residence.listing_urls.values_list("website", "url").order_by("website"))
+    urls = list(residence.listings.values_list("website", "url").order_by("website"))
     assert urls == [
         (Website.FUNDA.value, "https://funda.nl/listing/abc"),
         (Website.PARARIUS.value, "https://pararius.nl/listing/xyz"),

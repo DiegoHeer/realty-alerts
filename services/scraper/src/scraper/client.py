@@ -51,7 +51,7 @@ class BackendClient:
         logger.info(
             f"Submitted {result['listings_found']} listings "
             f"({result['new_residences_count']} new residences, "
-            f"{result['new_listing_urls_count']} new urls) "
+            f"{result['new_listings_count']} new listings) "
             f"and {len(dead_listings)} dead for {website}"
         )
         return result

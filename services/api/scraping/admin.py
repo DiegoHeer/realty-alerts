@@ -2,12 +2,12 @@ from django.contrib import admin, messages
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 
-from scraping.models import DeadResidence, ListingUrl, Residence, ScrapeRun
+from scraping.models import DeadResidence, Listing, Residence, ScrapeRun
 from scraping.services import DeadResidencePromotionError, promote_dead_residence
 
 
-class ListingUrlInline(admin.TabularInline):
-    model = ListingUrl
+class ListingInline(admin.TabularInline):
+    model = Listing
     extra = 0
     readonly_fields = ("url", "website", "first_seen_at")
     can_delete = False
@@ -33,12 +33,12 @@ class ResidenceAdmin(admin.ModelAdmin):
     search_fields = ("title", "street", "postcode", "bag_id")
     ordering = ("-scraped_at",)
     readonly_fields = ("created_at", "updated_at")
-    inlines = (ListingUrlInline,)
+    inlines = (ListingInline,)
 
 
-@admin.register(ListingUrl)
-class ListingUrlAdmin(admin.ModelAdmin):
-    list_display = ("id", "url", "website", "listing", "first_seen_at")
+@admin.register(Listing)
+class ListingAdmin(admin.ModelAdmin):
+    list_display = ("id", "url", "website", "residence", "first_seen_at")
     list_filter = ("website",)
     search_fields = ("url",)
     ordering = ("-first_seen_at",)
@@ -126,7 +126,7 @@ class ScrapeRunAdmin(admin.ModelAdmin):
         "finished_at",
         "listings_found",
         "new_residences_count",
-        "new_listing_urls_count",
+        "new_listings_count",
         "duration_seconds",
     )
     list_filter = ("website", "status")

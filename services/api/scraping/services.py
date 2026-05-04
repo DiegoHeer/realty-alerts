@@ -1,7 +1,7 @@
 from django.db import transaction
 
 from scraping.api import _parse_price_eur
-from scraping.models import DeadResidence, ListingUrl, Residence
+from scraping.models import DeadResidence, Listing, Residence
 
 # Subset of api._COMPLEMENT_FIELDS — DeadResidence carries a strict subset of
 # the Residence schema (no property_type / bedrooms / area_sqm).
@@ -32,7 +32,7 @@ def promote_dead_residence(dead: DeadResidence) -> Residence:
         missing = ", ".join(dead.missing_promotion_fields)
         raise DeadResidencePromotionError(f"Not ready for promotion. Missing: {missing}")
 
-    has_conflict = ListingUrl.objects.filter(url=dead.detail_url).exclude(listing__bag_id=dead.bag_id).exists()
+    has_conflict = Listing.objects.filter(url=dead.detail_url).exclude(residence__bag_id=dead.bag_id).exists()
     if has_conflict:
         raise DeadResidencePromotionError(f"URL {dead.detail_url} is already attached to a different residence")
 
@@ -44,9 +44,9 @@ def promote_dead_residence(dead: DeadResidence) -> Residence:
         if not created:
             _complement_residence_from_dead(residence, dead)
 
-        ListingUrl.objects.get_or_create(
+        Listing.objects.get_or_create(
             url=dead.detail_url,
-            defaults={"listing": residence, "website": dead.website},
+            defaults={"residence": residence, "website": dead.website},
         )
         dead.delete()
 

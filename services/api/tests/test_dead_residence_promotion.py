@@ -2,10 +2,10 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
-from scraping.models import DeadResidence, DeadResidenceReason, ListingUrl, Residence, Website
+from scraping.models import DeadResidence, DeadResidenceReason, Listing, Residence, Website
 from scraping.services import DeadResidencePromotionError, promote_dead_residence
 
-from tests.factories import DeadResidenceFactory, ListingUrlFactory, ResidenceFactory
+from tests.factories import DeadResidenceFactory, ListingFactory, ResidenceFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -59,7 +59,7 @@ def test_promote_creates_listing_url_and_deletes_dead():
     assert residence.city == "Amsterdam"
     assert residence.street == "Damrak"
     assert residence.postcode == "1012JS"
-    assert ListingUrl.objects.filter(url="https://example.com/dead/promote-1", listing=residence).exists()
+    assert Listing.objects.filter(url="https://example.com/dead/promote-1", residence=residence).exists()
     assert not DeadResidence.objects.filter(pk=dead.pk).exists()
 
 
@@ -76,7 +76,7 @@ def test_promote_reuses_existing_residence_when_bag_id_matches():
             scraped_at=datetime.now(UTC),
         ),
     )
-    ListingUrlFactory(listing=existing, website=Website.FUNDA, url="https://funda.example/orig")
+    ListingFactory(residence=existing, website=Website.FUNDA, url="https://funda.example/orig")
 
     dead = cast(
         DeadResidence,
@@ -105,7 +105,7 @@ def test_promote_reuses_existing_residence_when_bag_id_matches():
     # Complement-only: NULL fields are filled from dead row.
     assert residence.postcode == "1011AB"
     # Both URLs are now linked to the same residence.
-    urls = set(ListingUrl.objects.filter(listing=residence).values_list("url", flat=True))
+    urls = set(Listing.objects.filter(residence=residence).values_list("url", flat=True))
     assert urls == {"https://funda.example/orig", "https://pararius.example/dead"}
     assert not DeadResidence.objects.filter(pk=dead.pk).exists()
 
@@ -150,7 +150,7 @@ def test_promote_raises_when_not_ready():
 
 def test_promote_raises_when_url_attached_to_different_residence():
     other = cast(Residence, ResidenceFactory(bag_id="0003200000000004"))
-    ListingUrlFactory(listing=other, url="https://example.com/dead/conflict")
+    ListingFactory(residence=other, url="https://example.com/dead/conflict")
     dead = cast(
         DeadResidence,
         DeadResidenceFactory(
@@ -167,9 +167,9 @@ def test_promote_raises_when_url_attached_to_different_residence():
 
 
 def test_promote_idempotent_when_url_already_attached_to_same_residence():
-    """Re-promoting (or promoting after a manual ListingUrl insert) shouldn't error."""
+    """Re-promoting (or promoting after a manual Listing insert) shouldn't error."""
     existing = cast(Residence, ResidenceFactory(bag_id="0003200000000006"))
-    ListingUrlFactory(listing=existing, url="https://example.com/dead/already")
+    ListingFactory(residence=existing, url="https://example.com/dead/already")
     dead = cast(
         DeadResidence,
         DeadResidenceFactory(
@@ -181,7 +181,7 @@ def test_promote_idempotent_when_url_already_attached_to_same_residence():
     residence = promote_dead_residence(dead)
 
     assert residence.pk == existing.pk
-    assert ListingUrl.objects.filter(url="https://example.com/dead/already").count() == 1
+    assert Listing.objects.filter(url="https://example.com/dead/already").count() == 1
     assert not DeadResidence.objects.filter(pk=dead.pk).exists()
 
 
@@ -190,7 +190,7 @@ def test_upsert_dead_residences_skips_url_already_a_listing_url(
 ):
     """After a promotion, the next scrape run mustn't bounce the URL back into the DLQ."""
     residence = cast(Residence, ResidenceFactory(bag_id="0003200000000007"))
-    ListingUrlFactory(listing=residence, url="https://example.com/dead/already-promoted")
+    ListingFactory(residence=residence, url="https://example.com/dead/already-promoted")
 
     payload = scrape_payload(
         dead_listings=[
@@ -265,7 +265,7 @@ def test_promote_action_promotes_ready_skips_not_ready(admin_client):
 def test_promote_action_continues_after_per_row_error(admin_client):
     """A URL conflict on one row must not block promotion of the others."""
     occupied = cast(Residence, ResidenceFactory(bag_id="0003200000000020"))
-    ListingUrlFactory(listing=occupied, url="https://example.com/dead/conflicting-url")
+    ListingFactory(residence=occupied, url="https://example.com/dead/conflicting-url")
 
     conflicting = cast(
         DeadResidence,

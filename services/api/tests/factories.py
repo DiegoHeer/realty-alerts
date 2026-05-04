@@ -6,8 +6,8 @@ from factory.django import DjangoModelFactory
 from scraping.models import (
     DeadResidence,
     DeadResidenceReason,
+    Listing,
     ListingStatus,
-    ListingUrl,
     Residence,
     ScrapeRun,
     ScrapeRunStatus,
@@ -33,11 +33,11 @@ class ResidenceFactory(DjangoModelFactory):
     scraped_at = factory.LazyFunction(lambda: datetime.now(UTC))
 
 
-class ListingUrlFactory(DjangoModelFactory):
+class ListingFactory(DjangoModelFactory):
     class Meta:
-        model = ListingUrl
+        model = Listing
 
-    listing = factory.SubFactory(ResidenceFactory)
+    residence = factory.SubFactory(ResidenceFactory)
     website = Website.FUNDA
     url = factory.Sequence(lambda n: f"https://example.com/listing/{n}")
 
@@ -65,5 +65,5 @@ class ScrapeRunFactory(DjangoModelFactory):
     status = ScrapeRunStatus.SUCCESS
     listings_found = 0
     new_residences_count = 0
-    new_listing_urls_count = 0
+    new_listings_count = 0
     duration_seconds = 300.0
