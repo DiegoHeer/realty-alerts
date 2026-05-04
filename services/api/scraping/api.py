@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
+from django.utils import timezone
 from loguru import logger
 from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
@@ -169,6 +170,7 @@ def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
         "area_sqm": item.area_sqm,
         "image_url": item.image_url,
         "status": item.status,
+        "status_changed_at": timezone.now(),
         "scraped_at": scraped_at,
     }
 
@@ -178,7 +180,9 @@ def _apply_listing_update(listing: Listing, item: ListingIn, *, scraped_at: date
     # Always-update fields: capture price drops, status transitions, and freshness.
     listing.price = item.price
     listing.price_eur = _parse_price_eur(item.price)
-    listing.status = item.status
+    if listing.status != item.status:
+        listing.status = item.status
+        listing.status_changed_at = timezone.now()
     listing.scraped_at = scraped_at
     # Complement-only fields: fill columns currently NULL but never
     # overwrite a value that's already present (including 0 / "").

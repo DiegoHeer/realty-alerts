@@ -29,6 +29,7 @@ class ListingFactory(DjangoModelFactory):
     area_sqm = 75.0
     image_url = factory.Sequence(lambda n: f"https://example.com/img/{n}.jpg")
     status = ListingStatus.NEW
+    status_changed_at = factory.LazyFunction(lambda: datetime.now(UTC))
     scraped_at = factory.LazyFunction(lambda: datetime.now(UTC))
 
 
