@@ -4,9 +4,9 @@ from typing import Annotated, Self
 from ninja import Schema
 from pydantic import StringConstraints, model_validator
 
-from scraping.models import DeadListingReason, ListingStatus, ScrapeRunStatus, Website
+from scraping.models import DeadResidenceReason, ListingStatus, ScrapeRunStatus, Website
 
-# Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
+# Mirrors Residence.image_url = URLField(max_length=2000). Reject non-http(s) values
 # (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
 # 422 from Ninja rather than a Postgres DataError surfacing as a 500. The 2000
 # cap covers fastly/CDN signed URLs with query strings (observed up to ~700
@@ -18,7 +18,7 @@ ImageUrl = Annotated[str, StringConstraints(max_length=2000, pattern=r"^https?:/
 Title = Annotated[str, StringConstraints(min_length=1)]
 
 
-class ListingIn(Schema):
+class ResidenceIn(Schema):
     website: Website
     detail_url: str
     title: Title
@@ -43,7 +43,7 @@ class ListingUrlOut(Schema):
     first_seen_at: datetime
 
 
-class ListingOut(Schema):
+class ResidenceOut(Schema):
     id: int
     bag_id: str
     title: str
@@ -72,13 +72,13 @@ class ScrapeRunOut(Schema):
     finished_at: datetime | None
     status: ScrapeRunStatus
     listings_found: int
-    new_properties_count: int
+    new_residences_count: int
     new_listing_urls_count: int
     error_message: str | None
     duration_seconds: float | None
 
 
-class DeadListingIn(Schema):
+class DeadResidenceIn(Schema):
     website: Website
     detail_url: str
     title: Title
@@ -90,15 +90,15 @@ class DeadListingIn(Schema):
     house_number_suffix: str | None = None
     postcode: str | None = None
     image_url: ImageUrl | None = None
-    reason: DeadListingReason
+    reason: DeadResidenceReason
 
 
 class ScrapeResultsIn(Schema):
     started_at: datetime
     finished_at: datetime
     error_message: str | None = None
-    listings: list[ListingIn]
-    dead_listings: list[DeadListingIn] = []
+    listings: list[ResidenceIn]
+    dead_listings: list[DeadResidenceIn] = []
 
     @model_validator(mode="after")
     def _check_timestamps(self) -> Self:

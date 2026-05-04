@@ -2,8 +2,8 @@ from django.contrib import admin, messages
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 
-from scraping.models import DeadListing, Listing, ListingUrl, ScrapeRun
-from scraping.services import DeadListingPromotionError, promote_dead_listing
+from scraping.models import DeadResidence, ListingUrl, Residence, ScrapeRun
+from scraping.services import DeadResidencePromotionError, promote_dead_residence
 
 
 class ListingUrlInline(admin.TabularInline):
@@ -16,8 +16,8 @@ class ListingUrlInline(admin.TabularInline):
         return False
 
 
-@admin.register(Listing)
-class ListingAdmin(admin.ModelAdmin):
+@admin.register(Residence)
+class ResidenceAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "bag_id",
@@ -65,8 +65,8 @@ class PromotionReadyFilter(admin.SimpleListFilter):
         return queryset
 
 
-@admin.register(DeadListing)
-class DeadListingAdmin(admin.ModelAdmin):
+@admin.register(DeadResidence)
+class DeadResidenceAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "promotion_ready",
@@ -86,11 +86,11 @@ class DeadListingAdmin(admin.ModelAdmin):
     actions = ("promote_action",)
 
     @admin.display(boolean=True, description="Ready", ordering="bag_id")
-    def promotion_ready(self, obj: DeadListing) -> bool:
+    def promotion_ready(self, obj: DeadResidence) -> bool:
         return obj.is_promotion_ready
 
-    @admin.action(description="Promote to Listing")
-    def promote_action(self, request: HttpRequest, queryset: QuerySet[DeadListing]) -> None:
+    @admin.action(description="Promote to Residence")
+    def promote_action(self, request: HttpRequest, queryset: QuerySet[DeadResidence]) -> None:
         promoted = 0
         skipped = 0
         failed = 0
@@ -100,16 +100,16 @@ class DeadListingAdmin(admin.ModelAdmin):
                 skipped += 1
                 self.message_user(
                     request,
-                    f"DeadListing {dead.pk}: not ready — missing {', '.join(dead.missing_promotion_fields)}.",
+                    f"DeadResidence {dead.pk}: not ready — missing {', '.join(dead.missing_promotion_fields)}.",
                     level=messages.WARNING,
                 )
                 continue
             try:
-                promote_dead_listing(dead)
+                promote_dead_residence(dead)
                 promoted += 1
-            except DeadListingPromotionError as exc:
+            except DeadResidencePromotionError as exc:
                 failed += 1
-                self.message_user(request, f"DeadListing {dead.pk}: {exc}", level=messages.ERROR)
+                self.message_user(request, f"DeadResidence {dead.pk}: {exc}", level=messages.ERROR)
 
         summary = f"Promoted {promoted}, skipped {skipped}, failed {failed}."
         level = messages.SUCCESS if not skipped and not failed else messages.WARNING
@@ -125,7 +125,7 @@ class ScrapeRunAdmin(admin.ModelAdmin):
         "started_at",
         "finished_at",
         "listings_found",
-        "new_properties_count",
+        "new_residences_count",
         "new_listing_urls_count",
         "duration_seconds",
     )

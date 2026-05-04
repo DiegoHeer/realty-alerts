@@ -1,11 +1,11 @@
 from django.db import transaction
 
 from scraping.api import _parse_price_eur
-from scraping.models import DeadListing, Listing, ListingUrl
+from scraping.models import DeadResidence, ListingUrl, Residence
 
-# Subset of api._COMPLEMENT_FIELDS — DeadListing carries a strict subset of the
-# Listing schema (no property_type / bedrooms / area_sqm).
-_DEAD_LISTING_COMPLEMENT_FIELDS = (
+# Subset of api._COMPLEMENT_FIELDS — DeadResidence carries a strict subset of
+# the Residence schema (no property_type / bedrooms / area_sqm).
+_DEAD_RESIDENCE_COMPLEMENT_FIELDS = (
     "title",
     "street",
     "house_number",
@@ -16,44 +16,44 @@ _DEAD_LISTING_COMPLEMENT_FIELDS = (
 )
 
 
-class DeadListingPromotionError(ValueError):
-    """Raised when a DeadListing cannot be promoted into a Listing."""
+class DeadResidencePromotionError(ValueError):
+    """Raised when a DeadResidence cannot be promoted into a Residence."""
 
 
-def promote_dead_listing(dead: DeadListing) -> Listing:
-    """Promote a triaged DeadListing into a real Listing and delete the dead row.
+def promote_dead_residence(dead: DeadResidence) -> Residence:
+    """Promote a triaged DeadResidence into a real Residence and delete the dead row.
 
-    Reuses an existing Listing when its `bag_id` matches (e.g. same property
-    listed on a second portal). Refuses if `dead.detail_url` is already attached
-    to a Listing under a *different* `bag_id` — that's a re-wiring operation
-    that needs explicit operator action.
+    Reuses an existing Residence when its `bag_id` matches (e.g. same property
+    listed on a second portal). Refuses if `dead.detail_url` is already
+    attached to a Residence under a *different* `bag_id` — that's a re-wiring
+    operation that needs explicit operator action.
     """
     if not dead.is_promotion_ready:
         missing = ", ".join(dead.missing_promotion_fields)
-        raise DeadListingPromotionError(f"Not ready for promotion. Missing: {missing}")
+        raise DeadResidencePromotionError(f"Not ready for promotion. Missing: {missing}")
 
     has_conflict = ListingUrl.objects.filter(url=dead.detail_url).exclude(listing__bag_id=dead.bag_id).exists()
     if has_conflict:
-        raise DeadListingPromotionError(f"URL {dead.detail_url} is already attached to a different listing")
+        raise DeadResidencePromotionError(f"URL {dead.detail_url} is already attached to a different residence")
 
     with transaction.atomic():
-        listing, created = Listing.objects.get_or_create(
+        residence, created = Residence.objects.get_or_create(
             bag_id=dead.bag_id,
-            defaults=_listing_defaults_from_dead(dead),
+            defaults=_residence_defaults_from_dead(dead),
         )
         if not created:
-            _complement_listing_from_dead(listing, dead)
+            _complement_residence_from_dead(residence, dead)
 
         ListingUrl.objects.get_or_create(
             url=dead.detail_url,
-            defaults={"listing": listing, "website": dead.website},
+            defaults={"listing": residence, "website": dead.website},
         )
         dead.delete()
 
-    return listing
+    return residence
 
 
-def _listing_defaults_from_dead(dead: DeadListing) -> dict:
+def _residence_defaults_from_dead(dead: DeadResidence) -> dict:
     return {
         "title": dead.title,
         "price": dead.price,
@@ -69,16 +69,16 @@ def _listing_defaults_from_dead(dead: DeadListing) -> dict:
     }
 
 
-def _complement_listing_from_dead(listing: Listing, dead: DeadListing) -> None:
+def _complement_residence_from_dead(residence: Residence, dead: DeadResidence) -> None:
     # Promotion is manual triage — the dead row may be older than the matched
-    # listing's last scrape. Only refresh price/scraped_at when newer, unlike
+    # residence's last scrape. Only refresh price/scraped_at when newer, unlike
     # the scraper ingest path which always overwrites.
-    if dead.scraped_at > listing.scraped_at:
-        listing.scraped_at = dead.scraped_at
-        listing.price = dead.price
-        listing.price_eur = _parse_price_eur(dead.price)
+    if dead.scraped_at > residence.scraped_at:
+        residence.scraped_at = dead.scraped_at
+        residence.price = dead.price
+        residence.price_eur = _parse_price_eur(dead.price)
 
-    for field in _DEAD_LISTING_COMPLEMENT_FIELDS:
-        if getattr(listing, field) is None and (incoming := getattr(dead, field)) is not None:
-            setattr(listing, field, incoming)
-    listing.save()
+    for field in _DEAD_RESIDENCE_COMPLEMENT_FIELDS:
+        if getattr(residence, field) is None and (incoming := getattr(dead, field)) is not None:
+            setattr(residence, field, incoming)
+    residence.save()

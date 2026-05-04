@@ -1,19 +1,19 @@
 import { View, Text, Image, Pressable, ScrollView, Linking, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { getListing } from "@/api/listings";
+import { getResidence } from "@/api/residences";
 
-export default function ListingDetailScreen() {
+export default function ResidenceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const listingId = parseInt(id);
+  const residenceId = parseInt(id);
 
-  const { data: listing, isLoading } = useQuery({
-    queryKey: ["listing", listingId],
-    queryFn: () => getListing(listingId),
-    enabled: !isNaN(listingId),
+  const { data: residence, isLoading } = useQuery({
+    queryKey: ["residence", residenceId],
+    queryFn: () => getResidence(residenceId),
+    enabled: !isNaN(residenceId),
   });
 
-  if (isLoading || !listing) {
+  if (isLoading || !residence) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#2563eb" />
@@ -23,21 +23,21 @@ export default function ListingDetailScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#f9fafb" }}>
-      {listing.image_url && (
-        <Image source={{ uri: listing.image_url }} style={{ width: "100%", height: 250 }} resizeMode="cover" />
+      {residence.image_url && (
+        <Image source={{ uri: residence.image_url }} style={{ width: "100%", height: 250 }} resizeMode="cover" />
       )}
 
       <View style={{ padding: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 8 }}>{listing.title}</Text>
-        <Text style={{ fontSize: 24, fontWeight: "700", color: "#2563eb", marginBottom: 16 }}>{listing.price}</Text>
+        <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 8 }}>{residence.title}</Text>
+        <Text style={{ fontSize: 24, fontWeight: "700", color: "#2563eb", marginBottom: 16 }}>{residence.price}</Text>
 
         <View style={{ backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 16 }}>
           {[
-            { label: "City", value: listing.city },
-            { label: "Type", value: listing.property_type },
-            { label: "Bedrooms", value: listing.bedrooms?.toString() },
-            { label: "Area", value: listing.area_sqm ? `${listing.area_sqm} m2` : null },
-            { label: "Website", value: listing.website },
+            { label: "City", value: residence.city },
+            { label: "Type", value: residence.property_type },
+            { label: "Bedrooms", value: residence.bedrooms?.toString() },
+            { label: "Area", value: residence.area_sqm ? `${residence.area_sqm} m2` : null },
+            { label: "Website", value: residence.website },
           ].map(
             (d) =>
               d.value && (
@@ -50,7 +50,7 @@ export default function ListingDetailScreen() {
         </View>
 
         <Pressable
-          onPress={() => Linking.openURL(listing.detail_url)}
+          onPress={() => Linking.openURL(residence.detail_url)}
           style={{
             backgroundColor: "#2563eb",
             padding: 16,

@@ -8,10 +8,10 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import DeadListing, Listing, ListingUrl, ScrapeRun, ScrapeRunStatus, Website
-from scraping.schemas import DeadListingIn, ListingIn, ScrapeResultsIn, ScrapeRunOut
+from scraping.models import DeadResidence, ListingUrl, Residence, ScrapeRun, ScrapeRunStatus, Website
+from scraping.schemas import DeadResidenceIn, ResidenceIn, ScrapeResultsIn, ScrapeRunOut
 
-# Fields to fill on existing listings only when the stored value is NULL.
+# Fields to fill on existing residences only when the stored value is NULL.
 # We treat 0 / "" as real values, not blanks — bedrooms=0 (studio) and
 # area_sqm=0.0 (junk parse) are distinct from "we never had this column set".
 # Volatile fields (price, scraped_at) are always overwritten — see the upsert
@@ -83,8 +83,8 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
     run_status = ScrapeRunStatus.FAILED if payload.error_message else ScrapeRunStatus.SUCCESS
 
     with transaction.atomic():
-        new_properties_count, new_listing_urls_count = _ingest_listings(deduped, scraped_at=now)
-        _upsert_dead_listings(payload.dead_listings, scraped_at=now)
+        new_residences_count, new_listing_urls_count = _ingest_residences(deduped, scraped_at=now)
+        _upsert_dead_residences(payload.dead_listings, scraped_at=now)
 
         scrape_run = ScrapeRun.objects.create(
             website=website,
@@ -92,68 +92,68 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
             finished_at=payload.finished_at,
             status=run_status,
             listings_found=len(payload.listings),
-            new_properties_count=new_properties_count,
+            new_residences_count=new_residences_count,
             new_listing_urls_count=new_listing_urls_count,
             error_message=payload.error_message,
             duration_seconds=duration,
         )
 
     logger.info(
-        f"Scrape run for {website}: {new_properties_count} new properties / "
+        f"Scrape run for {website}: {new_residences_count} new residences / "
         f"{new_listing_urls_count} new urls / {len(payload.listings)} found, "
         f"{len(payload.dead_listings)} dead in {duration:.1f}s"
     )
     return scrape_run
 
 
-def _dedup_by_bag_id(listings: list[ListingIn]) -> list[ListingIn]:
+def _dedup_by_bag_id(items: list[ResidenceIn]) -> list[ResidenceIn]:
     """Keep the first occurrence of each bag_id within a single payload.
     A single scrape can surface the same property twice (duplicate cards on a
     results page); collapse on bag_id so we don't fight ourselves on the upsert.
     """
-    seen: dict[str, ListingIn] = {}
-    for item in listings:
+    seen: dict[str, ResidenceIn] = {}
+    for item in items:
         seen.setdefault(item.bag_id, item)
     return list(seen.values())
 
 
-def _ingest_listings(listings: list[ListingIn], *, scraped_at: datetime) -> tuple[int, int]:
-    """Upsert listings, returning (new_properties_count, new_listing_urls_count).
+def _ingest_residences(items: list[ResidenceIn], *, scraped_at: datetime) -> tuple[int, int]:
+    """Upsert residences, returning (new_residences_count, new_listing_urls_count).
 
     The "existing" snapshot is taken before any writes so newly-created rows
     aren't counted as pre-existing.
     """
-    payload_bag_ids = {item.bag_id for item in listings}
-    payload_urls = {item.detail_url for item in listings}
-    existing_bag_ids = set(Listing.objects.filter(bag_id__in=payload_bag_ids).values_list("bag_id", flat=True))
+    payload_bag_ids = {item.bag_id for item in items}
+    payload_urls = {item.detail_url for item in items}
+    existing_bag_ids = set(Residence.objects.filter(bag_id__in=payload_bag_ids).values_list("bag_id", flat=True))
     existing_urls = set(ListingUrl.objects.filter(url__in=payload_urls).values_list("url", flat=True))
 
-    for item in listings:
-        _upsert_listing(item, scraped_at=scraped_at)
+    for item in items:
+        _upsert_residence(item, scraped_at=scraped_at)
 
     return len(payload_bag_ids - existing_bag_ids), len(payload_urls - existing_urls)
 
 
-def _upsert_listing(item: ListingIn, *, scraped_at: datetime) -> Listing:
-    listing, created = Listing.objects.get_or_create(
+def _upsert_residence(item: ResidenceIn, *, scraped_at: datetime) -> Residence:
+    residence, created = Residence.objects.get_or_create(
         bag_id=item.bag_id,
-        defaults=_listing_defaults(item, scraped_at=scraped_at),
+        defaults=_residence_defaults(item, scraped_at=scraped_at),
     )
     if not created:
-        _apply_listing_update(listing, item, scraped_at=scraped_at)
+        _apply_residence_update(residence, item, scraped_at=scraped_at)
 
-    # If the URL is already attached to a different Listing (e.g. a parser fix
-    # changed the BAG match across runs), keep the existing FK. Re-wiring URLs
-    # between listings is intentionally a manual /admin operation, not the
-    # auto-ingest path.
+    # If the URL is already attached to a different Residence (e.g. a parser
+    # fix changed the BAG match across runs), keep the existing FK. Re-wiring
+    # URLs between residences is intentionally a manual /admin operation, not
+    # the auto-ingest path.
     ListingUrl.objects.get_or_create(
         url=item.detail_url,
-        defaults={"listing": listing, "website": item.website},
+        defaults={"listing": residence, "website": item.website},
     )
-    return listing
+    return residence
 
 
-def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
+def _residence_defaults(item: ResidenceIn, *, scraped_at: datetime) -> dict:
     return {
         "title": item.title,
         "price": item.price,
@@ -174,28 +174,28 @@ def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
 
 
 # TODO: figure out a more elegant way of doing this
-def _apply_listing_update(listing: Listing, item: ListingIn, *, scraped_at: datetime) -> None:
+def _apply_residence_update(residence: Residence, item: ResidenceIn, *, scraped_at: datetime) -> None:
     # Always-update fields: capture price drops, status transitions, and freshness.
-    listing.price = item.price
-    listing.price_eur = _parse_price_eur(item.price)
-    listing.status = item.status
-    listing.scraped_at = scraped_at
+    residence.price = item.price
+    residence.price_eur = _parse_price_eur(item.price)
+    residence.status = item.status
+    residence.scraped_at = scraped_at
     # Complement-only fields: fill columns currently NULL but never
     # overwrite a value that's already present (including 0 / "").
     for field in _COMPLEMENT_FIELDS:
-        if getattr(listing, field) is None and (incoming := getattr(item, field)) is not None:
-            setattr(listing, field, incoming)
-    listing.save()
+        if getattr(residence, field) is None and (incoming := getattr(item, field)) is not None:
+            setattr(residence, field, incoming)
+    residence.save()
 
 
-def _upsert_dead_listings(dead: list[DeadListingIn], *, scraped_at: datetime) -> None:
+def _upsert_dead_residences(dead: list[DeadResidenceIn], *, scraped_at: datetime) -> None:
     """Re-categorisation is allowed across runs (e.g. a typo source that gets
-    fixed and now matches BAG would be removed from listings on next ingest;
+    fixed and now matches BAG would be removed from residences on next ingest;
     if it's still broken we just refresh the row's reason and timestamp).
 
-    URLs already attached to a real `Listing` are skipped — they were promoted
-    out of the DLQ via /admin and shouldn't bounce back when BAG resolution
-    keeps failing upstream in the scraper.
+    URLs already attached to a real `Residence` are skipped — they were
+    promoted out of the DLQ via /admin and shouldn't bounce back when BAG
+    resolution keeps failing upstream in the scraper.
     """
     if not dead:
         return
@@ -207,13 +207,13 @@ def _upsert_dead_listings(dead: list[DeadListingIn], *, scraped_at: datetime) ->
         if item.detail_url in promoted_urls:
             continue
 
-        DeadListing.objects.update_or_create(
+        DeadResidence.objects.update_or_create(
             detail_url=item.detail_url,
-            defaults=_dead_listing_defaults(item, scraped_at=scraped_at),
+            defaults=_dead_residence_defaults(item, scraped_at=scraped_at),
         )
 
 
-def _dead_listing_defaults(item: DeadListingIn, *, scraped_at: datetime) -> dict:
+def _dead_residence_defaults(item: DeadResidenceIn, *, scraped_at: datetime) -> dict:
     return {
         "website": item.website,
         "title": item.title,

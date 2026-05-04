@@ -1,7 +1,7 @@
 import { api } from "./client";
-import type { Listing } from "@/types";
+import type { Residence } from "@/types";
 
-export interface ListingParams {
+export interface ResidenceParams {
   city?: string;
   min_price?: number;
   max_price?: number;
@@ -11,7 +11,7 @@ export interface ListingParams {
   page_size?: number;
 }
 
-export async function getListings(params?: ListingParams): Promise<Listing[]> {
+export async function getResidences(params?: ResidenceParams): Promise<Residence[]> {
   const query: Record<string, string> = {};
   if (params?.city) query.city = params.city;
   if (params?.min_price != null) query.min_price = String(params.min_price);
@@ -21,9 +21,9 @@ export async function getListings(params?: ListingParams): Promise<Listing[]> {
   if (params?.page != null) query.page = String(params.page);
   if (params?.page_size != null) query.page_size = String(params.page_size);
 
-  return api.get<Listing[]>("/api/v1/listings/", query);
+  return api.get<Residence[]>("/api/v1/residences/", query);
 }
 
-export async function getListing(id: number): Promise<Listing> {
-  return api.get<Listing>(`/api/v1/listings/${id}`);
+export async function getResidence(id: number): Promise<Residence> {
+  return api.get<Residence>(`/api/v1/residences/${id}`);
 }

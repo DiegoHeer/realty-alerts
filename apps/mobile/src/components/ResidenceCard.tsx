@@ -1,17 +1,17 @@
 import { View, Text, Image, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import type { Listing } from "@/types";
+import type { Residence } from "@/types";
 
 interface Props {
-  listing: Listing;
+  residence: Residence;
 }
 
-export function ListingCard({ listing }: Props) {
+export function ResidenceCard({ residence }: Props) {
   const router = useRouter();
 
   return (
     <Pressable
-      onPress={() => router.push(`/listing/${listing.id}`)}
+      onPress={() => router.push(`/residence/${residence.id}`)}
       style={{
         backgroundColor: "#fff",
         borderRadius: 12,
@@ -24,30 +24,30 @@ export function ListingCard({ listing }: Props) {
         shadowRadius: 3,
       }}
     >
-      {listing.image_url && (
+      {residence.image_url && (
         <Image
-          source={{ uri: listing.image_url }}
+          source={{ uri: residence.image_url }}
           style={{ width: "100%", height: 180 }}
           resizeMode="cover"
         />
       )}
       <View style={{ padding: 12 }}>
         <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 4 }}>
-          {listing.title}
+          {residence.title}
         </Text>
         <Text style={{ fontSize: 18, fontWeight: "700", color: "#2563eb", marginBottom: 4 }}>
-          {listing.price}
+          {residence.price}
         </Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <Text style={{ color: "#6b7280", fontSize: 13 }}>{listing.city}</Text>
-          {listing.property_type && (
-            <Text style={{ color: "#6b7280", fontSize: 13 }}>{listing.property_type}</Text>
+          <Text style={{ color: "#6b7280", fontSize: 13 }}>{residence.city}</Text>
+          {residence.property_type && (
+            <Text style={{ color: "#6b7280", fontSize: 13 }}>{residence.property_type}</Text>
           )}
-          {listing.bedrooms && (
-            <Text style={{ color: "#6b7280", fontSize: 13 }}>{listing.bedrooms} bed</Text>
+          {residence.bedrooms && (
+            <Text style={{ color: "#6b7280", fontSize: 13 }}>{residence.bedrooms} bed</Text>
           )}
-          {listing.area_sqm && (
-            <Text style={{ color: "#6b7280", fontSize: 13 }}>{listing.area_sqm} m²</Text>
+          {residence.area_sqm && (
+            <Text style={{ color: "#6b7280", fontSize: 13 }}>{residence.area_sqm} m²</Text>
           )}
         </View>
       </View>
