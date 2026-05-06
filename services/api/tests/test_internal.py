@@ -3,6 +3,7 @@ from typing import cast
 
 import pytest
 from scraping.models import (
+    BagStatus,
     DeadResidence,
     DeadResidenceReason,
     Listing,
@@ -583,6 +584,142 @@ def test_submit_results_rejects_unknown_dead_residence_reason(
 
     assert response.status_code == 422
     assert DeadResidence.objects.count() == 0
+
+
+def test_submit_results_persists_per_portal_data_on_listing(client, api_key_headers, scrape_payload, residence_payload):
+    payload = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url="https://funda.nl/listing/abc",
+                bag_id="0003200000000400",
+                title="Sunny duplex",
+                price="€ 425.000 k.k.",
+                image_url="https://cdn.example.com/abc.jpg",
+                status=ListingStatus.SALE_PENDING.value,
+                street="Nieuwstraat",
+                house_number=42,
+                postcode="1011 AA",
+                city="Amsterdam",
+            ),
+        ],
+    )
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 200
+    listing = Listing.objects.get(url="https://funda.nl/listing/abc")
+    assert listing.title == "Sunny duplex"
+    assert listing.price == "€ 425.000 k.k."
+    assert listing.price_eur == 425_000
+    assert listing.image_url == "https://cdn.example.com/abc.jpg"
+    assert listing.status == ListingStatus.SALE_PENDING
+    assert listing.street == "Nieuwstraat"
+    assert listing.house_number == 42
+    assert listing.postcode == "1011 AA"
+    assert listing.city == "Amsterdam"
+    assert listing.bag_status == BagStatus.RESOLVED
+    assert listing.scraped_at is not None
+    assert listing.last_seen_at is not None
+    assert listing.bag_resolved_at is not None
+
+
+def test_submit_results_reconciles_residence_aggregates_on_create(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    payload = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url="https://funda.nl/listing/agg",
+                bag_id="0003200000000401",
+                price="€ 410.000 k.k.",
+                status=ListingStatus.NEW.value,
+            ),
+        ],
+    )
+
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers)
+
+    residence = Residence.objects.get(bag_id="0003200000000401")
+    assert residence.current_price_eur == 410_000
+    assert residence.current_status == ListingStatus.NEW
+    assert residence.last_scraped_at is not None
+
+
+def test_submit_results_cross_portal_picks_min_price_and_advanced_status(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    funda = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url="https://funda.nl/listing/cp",
+                website=Website.FUNDA.value,
+                bag_id="0003200000000402",
+                price="€ 500.000 k.k.",
+                status=ListingStatus.NEW.value,
+            ),
+        ],
+    )
+    pararius = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url="https://pararius.nl/listing/cp",
+                website=Website.PARARIUS.value,
+                bag_id="0003200000000402",
+                price="€ 480.000 k.k.",
+                status=ListingStatus.SALE_PENDING.value,
+            ),
+        ],
+    )
+
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=funda, headers=api_key_headers)
+    client.post(f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results", json=pararius, headers=api_key_headers)
+
+    residence = Residence.objects.get(bag_id="0003200000000402")
+    assert residence.current_price_eur == 480_000
+    assert residence.current_status == ListingStatus.SALE_PENDING
+
+
+def test_submit_results_re_scrape_updates_listing_per_portal_fields(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    first = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url="https://funda.nl/listing/re",
+                bag_id="0003200000000403",
+                price="€ 450.000 k.k.",
+                status=ListingStatus.NEW.value,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+    listing_before = Listing.objects.get(url="https://funda.nl/listing/re")
+    first_seen_at = listing_before.first_seen_at
+
+    second = scrape_payload(
+        listings=[
+            residence_payload(
+                detail_url="https://funda.nl/listing/re",
+                bag_id="0003200000000403",
+                price="€ 420.000 k.k.",
+                status=ListingStatus.SALE_PENDING.value,
+            ),
+        ],
+    )
+    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
+
+    listing = Listing.objects.get(url="https://funda.nl/listing/re")
+    assert listing.first_seen_at == first_seen_at  # never moves
+    assert listing.price == "€ 420.000 k.k."
+    assert listing.price_eur == 420_000
+    assert listing.status == ListingStatus.SALE_PENDING
+    assert listing.last_seen_at > first_seen_at
+
+    residence = Residence.objects.get(bag_id="0003200000000403")
+    assert residence.current_price_eur == 420_000
+    assert residence.current_status == ListingStatus.SALE_PENDING
 
 
 def test_internal_endpoints_require_api_key(client, scrape_payload):

@@ -9,7 +9,8 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import DeadResidence, Listing, Residence, ScrapeRun, ScrapeRunStatus, Website
+from scraping.models import BagStatus, DeadResidence, Listing, Residence, ScrapeRun, ScrapeRunStatus, Website
+from scraping.reconciliation import reconcile_residence
 from scraping.schemas import DeadResidenceIn, ResidenceIn, ScrapeResultsIn, ScrapeRunOut
 
 # Fields to fill on existing residences only when the stored value is NULL.
@@ -147,11 +148,39 @@ def _upsert_residence(item: ResidenceIn, *, scraped_at: datetime) -> Residence:
     # fix changed the BAG match across runs), keep the existing FK. Re-wiring
     # listings between residences is intentionally a manual /admin operation,
     # not the auto-ingest path.
-    Listing.objects.get_or_create(
-        url=item.detail_url,
-        defaults={"residence": residence, "website": item.website},
-    )
+    listing_defaults = _listing_defaults(item, residence=residence, scraped_at=scraped_at)
+    listing, created = Listing.objects.get_or_create(url=item.detail_url, defaults=listing_defaults)
+    if not created:
+        for field, value in listing_defaults.items():
+            if field == "residence":
+                continue
+            setattr(listing, field, value)
+        listing.save()
+    if listing.residence_id == residence.pk:
+        reconcile_residence(residence)
     return residence
+
+
+def _listing_defaults(item: ResidenceIn, *, residence: Residence, scraped_at: datetime) -> dict:
+    return {
+        "residence": residence,
+        "website": item.website,
+        "title": item.title,
+        "price": item.price,
+        "price_eur": _parse_price_eur(item.price),
+        "image_url": item.image_url,
+        "status": item.status,
+        "scraped_at": scraped_at,
+        "last_seen_at": scraped_at,
+        "street": item.street,
+        "house_number": item.house_number,
+        "house_letter": item.house_letter,
+        "house_number_suffix": item.house_number_suffix,
+        "postcode": item.postcode,
+        "city": item.city,
+        "bag_status": BagStatus.RESOLVED,
+        "bag_resolved_at": scraped_at,
+    }
 
 
 def _residence_defaults(item: ResidenceIn, *, scraped_at: datetime) -> dict:
