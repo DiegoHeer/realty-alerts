@@ -1,7 +1,10 @@
 from datetime import UTC, datetime, timedelta
 from typing import cast
+from unittest import mock
 
+import httpx
 import pytest
+import respx
 from scraping.models import (
     BagStatus,
     DeadResidence,
@@ -374,8 +377,123 @@ def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scr
     assert response.status_code == 422
 
 
-def test_submit_results_rejects_residence_without_bag_id(client, api_key_headers, scrape_payload, residence_payload):
+def test_submit_results_accepts_payload_without_bag_id_and_queues_resolution(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    """The post-PR-4 scraper drops scraper-side BAG enrichment and submits raw
+    listings. The handler stores them as `bag_status='pending'` with no
+    Residence link and queues `resolve_bag` to do the lookup async.
+
+    `transaction.on_commit` is patched to fire the callback inline because
+    pytest-django wraps each test in a transaction that's rolled back, so
+    real on-commit callbacks never run."""
     item = residence_payload()
+    del item["bag_id"]
+    payload = scrape_payload(listings=[item])
+
+    with (
+        mock.patch("scraping.api.transaction.on_commit", side_effect=lambda fn: fn()),
+        mock.patch("scraping.api.resolve_bag.delay") as task_delay,
+    ):
+        response = client.post(
+            f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["new_listings_count"] == 1
+    assert Residence.objects.count() == 0
+    listing = Listing.objects.get(url=item["detail_url"])
+    assert listing.bag_status == BagStatus.PENDING
+    assert listing.residence is None
+    assert listing.title == item["title"]
+    assert listing.price == item["price"]
+    task_delay.assert_called_once_with(listing.pk)
+
+
+def test_submit_results_treats_empty_string_bag_id_as_missing(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    payload = scrape_payload(listings=[residence_payload(bag_id="")])
+
+    with (
+        mock.patch("scraping.api.transaction.on_commit", side_effect=lambda fn: fn()),
+        mock.patch("scraping.api.resolve_bag.delay") as task_delay,
+    ):
+        response = client.post(
+            f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+        )
+
+    assert response.status_code == 200
+    listing = Listing.objects.get()
+    assert listing.bag_status == BagStatus.PENDING
+    task_delay.assert_called_once_with(listing.pk)
+
+
+def test_submit_results_does_not_redispatch_for_already_resolved_url(
+    client, api_key_headers, scrape_payload, residence_payload
+):
+    """Re-scrape of the same URL shouldn't re-queue resolution — the listing
+    is already linked to a residence; the bag_status guard preserves it."""
+    existing_residence = cast(Residence, ResidenceFactory(bag_id="0003200000000900"))
+    ListingFactory(
+        residence=existing_residence,
+        url="https://funda.nl/listing/already-resolved",
+        bag_status=BagStatus.RESOLVED,
+    )
+    item = residence_payload(detail_url="https://funda.nl/listing/already-resolved")
+    del item["bag_id"]
+    payload = scrape_payload(listings=[item])
+
+    with mock.patch("scraping.api.resolve_bag.delay") as task_delay:
+        response = client.post(
+            f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+        )
+
+    assert response.status_code == 200
+    task_delay.assert_not_called()
+    listing = Listing.objects.get(url="https://funda.nl/listing/already-resolved")
+    assert listing.bag_status == BagStatus.RESOLVED
+    assert listing.residence == existing_residence
+
+
+@pytest.mark.django_db(transaction=True)
+@respx.mock
+def test_submit_results_no_bag_id_path_resolves_end_to_end(client, api_key_headers, scrape_payload, residence_payload):
+    """End-to-end: POST → on_commit fires resolve_bag → BAG mocked → listing
+    lands as RESOLVED with a Residence linked. `transaction=True` is needed
+    so `transaction.on_commit` callbacks actually fire (the default
+    non-transactional pytest-django marker swallows them)."""
+    from scraping.bag_client import _BAG_BASE_URL
+
+    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        {
+                            "openbareRuimteNaam": "Klaterweg",
+                            "huisnummer": 9,
+                            "huisletter": "R",
+                            "huisnummertoevoeging": "A59",
+                            "postcode": "1271KE",
+                            "woonplaatsNaam": "Huizen",
+                            "nummeraanduidingIdentificatie": "0402200000084467",
+                        }
+                    ]
+                }
+            },
+        )
+    )
+    item = residence_payload(
+        detail_url="https://funda.nl/listing/e2e",
+        postcode="1271 KE",
+        house_number=9,
+        house_letter="R",
+        house_number_suffix="A59",
+        city="Huizen",
+    )
     del item["bag_id"]
     payload = scrape_payload(listings=[item])
 
@@ -383,9 +501,11 @@ def test_submit_results_rejects_residence_without_bag_id(client, api_key_headers
         f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
     )
 
-    assert response.status_code == 422
-    assert "bag_id" in response.content.decode()
-    assert Residence.objects.count() == 0
+    assert response.status_code == 200
+    listing = Listing.objects.get(url="https://funda.nl/listing/e2e")
+    assert listing.bag_status == BagStatus.RESOLVED
+    assert listing.residence is not None
+    assert listing.residence.bag_id == "0402200000084467"
 
 
 @pytest.mark.parametrize(
