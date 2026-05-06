@@ -9,9 +9,9 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import BagStatus, DeadResidence, Listing, Residence, ScrapeRun, ScrapeRunStatus, Website
+from scraping.models import BagStatus, Listing, Residence, ScrapeRun, ScrapeRunStatus, Website
 from scraping.reconciliation import reconcile_residence
-from scraping.schemas import DeadResidenceIn, ResidenceIn, ScrapeResultsIn, ScrapeRunOut
+from scraping.schemas import ResidenceIn, ScrapeResultsIn, ScrapeRunOut
 from scraping.tasks import resolve_bag
 
 # Fields to fill on existing residences only when the stored value is NULL.
@@ -89,7 +89,6 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
     with transaction.atomic():
         new_residences_count, legacy_new_count = _ingest_residences(deduped_legacy, scraped_at=now)
         pending_new_count = _ingest_pending_listings(pending_items, scraped_at=now)
-        _upsert_dead_residences(payload.dead_listings, scraped_at=now)
 
         new_listings_count = legacy_new_count + pending_new_count
         scrape_run = ScrapeRun.objects.create(
@@ -106,8 +105,8 @@ def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
 
     logger.info(
         f"Scrape run for {website}: {new_residences_count} new residences / "
-        f"{new_listings_count} new listings / {len(payload.listings)} found, "
-        f"{len(payload.dead_listings)} dead in {duration:.1f}s"
+        f"{new_listings_count} new listings / {len(payload.listings)} found "
+        f"in {duration:.1f}s"
     )
     return scrape_run
 
@@ -290,48 +289,6 @@ def _apply_residence_update(residence: Residence, item: ResidenceIn, *, scraped_
         if getattr(residence, field) is None and (incoming := getattr(item, field)) is not None:
             setattr(residence, field, incoming)
     residence.save()
-
-
-def _upsert_dead_residences(dead: list[DeadResidenceIn], *, scraped_at: datetime) -> None:
-    """Re-categorisation is allowed across runs (e.g. a typo source that gets
-    fixed and now matches BAG would be removed from residences on next ingest;
-    if it's still broken we just refresh the row's reason and timestamp).
-
-    URLs already attached to a real `Residence` are skipped — they were
-    promoted out of the DLQ via /admin and shouldn't bounce back when BAG
-    resolution keeps failing upstream in the scraper.
-    """
-    if not dead:
-        return
-
-    urls = [item.detail_url for item in dead]
-    promoted_urls = set(Listing.objects.filter(url__in=urls).values_list("url", flat=True))
-
-    for item in dead:
-        if item.detail_url in promoted_urls:
-            continue
-
-        DeadResidence.objects.update_or_create(
-            detail_url=item.detail_url,
-            defaults=_dead_residence_defaults(item, scraped_at=scraped_at),
-        )
-
-
-def _dead_residence_defaults(item: DeadResidenceIn, *, scraped_at: datetime) -> dict:
-    return {
-        "website": item.website,
-        "title": item.title,
-        "price": item.price,
-        "city": item.city,
-        "street": item.street,
-        "house_number": item.house_number,
-        "house_letter": item.house_letter,
-        "house_number_suffix": item.house_number_suffix,
-        "postcode": item.postcode,
-        "image_url": item.image_url,
-        "reason": item.reason,
-        "scraped_at": scraped_at,
-    }
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())

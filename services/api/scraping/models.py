@@ -19,13 +19,6 @@ class ScrapeRunStatus(models.TextChoices):
     FAILED = "failed", "Failed"
 
 
-class DeadResidenceReason(models.TextChoices):
-    PARSE_FAILED = "parse_failed", "Parse failed"
-    MISSING_POSTCODE_AND_STREET = "missing_postcode_and_street", "Missing postcode and street"
-    BAG_NO_MATCH = "bag_no_match", "BAG no match"
-    BAG_AMBIGUOUS = "bag_ambiguous", "BAG ambiguous"
-
-
 class BagStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     RESOLVED = "resolved", "Resolved"
@@ -119,57 +112,6 @@ class Listing(models.Model):
 
     def __str__(self) -> str:
         return f"{self.website}: {self.url}"
-
-
-class DeadResidence(models.Model):
-    """Residences that fail BAG enrichment terminally — bad input from the
-    source (typo postcode, garbage address) or a BAG miss we can't recover.
-    Kept separate from `residences` so notification/matching never sees them
-    and they're easy to triage from /admin."""
-
-    website = models.CharField(max_length=20, choices=Website.choices)
-    detail_url = models.URLField(max_length=500, unique=True)
-    bag_id = models.CharField(max_length=16, null=True, blank=True)
-    title = models.CharField(max_length=500)
-    price = models.CharField(max_length=100)
-    city = models.CharField(max_length=255)
-    street = models.CharField(max_length=255, null=True, blank=True)
-    house_number = models.PositiveIntegerField(null=True, blank=True)
-    house_letter = models.CharField(max_length=5, null=True, blank=True)
-    house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
-    postcode = models.CharField(max_length=10, null=True, blank=True)
-    image_url = models.URLField(max_length=2000, null=True, blank=True)
-    reason = models.CharField(max_length=40, choices=DeadResidenceReason.choices)
-    scraped_at = models.DateTimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "dead_residences"
-        indexes = [
-            models.Index(fields=["website", "created_at"], name="idx_dead_residences_website"),
-            models.Index(fields=["reason", "created_at"], name="idx_dead_residences_reason"),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.title} ({self.reason})"
-
-    @property
-    def is_promotion_ready(self) -> bool:
-        return not self.missing_promotion_fields
-
-    @property
-    def missing_promotion_fields(self) -> list[str]:
-        return [
-            name
-            for name, value in (
-                ("bag_id", self.bag_id),
-                ("title", self.title),
-                ("price", self.price),
-                ("city", self.city),
-            )
-            if not value
-        ]
 
 
 class ScrapeRun(models.Model):

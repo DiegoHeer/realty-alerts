@@ -3,16 +3,7 @@ from datetime import UTC, datetime, timedelta
 import factory
 from factory.django import DjangoModelFactory
 
-from scraping.models import (
-    DeadResidence,
-    DeadResidenceReason,
-    Listing,
-    ListingStatus,
-    Residence,
-    ScrapeRun,
-    ScrapeRunStatus,
-    Website,
-)
+from scraping.models import Listing, ListingStatus, Residence, ScrapeRun, ScrapeRunStatus, Website
 
 
 class ResidenceFactory(DjangoModelFactory):
@@ -45,19 +36,6 @@ class ListingFactory(DjangoModelFactory):
     residence = factory.SubFactory(ResidenceFactory)
     website = Website.FUNDA
     url = factory.Sequence(lambda n: f"https://example.com/listing/{n}")
-
-
-class DeadResidenceFactory(DjangoModelFactory):
-    class Meta:
-        model = DeadResidence
-
-    website = Website.FUNDA
-    detail_url = factory.Sequence(lambda n: f"https://example.com/dead/{n}")
-    title = factory.Sequence(lambda n: f"Dead residence {n}")
-    price = "€ 250.000 k.k."
-    city = "Amsterdam"
-    reason = DeadResidenceReason.BAG_NO_MATCH
-    scraped_at = factory.LazyFunction(lambda: datetime.now(UTC))
 
 
 class ScrapeRunFactory(DjangoModelFactory):

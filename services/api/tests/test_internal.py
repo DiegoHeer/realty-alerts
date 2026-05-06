@@ -7,8 +7,6 @@ import pytest
 import respx
 from scraping.models import (
     BagStatus,
-    DeadResidence,
-    DeadResidenceReason,
     Listing,
     ListingStatus,
     Residence,
@@ -631,79 +629,6 @@ def test_submit_results_persists_bag_id(client, api_key_headers, scrape_payload,
 
     assert response.status_code == 200
     assert Residence.objects.get().bag_id == "0003200000133985"
-
-
-def test_submit_results_persists_dead_residences(client, api_key_headers, scrape_payload, dead_residence_payload):
-    payload = scrape_payload(
-        listings=[],
-        dead_listings=[
-            dead_residence_payload(
-                "https://example.com/dead/typo-postcode",
-                reason=DeadResidenceReason.BAG_NO_MATCH.value,
-                title="Probably typoed postcode",
-                postcode="ZZZZ ZZ",
-            ),
-            dead_residence_payload(
-                "https://example.com/dead/parse-failed",
-                reason=DeadResidenceReason.PARSE_FAILED.value,
-                title="No number to parse",
-            ),
-        ],
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 200
-    assert DeadResidence.objects.count() == 2
-    by_reason = {d.reason: d for d in DeadResidence.objects.all()}
-    assert set(by_reason) == {DeadResidenceReason.BAG_NO_MATCH.value, DeadResidenceReason.PARSE_FAILED.value}
-    assert by_reason[DeadResidenceReason.BAG_NO_MATCH.value].postcode == "ZZZZ ZZ"
-
-
-def test_submit_results_dead_residences_re_categorise_on_repeat(
-    client, api_key_headers, scrape_payload, dead_residence_payload
-):
-    """A dead residence that reappears in a later run with a different reason
-    must update_or_create on detail_url instead of inserting a duplicate."""
-    first = scrape_payload(
-        dead_listings=[
-            dead_residence_payload(
-                "https://example.com/dead/repeat",
-                reason=DeadResidenceReason.BAG_AMBIGUOUS.value,
-            ),
-        ],
-    )
-    second = scrape_payload(
-        dead_listings=[
-            dead_residence_payload(
-                "https://example.com/dead/repeat",
-                reason=DeadResidenceReason.BAG_NO_MATCH.value,
-            ),
-        ],
-    )
-
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
-
-    assert DeadResidence.objects.count() == 1
-    assert DeadResidence.objects.get().reason == DeadResidenceReason.BAG_NO_MATCH.value
-
-
-def test_submit_results_rejects_unknown_dead_residence_reason(
-    client, api_key_headers, scrape_payload, dead_residence_payload
-):
-    payload = scrape_payload(
-        dead_listings=[dead_residence_payload(reason="not_a_real_reason")],
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 422
-    assert DeadResidence.objects.count() == 0
 
 
 def test_submit_results_persists_per_portal_data_on_listing(client, api_key_headers, scrape_payload, residence_payload):

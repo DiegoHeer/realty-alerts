@@ -4,7 +4,7 @@ from typing import Annotated, Self
 from ninja import Schema
 from pydantic import StringConstraints, model_validator
 
-from scraping.models import DeadResidenceReason, ListingStatus, ScrapeRunStatus, Website
+from scraping.models import ListingStatus, ScrapeRunStatus, Website
 
 # Mirrors Residence.image_url = URLField(max_length=2000). Reject non-http(s) values
 # (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
@@ -80,27 +80,11 @@ class ScrapeRunOut(Schema):
     duration_seconds: float | None
 
 
-class DeadResidenceIn(Schema):
-    website: Website
-    detail_url: str
-    title: Title
-    price: str
-    city: str
-    street: str | None = None
-    house_number: int | None = None
-    house_letter: str | None = None
-    house_number_suffix: str | None = None
-    postcode: str | None = None
-    image_url: ImageUrl | None = None
-    reason: DeadResidenceReason
-
-
 class ScrapeResultsIn(Schema):
     started_at: datetime
     finished_at: datetime
     error_message: str | None = None
     listings: list[ResidenceIn]
-    dead_listings: list[DeadResidenceIn] = []
 
     @model_validator(mode="after")
     def _check_timestamps(self) -> Self:
