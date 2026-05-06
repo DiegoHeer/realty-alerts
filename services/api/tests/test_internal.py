@@ -57,379 +57,130 @@ def test_active_runs_lists_only_running(client, api_key_headers):
     assert body[0]["id"] == running.pk
 
 
+# `transaction.on_commit` doesn't fire under pytest-django's default rolled-back
+# transaction mode, so most tests below patch it to invoke the callback inline.
+# The end-to-end test that asserts the full resolve_bag flow uses `transaction=True`
+# to get real commits and real on-commit callbacks.
+def _on_commit_inline():
+    return mock.patch("scraping.api.transaction.on_commit", side_effect=lambda fn: fn())
+
+
 @pytest.mark.parametrize("website", list(Website))
-def test_submit_results_creates_run_and_residences(client, api_key_headers, scrape_payload, residence_payload, website):
+def test_submit_results_creates_run_and_pending_listings(
+    client, api_key_headers, scrape_payload, listing_payload, website
+):
     payload = scrape_payload(
         listings=[
-            residence_payload(website=website.value),
-            residence_payload(website=website.value),
+            listing_payload(website=website.value),
+            listing_payload(website=website.value),
         ]
     )
 
-    response = client.post(f"/internal/v1/scrape-runs/{website.value}/results", json=payload, headers=api_key_headers)
+    with _on_commit_inline(), mock.patch("scraping.api.resolve_bag.delay") as task_delay:
+        response = client.post(
+            f"/internal/v1/scrape-runs/{website.value}/results", json=payload, headers=api_key_headers
+        )
 
     assert response.status_code == 200
     body = response.json()
     assert body["website"] == website.value
     assert body["listings_found"] == 2
-    assert body["new_residences_count"] == 2
     assert body["new_listings_count"] == 2
     assert body["status"] == ScrapeRunStatus.SUCCESS.value
     assert ScrapeRun.objects.count() == 1
-    assert Residence.objects.count() == 2
     assert Listing.objects.count() == 2
+    # No Residence rows are created synchronously — that's the resolve_bag task's job.
+    assert Residence.objects.count() == 0
+    assert task_delay.call_count == 2
 
 
-def test_submit_results_dedups_existing_residences(client, api_key_headers, scrape_payload, residence_payload):
-    existing = ResidenceFactory(bag_id="0003200000000001")
-    ListingFactory(residence=existing, url="https://example.com/listing/existing", website=Website.FUNDA)
-
+def test_submit_results_persists_per_portal_data_on_listing(client, api_key_headers, scrape_payload, listing_payload):
     payload = scrape_payload(
         listings=[
-            residence_payload(detail_url="https://example.com/listing/existing", bag_id="0003200000000001"),
-            residence_payload(detail_url="https://example.com/listing/new", bag_id="0003200000000002"),
-        ]
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["listings_found"] == 2
-    assert body["new_residences_count"] == 1
-    assert body["new_listings_count"] == 1
-    assert Residence.objects.count() == 2
-    assert Listing.objects.count() == 2
-
-
-def test_submit_results_dedups_within_payload_by_bag_id(client, api_key_headers, scrape_payload, residence_payload):
-    payload = scrape_payload(
-        listings=[
-            residence_payload(detail_url="https://example.com/listing/1", bag_id="0003200000000001"),
-            residence_payload(detail_url="https://example.com/listing/2", bag_id="0003200000000001"),
-            residence_payload(detail_url="https://example.com/listing/3", bag_id="0003200000000002"),
-        ]
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["listings_found"] == 3
-    assert body["new_residences_count"] == 2
-    assert Residence.objects.count() == 2
-
-
-def test_submit_results_merges_cross_portal_residence(client, api_key_headers, scrape_payload, residence_payload):
-    funda_payload = scrape_payload(
-        listings=[
-            residence_payload(
+            listing_payload(
                 detail_url="https://funda.nl/listing/abc",
-                website=Website.FUNDA.value,
-                bag_id="0003200000133985",
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=funda_payload, headers=api_key_headers)
-
-    pararius_payload = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://pararius.nl/listing/xyz",
-                website=Website.PARARIUS.value,
-                bag_id="0003200000133985",
-            ),
-        ],
-    )
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results",
-        json=pararius_payload,
-        headers=api_key_headers,
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["new_residences_count"] == 0
-    assert body["new_listings_count"] == 1
-    assert Residence.objects.count() == 1
-    residence = Residence.objects.get()
-    urls = list(residence.listings.values_list("website", "url").order_by("website"))
-    assert urls == [
-        (Website.FUNDA.value, "https://funda.nl/listing/abc"),
-        (Website.PARARIUS.value, "https://pararius.nl/listing/xyz"),
-    ]
-
-
-def test_submit_results_complements_missing_fields(client, api_key_headers, scrape_payload, residence_payload):
-    first = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://example.com/listing/1",
-                bag_id="0003200000000010",
-                title="Original title",
-                area_sqm=None,
-                bedrooms=None,
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-
-    second = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://pararius.nl/listing/1",
-                website=Website.PARARIUS.value,
-                bag_id="0003200000000010",
-                title="Different title from second portal",
-                area_sqm=88.0,
-                bedrooms=3,
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results", json=second, headers=api_key_headers)
-
-    residence = Residence.objects.get(bag_id="0003200000000010")
-    assert residence.title == "Original title"  # complement-only: existing wins
-    assert residence.area_sqm == 88.0  # was None, filled by second scrape
-    assert residence.bedrooms == 3  # was None, filled by second scrape
-
-
-def test_submit_results_complement_does_not_overwrite_zero_bedrooms(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    """A studio (bedrooms=0) is a real value, not a blank. The complement-only
-    merge must not treat 0 as missing and overwrite it with a later scrape's
-    non-zero count."""
-    first = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://example.com/listing/studio",
-                bag_id="0003200000000030",
-                bedrooms=0,
-                area_sqm=0.0,
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-
-    second = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://pararius.nl/listing/studio",
-                website=Website.PARARIUS.value,
-                bag_id="0003200000000030",
-                bedrooms=3,
-                area_sqm=88.0,
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results", json=second, headers=api_key_headers)
-
-    residence = Residence.objects.get(bag_id="0003200000000030")
-    assert residence.bedrooms == 0
-    assert residence.area_sqm == 0.0
-
-
-def test_submit_results_always_updates_price_and_scraped_at(client, api_key_headers, scrape_payload, residence_payload):
-    first = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://example.com/listing/1",
-                bag_id="0003200000000020",
-                price="€ 450.000 k.k.",
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-    first_scraped_at = Residence.objects.get(bag_id="0003200000000020").scraped_at
-
-    second = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://example.com/listing/1",
-                bag_id="0003200000000020",
-                price="€ 420.000 k.k.",
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
-
-    residence = Residence.objects.get(bag_id="0003200000000020")
-    assert residence.price == "€ 420.000 k.k."
-    assert residence.price_eur == 420_000
-    assert residence.scraped_at > first_scraped_at
-
-
-def test_submit_results_persists_status_and_updates_on_repeat(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    first = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://example.com/listing/status",
-                bag_id="0003200000000099",
+                title="Sunny duplex",
+                price="€ 425.000 k.k.",
+                image_url="https://cdn.example.com/abc.jpg",
                 status=ListingStatus.SALE_PENDING.value,
+                street="Nieuwstraat",
+                house_number=42,
+                postcode="1011 AA",
+                city="Amsterdam",
             ),
         ],
     )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-    assert Residence.objects.get(bag_id="0003200000000099").status == ListingStatus.SALE_PENDING
 
-    second = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://example.com/listing/status",
-                bag_id="0003200000000099",
-                status=ListingStatus.SOLD.value,
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
-    assert Residence.objects.get(bag_id="0003200000000099").status == ListingStatus.SOLD
-
-
-def test_submit_results_sets_status_changed_at_on_create(client, api_key_headers, scrape_payload, residence_payload):
-    payload = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://example.com/listing/anchor",
-                bag_id="0003200000000201",
-                status=ListingStatus.SOLD.value,
-            ),
-        ],
-    )
-    before = datetime.now(UTC)
-
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers)
-
-    residence = Residence.objects.get(bag_id="0003200000000201")
-    assert residence.status_changed_at is not None
-    assert residence.status_changed_at >= before
-
-
-def test_submit_results_does_not_bump_status_changed_at_when_status_unchanged(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    detail_url = "https://example.com/listing/no-bump"
-    bag_id = "0003200000000202"
-    first = scrape_payload(
-        listings=[
-            residence_payload(detail_url=detail_url, bag_id=bag_id, status=ListingStatus.NEW.value),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-    initial_anchor = Residence.objects.get(bag_id=bag_id).status_changed_at
-
-    second = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url=detail_url,
-                bag_id=bag_id,
-                status=ListingStatus.NEW.value,
-                price="€ 410.000 k.k.",
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
-
-    assert Residence.objects.get(bag_id=bag_id).status_changed_at == initial_anchor
-
-
-def test_submit_results_bumps_status_changed_at_on_transition(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    detail_url = "https://example.com/listing/transition"
-    bag_id = "0003200000000203"
-    first = scrape_payload(
-        listings=[
-            residence_payload(detail_url=detail_url, bag_id=bag_id, status=ListingStatus.NEW.value),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-    initial_anchor = Residence.objects.get(bag_id=bag_id).status_changed_at
-
-    second = scrape_payload(
-        listings=[
-            residence_payload(detail_url=detail_url, bag_id=bag_id, status=ListingStatus.SOLD.value),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
-
-    updated = Residence.objects.get(bag_id=bag_id)
-    assert updated.status == ListingStatus.SOLD
-    assert updated.status_changed_at > initial_anchor
-
-
-def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
-    payload = scrape_payload(listings=[])
-    payload["started_at"], payload["finished_at"] = (payload["finished_at"], payload["started_at"])
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 422
-
-
-def test_submit_results_accepts_payload_without_bag_id_and_queues_resolution(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    """The post-PR-4 scraper drops scraper-side BAG enrichment and submits raw
-    listings. The handler stores them as `bag_status='pending'` with no
-    Residence link and queues `resolve_bag` to do the lookup async.
-
-    `transaction.on_commit` is patched to fire the callback inline because
-    pytest-django wraps each test in a transaction that's rolled back, so
-    real on-commit callbacks never run."""
-    item = residence_payload()
-    del item["bag_id"]
-    payload = scrape_payload(listings=[item])
-
-    with (
-        mock.patch("scraping.api.transaction.on_commit", side_effect=lambda fn: fn()),
-        mock.patch("scraping.api.resolve_bag.delay") as task_delay,
-    ):
+    with _on_commit_inline(), mock.patch("scraping.api.resolve_bag.delay"):
         response = client.post(
             f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
         )
 
     assert response.status_code == 200
-    body = response.json()
-    assert body["new_listings_count"] == 1
-    assert Residence.objects.count() == 0
-    listing = Listing.objects.get(url=item["detail_url"])
+    listing = Listing.objects.get(url="https://funda.nl/listing/abc")
+    assert listing.title == "Sunny duplex"
+    assert listing.price == "€ 425.000 k.k."
+    assert listing.price_eur == 425_000
+    assert listing.image_url == "https://cdn.example.com/abc.jpg"
+    assert listing.status == ListingStatus.SALE_PENDING
+    assert listing.street == "Nieuwstraat"
+    assert listing.house_number == 42
+    assert listing.postcode == "1011 AA"
+    assert listing.city == "Amsterdam"
     assert listing.bag_status == BagStatus.PENDING
     assert listing.residence is None
-    assert listing.title == item["title"]
-    assert listing.price == item["price"]
-    task_delay.assert_called_once_with(listing.pk)
+    assert listing.scraped_at is not None
+    assert listing.last_seen_at is not None
 
 
-def test_submit_results_treats_empty_string_bag_id_as_missing(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    payload = scrape_payload(listings=[residence_payload(bag_id="")])
+def test_submit_results_persists_structured_address_fields(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(
+        listings=[
+            listing_payload(
+                street="Klaterweg",
+                house_number=9,
+                house_letter="R",
+                house_number_suffix="A59",
+                postcode="1271 KE",
+                city="Huizen",
+            )
+        ],
+    )
 
-    with (
-        mock.patch("scraping.api.transaction.on_commit", side_effect=lambda fn: fn()),
-        mock.patch("scraping.api.resolve_bag.delay") as task_delay,
-    ):
+    with _on_commit_inline(), mock.patch("scraping.api.resolve_bag.delay"):
         response = client.post(
             f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
         )
 
     assert response.status_code == 200
     listing = Listing.objects.get()
-    assert listing.bag_status == BagStatus.PENDING
-    task_delay.assert_called_once_with(listing.pk)
+    assert listing.street == "Klaterweg"
+    assert listing.house_number == 9
+    assert listing.house_letter == "R"
+    assert listing.house_number_suffix == "A59"
+    assert listing.postcode == "1271 KE"
+    assert listing.city == "Huizen"
+
+
+def test_submit_results_address_fields_default_to_null(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(listings=[listing_payload()])
+
+    with _on_commit_inline(), mock.patch("scraping.api.resolve_bag.delay"):
+        response = client.post(
+            f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+        )
+
+    assert response.status_code == 200
+    listing = Listing.objects.get()
+    assert listing.street is None
+    assert listing.house_number is None
+    assert listing.house_letter is None
+    assert listing.house_number_suffix is None
+    assert listing.postcode is None
 
 
 def test_submit_results_does_not_redispatch_for_already_resolved_url(
-    client, api_key_headers, scrape_payload, residence_payload
+    client, api_key_headers, scrape_payload, listing_payload
 ):
     """Re-scrape of the same URL shouldn't re-queue resolution — the listing
     is already linked to a residence; the bag_status guard preserves it."""
@@ -439,8 +190,7 @@ def test_submit_results_does_not_redispatch_for_already_resolved_url(
         url="https://funda.nl/listing/already-resolved",
         bag_status=BagStatus.RESOLVED,
     )
-    item = residence_payload(detail_url="https://funda.nl/listing/already-resolved")
-    del item["bag_id"]
+    item = listing_payload(detail_url="https://funda.nl/listing/already-resolved")
     payload = scrape_payload(listings=[item])
 
     with mock.patch("scraping.api.resolve_bag.delay") as task_delay:
@@ -455,9 +205,46 @@ def test_submit_results_does_not_redispatch_for_already_resolved_url(
     assert listing.residence == existing_residence
 
 
+def test_submit_results_re_scrape_updates_listing_per_portal_fields(
+    client, api_key_headers, scrape_payload, listing_payload
+):
+    first = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://funda.nl/listing/re",
+                price="€ 450.000 k.k.",
+                status=ListingStatus.NEW.value,
+            ),
+        ],
+    )
+    with _on_commit_inline(), mock.patch("scraping.api.resolve_bag.delay"):
+        client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
+    listing_before = Listing.objects.get(url="https://funda.nl/listing/re")
+    first_seen_at = listing_before.first_seen_at
+
+    second = scrape_payload(
+        listings=[
+            listing_payload(
+                detail_url="https://funda.nl/listing/re",
+                price="€ 420.000 k.k.",
+                status=ListingStatus.SALE_PENDING.value,
+            ),
+        ],
+    )
+    with _on_commit_inline(), mock.patch("scraping.api.resolve_bag.delay"):
+        client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
+
+    listing = Listing.objects.get(url="https://funda.nl/listing/re")
+    assert listing.first_seen_at == first_seen_at  # never moves
+    assert listing.price == "€ 420.000 k.k."
+    assert listing.price_eur == 420_000
+    assert listing.status == ListingStatus.SALE_PENDING
+    assert listing.last_seen_at > first_seen_at
+
+
 @pytest.mark.django_db(transaction=True)
 @respx.mock
-def test_submit_results_no_bag_id_path_resolves_end_to_end(client, api_key_headers, scrape_payload, residence_payload):
+def test_submit_results_resolves_end_to_end(client, api_key_headers, scrape_payload, listing_payload):
     """End-to-end: POST → on_commit fires resolve_bag → BAG mocked → listing
     lands as RESOLVED with a Residence linked. `transaction=True` is needed
     so `transaction.on_commit` callbacks actually fire (the default
@@ -484,7 +271,7 @@ def test_submit_results_no_bag_id_path_resolves_end_to_end(client, api_key_heade
             },
         )
     )
-    item = residence_payload(
+    item = listing_payload(
         detail_url="https://funda.nl/listing/e2e",
         postcode="1271 KE",
         house_number=9,
@@ -492,7 +279,6 @@ def test_submit_results_no_bag_id_path_resolves_end_to_end(client, api_key_heade
         house_number_suffix="A59",
         city="Huizen",
     )
-    del item["bag_id"]
     payload = scrape_payload(listings=[item])
 
     response = client.post(
@@ -506,6 +292,17 @@ def test_submit_results_no_bag_id_path_resolves_end_to_end(client, api_key_heade
     assert listing.residence.bag_id == "0402200000084467"
 
 
+def test_submit_results_rejects_inverted_timestamps(client, api_key_headers, scrape_payload):
+    payload = scrape_payload(listings=[])
+    payload["started_at"], payload["finished_at"] = (payload["finished_at"], payload["started_at"])
+
+    response = client.post(
+        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+    )
+
+    assert response.status_code == 422
+
+
 @pytest.mark.parametrize(
     "image_url",
     [
@@ -514,12 +311,8 @@ def test_submit_results_no_bag_id_path_resolves_end_to_end(client, api_key_heade
     ],
     ids=["data_uri", "over_2000_chars"],
 )
-def test_submit_results_rejects_invalid_image_url(
-    client, api_key_headers, scrape_payload, residence_payload, image_url
-):
-    payload = scrape_payload(
-        listings=[residence_payload(image_url=image_url)],
-    )
+def test_submit_results_rejects_invalid_image_url(client, api_key_headers, scrape_payload, listing_payload, image_url):
+    payload = scrape_payload(listings=[listing_payload(image_url=image_url)])
 
     response = client.post(
         f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
@@ -527,30 +320,27 @@ def test_submit_results_rejects_invalid_image_url(
 
     assert response.status_code == 422
     assert "image_url" in response.content.decode()
-    assert Residence.objects.count() == 0
+    assert Listing.objects.count() == 0
 
 
-def test_submit_results_accepts_long_signed_image_url(client, api_key_headers, scrape_payload, residence_payload):
+def test_submit_results_accepts_long_signed_image_url(client, api_key_headers, scrape_payload, listing_payload):
     # Real fastly/CDN URLs with signed query strings can exceed 500 chars
     # (observed up to ~700 on pararius); the 500-char cap was the original
     # source of the production 500. 1500 chars must round-trip end-to-end.
     long_url = "https://cdn.example.com/img/" + ("a" * 1500)
-    payload = scrape_payload(
-        listings=[residence_payload(image_url=long_url)],
-    )
+    payload = scrape_payload(listings=[listing_payload(image_url=long_url)])
 
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
+    with _on_commit_inline(), mock.patch("scraping.api.resolve_bag.delay"):
+        response = client.post(
+            f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
+        )
 
     assert response.status_code == 200
-    assert Residence.objects.get().image_url == long_url
+    assert Listing.objects.get().image_url == long_url
 
 
-def test_submit_results_rejects_empty_title(client, api_key_headers, scrape_payload, residence_payload):
-    payload = scrape_payload(
-        listings=[residence_payload(title="")],
-    )
+def test_submit_results_rejects_empty_title(client, api_key_headers, scrape_payload, listing_payload):
+    payload = scrape_payload(listings=[listing_payload(title="")])
 
     response = client.post(
         f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
@@ -558,7 +348,7 @@ def test_submit_results_rejects_empty_title(client, api_key_headers, scrape_payl
 
     assert response.status_code == 422
     assert "title" in response.content.decode()
-    assert Residence.objects.count() == 0
+    assert Listing.objects.count() == 0
 
 
 def test_submit_results_marks_run_failed_when_error_message(client, api_key_headers, scrape_payload):
@@ -570,201 +360,6 @@ def test_submit_results_marks_run_failed_when_error_message(client, api_key_head
 
     assert response.status_code == 200
     assert response.json()["status"] == ScrapeRunStatus.FAILED.value
-
-
-def test_submit_results_persists_structured_address_fields(client, api_key_headers, scrape_payload, residence_payload):
-    payload = scrape_payload(
-        listings=[
-            residence_payload(
-                street="Klaterweg",
-                house_number=9,
-                house_letter="R",
-                house_number_suffix="A59",
-                postcode="1271 KE",
-                city="Huizen",
-            )
-        ],
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 200
-    residence = Residence.objects.get()
-    assert residence.street == "Klaterweg"
-    assert residence.house_number == 9
-    assert residence.house_letter == "R"
-    assert residence.house_number_suffix == "A59"
-    assert residence.postcode == "1271 KE"
-    assert residence.city == "Huizen"
-
-
-def test_submit_results_address_fields_default_to_null(client, api_key_headers, scrape_payload, residence_payload):
-    payload = scrape_payload(
-        listings=[residence_payload()],
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 200
-    residence = Residence.objects.get()
-    assert residence.street is None
-    assert residence.house_number is None
-    assert residence.house_letter is None
-    assert residence.house_number_suffix is None
-    assert residence.postcode is None
-
-
-def test_submit_results_persists_bag_id(client, api_key_headers, scrape_payload, residence_payload):
-    payload = scrape_payload(
-        listings=[residence_payload(bag_id="0003200000133985")],
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 200
-    assert Residence.objects.get().bag_id == "0003200000133985"
-
-
-def test_submit_results_persists_per_portal_data_on_listing(client, api_key_headers, scrape_payload, residence_payload):
-    payload = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://funda.nl/listing/abc",
-                bag_id="0003200000000400",
-                title="Sunny duplex",
-                price="€ 425.000 k.k.",
-                image_url="https://cdn.example.com/abc.jpg",
-                status=ListingStatus.SALE_PENDING.value,
-                street="Nieuwstraat",
-                house_number=42,
-                postcode="1011 AA",
-                city="Amsterdam",
-            ),
-        ],
-    )
-
-    response = client.post(
-        f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers
-    )
-
-    assert response.status_code == 200
-    listing = Listing.objects.get(url="https://funda.nl/listing/abc")
-    assert listing.title == "Sunny duplex"
-    assert listing.price == "€ 425.000 k.k."
-    assert listing.price_eur == 425_000
-    assert listing.image_url == "https://cdn.example.com/abc.jpg"
-    assert listing.status == ListingStatus.SALE_PENDING
-    assert listing.street == "Nieuwstraat"
-    assert listing.house_number == 42
-    assert listing.postcode == "1011 AA"
-    assert listing.city == "Amsterdam"
-    assert listing.bag_status == BagStatus.RESOLVED
-    assert listing.scraped_at is not None
-    assert listing.last_seen_at is not None
-    assert listing.bag_resolved_at is not None
-
-
-def test_submit_results_reconciles_residence_aggregates_on_create(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    payload = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://funda.nl/listing/agg",
-                bag_id="0003200000000401",
-                price="€ 410.000 k.k.",
-                status=ListingStatus.NEW.value,
-            ),
-        ],
-    )
-
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=payload, headers=api_key_headers)
-
-    residence = Residence.objects.get(bag_id="0003200000000401")
-    assert residence.current_price_eur == 410_000
-    assert residence.current_status == ListingStatus.NEW
-    assert residence.last_scraped_at is not None
-
-
-def test_submit_results_cross_portal_picks_min_price_and_advanced_status(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    funda = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://funda.nl/listing/cp",
-                website=Website.FUNDA.value,
-                bag_id="0003200000000402",
-                price="€ 500.000 k.k.",
-                status=ListingStatus.NEW.value,
-            ),
-        ],
-    )
-    pararius = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://pararius.nl/listing/cp",
-                website=Website.PARARIUS.value,
-                bag_id="0003200000000402",
-                price="€ 480.000 k.k.",
-                status=ListingStatus.SALE_PENDING.value,
-            ),
-        ],
-    )
-
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=funda, headers=api_key_headers)
-    client.post(f"/internal/v1/scrape-runs/{Website.PARARIUS.value}/results", json=pararius, headers=api_key_headers)
-
-    residence = Residence.objects.get(bag_id="0003200000000402")
-    assert residence.current_price_eur == 480_000
-    assert residence.current_status == ListingStatus.SALE_PENDING
-
-
-def test_submit_results_re_scrape_updates_listing_per_portal_fields(
-    client, api_key_headers, scrape_payload, residence_payload
-):
-    first = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://funda.nl/listing/re",
-                bag_id="0003200000000403",
-                price="€ 450.000 k.k.",
-                status=ListingStatus.NEW.value,
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=first, headers=api_key_headers)
-    listing_before = Listing.objects.get(url="https://funda.nl/listing/re")
-    first_seen_at = listing_before.first_seen_at
-
-    second = scrape_payload(
-        listings=[
-            residence_payload(
-                detail_url="https://funda.nl/listing/re",
-                bag_id="0003200000000403",
-                price="€ 420.000 k.k.",
-                status=ListingStatus.SALE_PENDING.value,
-            ),
-        ],
-    )
-    client.post(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/results", json=second, headers=api_key_headers)
-
-    listing = Listing.objects.get(url="https://funda.nl/listing/re")
-    assert listing.first_seen_at == first_seen_at  # never moves
-    assert listing.price == "€ 420.000 k.k."
-    assert listing.price_eur == 420_000
-    assert listing.status == ListingStatus.SALE_PENDING
-    assert listing.last_seen_at > first_seen_at
-
-    residence = Residence.objects.get(bag_id="0003200000000403")
-    assert residence.current_price_eur == 420_000
-    assert residence.current_status == ListingStatus.SALE_PENDING
 
 
 def test_internal_endpoints_require_api_key(client, scrape_payload):

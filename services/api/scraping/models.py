@@ -29,34 +29,25 @@ class BagStatus(models.TextChoices):
 
 
 class Residence(models.Model):
-    """One row per physical property, keyed on its BAG ID. Per-portal listings
-    live in `Listing` so the same property advertised on Funda + Pararius
-    collapses to a single residence row. Status mirrors the portal's own badge
-    (`Nieuw` / `Verkocht onder voorbehoud` / `Verkocht`) and updates on every
-    scrape."""
+    """One physical property, keyed on its BAG ID. Per-portal scraped data
+    (price, title, image, status) lives on the child `Listing` rows; this
+    model holds the BAG-canonical address plus reconciled aggregates that the
+    matcher filters and orders on. `title` and `image_url` are computed from
+    the freshest resolved Listing for display only."""
 
     bag_id = models.CharField(max_length=16, unique=True)
-    title = models.CharField(max_length=500)
-    price = models.CharField(max_length=100)
-    price_eur = models.BigIntegerField(null=True, blank=True)
     city = models.CharField(max_length=255, db_index=True)
     street = models.CharField(max_length=255, null=True, blank=True)
     house_number = models.PositiveIntegerField(null=True, blank=True)
     house_letter = models.CharField(max_length=5, null=True, blank=True)
     house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
     postcode = models.CharField(max_length=10, null=True, blank=True)
-    property_type = models.CharField(max_length=100, null=True, blank=True)
-    bedrooms = models.PositiveIntegerField(null=True, blank=True)
-    area_sqm = models.FloatField(null=True, blank=True)
-    image_url = models.URLField(max_length=2000, null=True, blank=True)
-    status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
-    status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
-    scraped_at = models.DateTimeField()
     # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence
     # whenever a child Listing is created or updated. The matcher reads these.
     current_price_eur = models.BigIntegerField(null=True, blank=True)
     current_status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
     last_scraped_at = models.DateTimeField(null=True, blank=True)
+    status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -67,7 +58,20 @@ class Residence(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.title} ({self.city})"
+        return f"{self.title or '(no title)'} ({self.city})"
+
+    def _freshest_resolved_listing(self) -> Listing | None:
+        return Listing.objects.filter(residence=self, bag_status=BagStatus.RESOLVED).order_by("-scraped_at").first()
+
+    @property
+    def title(self) -> str | None:
+        listing = self._freshest_resolved_listing()
+        return listing.title if listing else None
+
+    @property
+    def image_url(self) -> str | None:
+        listing = self._freshest_resolved_listing()
+        return listing.image_url if listing else None
 
 
 class Listing(models.Model):
@@ -120,7 +124,6 @@ class ScrapeRun(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=ScrapeRunStatus.choices)
     listings_found = models.PositiveIntegerField(default=0)
-    new_residences_count = models.PositiveIntegerField(default=0)
     new_listings_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(null=True, blank=True)
     duration_seconds = models.FloatField(null=True, blank=True)

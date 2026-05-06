@@ -34,7 +34,7 @@ def test_reconcile_picks_min_price_across_resolved_listings():
 
 
 def test_reconcile_picks_most_advanced_status():
-    residence = cast(Residence, ResidenceFactory(status=ListingStatus.NEW, current_status=ListingStatus.NEW))
+    residence = cast(Residence, ResidenceFactory(current_status=ListingStatus.NEW))
     ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, status=ListingStatus.NEW)
     ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, status=ListingStatus.SOLD)
     ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, status=ListingStatus.SALE_PENDING)
@@ -71,7 +71,7 @@ def test_reconcile_ignores_unresolved_listings():
 
 
 def test_reconcile_bumps_status_changed_at_on_transition():
-    residence = cast(Residence, ResidenceFactory(status=ListingStatus.NEW, current_status=ListingStatus.NEW))
+    residence = cast(Residence, ResidenceFactory(current_status=ListingStatus.NEW))
     initial_anchor = residence.status_changed_at
     assert initial_anchor is not None
     ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, status=ListingStatus.SOLD)
@@ -85,7 +85,7 @@ def test_reconcile_bumps_status_changed_at_on_transition():
 
 
 def test_reconcile_does_not_bump_status_changed_at_when_unchanged():
-    residence = cast(Residence, ResidenceFactory(status=ListingStatus.NEW, current_status=ListingStatus.NEW))
+    residence = cast(Residence, ResidenceFactory(current_status=ListingStatus.NEW))
     initial_anchor = residence.status_changed_at
     ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, status=ListingStatus.NEW)
 
