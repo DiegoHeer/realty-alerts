@@ -3,7 +3,7 @@ from datetime import datetime
 import httpx
 from loguru import logger
 
-from scraper.models import DeadListing, Listing
+from scraper.models import Listing
 
 
 class BackendClient:
@@ -33,7 +33,6 @@ class BackendClient:
         self,
         website: str,
         listings: list[Listing],
-        dead_listings: list[DeadListing],
         started_at: datetime,
         finished_at: datetime,
         error_message: str | None = None,
@@ -43,7 +42,6 @@ class BackendClient:
             "finished_at": finished_at.isoformat(),
             "error_message": error_message,
             "listings": [listing.model_dump() for listing in listings],
-            "dead_listings": [dead.model_dump() for dead in dead_listings],
         }
         response = self.client.post(f"/internal/v1/scrape-runs/{website}/results", json=payload)
         response.raise_for_status()
@@ -51,7 +49,6 @@ class BackendClient:
         logger.info(
             f"Submitted {result['listings_found']} listings "
             f"({result['new_residences_count']} new residences, "
-            f"{result['new_listings_count']} new listings) "
-            f"and {len(dead_listings)} dead for {website}"
+            f"{result['new_listings_count']} new listings) for {website}"
         )
         return result
