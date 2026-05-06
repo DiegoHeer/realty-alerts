@@ -29,7 +29,9 @@ class ResidenceIn(Schema):
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
-    bag_id: str
+    # Optional: scraper-supplied bag_id is the legacy path; absent/empty
+    # routes the listing through API-side BAG resolution (Celery task).
+    bag_id: str | None = None
     property_type: str | None = None
     bedrooms: int | None = None
     area_sqm: float | None = None

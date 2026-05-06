@@ -3,6 +3,7 @@ from typing import cast
 
 # Sensible defaults for local dev / test runs. Production must set these explicitly via prod.py.
 os.environ.setdefault("REALTY_API_KEY", "dev-realty-api-key")
+os.environ.setdefault("BAG_API_KEY", "dev-bag-api-key")
 
 from secret_key_generator import secret_key_generator  # noqa: E402
 

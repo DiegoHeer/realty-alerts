@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     realty_api_key: str = Field(...)
+    bag_api_key: str = Field(...)
     django_secret_key: str | None = None
     allowed_hosts: str = ""
     csrf_trusted_origins: str = ""
