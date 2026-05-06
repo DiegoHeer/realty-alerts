@@ -4,18 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0008_listing_per_portal_fields_residence_aggregates'),
+        ("scraping", "0008_listing_per_portal_fields_residence_aggregates"),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='residence',
-            name='idx_residences_filters',
+            model_name="residence",
+            name="idx_residences_filters",
         ),
         migrations.AddIndex(
-            model_name='residence',
-            index=models.Index(fields=['city', 'current_price_eur'], name='idx_residences_filters'),
+            model_name="residence",
+            index=models.Index(fields=["city", "current_price_eur"], name="idx_residences_filters"),
         ),
     ]
