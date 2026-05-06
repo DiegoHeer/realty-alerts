@@ -31,6 +31,11 @@ class ResidenceFactory(DjangoModelFactory):
     status = ListingStatus.NEW
     status_changed_at = factory.LazyFunction(lambda: datetime.now(UTC))
     scraped_at = factory.LazyFunction(lambda: datetime.now(UTC))
+    # Mirror the same-row backfill the migration applied so factory-built
+    # Residences look like real post-migration rows.
+    current_price_eur = factory.SelfAttribute("price_eur")
+    current_status = factory.SelfAttribute("status")
+    last_scraped_at = factory.SelfAttribute("scraped_at")
 
 
 class ListingFactory(DjangoModelFactory):

@@ -26,6 +26,15 @@ class DeadResidenceReason(models.TextChoices):
     BAG_AMBIGUOUS = "bag_ambiguous", "BAG ambiguous"
 
 
+class BagStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    RESOLVED = "resolved", "Resolved"
+    PARSE_FAILED = "parse_failed", "Parse failed"
+    MISSING_ADDRESS = "missing_address", "Missing address"
+    BAG_NO_MATCH = "bag_no_match", "BAG no match"
+    BAG_AMBIGUOUS = "bag_ambiguous", "BAG ambiguous"
+
+
 class Residence(models.Model):
     """One row per physical property, keyed on its BAG ID. Per-portal listings
     live in `Listing` so the same property advertised on Funda + Pararius
@@ -50,6 +59,11 @@ class Residence(models.Model):
     status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
     status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
     scraped_at = models.DateTimeField()
+    # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence
+    # whenever a child Listing is created or updated. The matcher reads these.
+    current_price_eur = models.BigIntegerField(null=True, blank=True)
+    current_status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
+    last_scraped_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -65,17 +79,42 @@ class Residence(models.Model):
 
 class Listing(models.Model):
     """One row per portal advertisement. Multiple `Listing`s may point at the
-    same `Residence` when the property is advertised across portals."""
+    same `Residence` when the property is advertised across portals. Holds
+    everything the portal said about the listing: per-portal price/title/image/
+    status, the raw address bits used to look up the BAG record, and the BAG
+    resolution state. `residence` is null until BAG resolution succeeds."""
 
-    residence = models.ForeignKey(Residence, related_name="listings", on_delete=models.CASCADE)
+    residence = models.ForeignKey(Residence, related_name="listings", on_delete=models.CASCADE, null=True, blank=True)
     website = models.CharField(max_length=20, choices=Website.choices)
     url = models.URLField(max_length=500, unique=True)
     first_seen_at = models.DateTimeField(auto_now_add=True)
+    # Per-portal scraped data
+    title = models.CharField(max_length=500, null=True, blank=True)
+    price = models.CharField(max_length=100, null=True, blank=True)
+    price_eur = models.BigIntegerField(null=True, blank=True)
+    image_url = models.URLField(max_length=2000, null=True, blank=True)
+    status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
+    scraped_at = models.DateTimeField(null=True, blank=True)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    # Raw address bits scraped from the portal — only what BAG needs to resolve
+    # to an official record. Canonical address lives on Residence.
+    street = models.CharField(max_length=255, null=True, blank=True)
+    house_number = models.PositiveIntegerField(null=True, blank=True)
+    house_letter = models.CharField(max_length=5, null=True, blank=True)
+    house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
+    postcode = models.CharField(max_length=10, null=True, blank=True)
+    city = models.CharField(max_length=255, null=True, blank=True)
+    # BAG resolution lifecycle: pending → resolved | (parse_failed | missing_address |
+    # bag_no_match | bag_ambiguous). Existing rows backfill to 'resolved'.
+    bag_status = models.CharField(max_length=20, choices=BagStatus.choices, default=BagStatus.RESOLVED)
+    bag_failure_reason = models.TextField(null=True, blank=True)
+    bag_resolved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "listings"
         indexes = [
             models.Index(fields=["website", "first_seen_at"], name="idx_listings_website"),
+            models.Index(fields=["bag_status"], name="idx_listings_bag_status"),
         ]
 
     def __str__(self) -> str:
