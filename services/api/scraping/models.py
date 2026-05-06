@@ -70,7 +70,7 @@ class Residence(models.Model):
     class Meta:
         db_table = "residences"
         indexes = [
-            models.Index(fields=["city", "property_type", "price_eur"], name="idx_residences_filters"),
+            models.Index(fields=["city", "current_price_eur"], name="idx_residences_filters"),
         ]
 
     def __str__(self) -> str:
