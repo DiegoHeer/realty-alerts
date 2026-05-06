@@ -4,50 +4,49 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0010_pr5_drop_legacy'),
+        ("scraping", "0010_pr5_drop_legacy"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='residence',
-            name='area_sqm',
+            model_name="residence",
+            name="area_sqm",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='bedrooms',
+            model_name="residence",
+            name="bedrooms",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='image_url',
+            model_name="residence",
+            name="image_url",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='price',
+            model_name="residence",
+            name="price",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='price_eur',
+            model_name="residence",
+            name="price_eur",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='property_type',
+            model_name="residence",
+            name="property_type",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='scraped_at',
+            model_name="residence",
+            name="scraped_at",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='status',
+            model_name="residence",
+            name="status",
         ),
         migrations.RemoveField(
-            model_name='residence',
-            name='title',
+            model_name="residence",
+            name="title",
         ),
         migrations.RemoveField(
-            model_name='scraperun',
-            name='new_residences_count',
+            model_name="scraperun",
+            name="new_residences_count",
         ),
     ]
