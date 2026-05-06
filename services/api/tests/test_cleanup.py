@@ -90,3 +90,19 @@ def test_returns_zero_when_nothing_to_delete():
     deleted = delete_expired_terminal_residences(now=NOW)
 
     assert deleted == 0
+
+
+@pytest.mark.django_db
+def test_uses_current_status_when_legacy_disagrees():
+    """Cross-portal: legacy `status` regressed to NEW because the freshest
+    portal saw NEW, but `current_status` rolled up to SOLD via reconciliation
+    (another portal marked it sold). Cleanup must follow `current_status`."""
+    regressed = _make(status=ListingStatus.NEW, current_status=ListingStatus.SOLD, status_changed_at=PAST_TTL)
+    matching_legacy = _make(status=ListingStatus.SOLD, current_status=ListingStatus.NEW, status_changed_at=PAST_TTL)
+
+    deleted = delete_expired_terminal_residences(now=NOW)
+
+    assert deleted == 1
+    surviving_pks = set(Residence.objects.values_list("pk", flat=True))
+    assert surviving_pks == {matching_legacy.pk}
+    assert not Residence.objects.filter(pk=regressed.pk).exists()

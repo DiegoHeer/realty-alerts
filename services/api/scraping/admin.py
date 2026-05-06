@@ -25,13 +25,13 @@ class ResidenceAdmin(admin.ModelAdmin):
         "street",
         "house_number",
         "postcode",
-        "price",
-        "status",
-        "scraped_at",
+        "current_price_eur",
+        "current_status",
+        "last_scraped_at",
     )
-    list_filter = ("status", "city")
+    list_filter = ("current_status", "city")
     search_fields = ("title", "street", "postcode", "bag_id")
-    ordering = ("-scraped_at",)
+    ordering = ("-last_scraped_at",)
     readonly_fields = ("created_at", "updated_at")
     inlines = (ListingInline,)
 

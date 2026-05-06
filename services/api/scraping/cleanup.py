@@ -14,7 +14,7 @@ def delete_expired_terminal_residences(*, now: datetime) -> int:
     `status_changed_at` is NULL are excluded (SQL `<` is unknown for NULL)."""
     cutoff = now - timedelta(days=RESIDENCE_TERMINAL_TTL_DAYS)
 
-    deleted, _ = Residence.objects.filter(status__in=TERMINAL_STATUSES, status_changed_at__lt=cutoff).delete()
+    deleted, _ = Residence.objects.filter(current_status__in=TERMINAL_STATUSES, status_changed_at__lt=cutoff).delete()
     if deleted:
         logger.info("residence_ttl_deleted", deleted=deleted, cutoff=cutoff.isoformat())
 
