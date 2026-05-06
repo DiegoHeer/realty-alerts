@@ -76,6 +76,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_realty_alerts
           REALTY_API_KEY: test-key
+          BAG_API_KEY: test-bag-key
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
   build:
