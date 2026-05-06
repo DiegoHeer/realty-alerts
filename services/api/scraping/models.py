@@ -19,13 +19,6 @@ class ScrapeRunStatus(models.TextChoices):
     FAILED = "failed", "Failed"
 
 
-class DeadResidenceReason(models.TextChoices):
-    PARSE_FAILED = "parse_failed", "Parse failed"
-    MISSING_POSTCODE_AND_STREET = "missing_postcode_and_street", "Missing postcode and street"
-    BAG_NO_MATCH = "bag_no_match", "BAG no match"
-    BAG_AMBIGUOUS = "bag_ambiguous", "BAG ambiguous"
-
-
 class BagStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     RESOLVED = "resolved", "Resolved"
@@ -36,34 +29,25 @@ class BagStatus(models.TextChoices):
 
 
 class Residence(models.Model):
-    """One row per physical property, keyed on its BAG ID. Per-portal listings
-    live in `Listing` so the same property advertised on Funda + Pararius
-    collapses to a single residence row. Status mirrors the portal's own badge
-    (`Nieuw` / `Verkocht onder voorbehoud` / `Verkocht`) and updates on every
-    scrape."""
+    """One physical property, keyed on its BAG ID. Per-portal scraped data
+    (price, title, image, status) lives on the child `Listing` rows; this
+    model holds the BAG-canonical address plus reconciled aggregates that the
+    matcher filters and orders on. `title` and `image_url` are computed from
+    the freshest resolved Listing for display only."""
 
     bag_id = models.CharField(max_length=16, unique=True)
-    title = models.CharField(max_length=500)
-    price = models.CharField(max_length=100)
-    price_eur = models.BigIntegerField(null=True, blank=True)
     city = models.CharField(max_length=255, db_index=True)
     street = models.CharField(max_length=255, null=True, blank=True)
     house_number = models.PositiveIntegerField(null=True, blank=True)
     house_letter = models.CharField(max_length=5, null=True, blank=True)
     house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
     postcode = models.CharField(max_length=10, null=True, blank=True)
-    property_type = models.CharField(max_length=100, null=True, blank=True)
-    bedrooms = models.PositiveIntegerField(null=True, blank=True)
-    area_sqm = models.FloatField(null=True, blank=True)
-    image_url = models.URLField(max_length=2000, null=True, blank=True)
-    status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
-    status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
-    scraped_at = models.DateTimeField()
     # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence
     # whenever a child Listing is created or updated. The matcher reads these.
     current_price_eur = models.BigIntegerField(null=True, blank=True)
     current_status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
     last_scraped_at = models.DateTimeField(null=True, blank=True)
+    status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -74,7 +58,20 @@ class Residence(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.title} ({self.city})"
+        return f"{self.title or '(no title)'} ({self.city})"
+
+    def _freshest_resolved_listing(self) -> Listing | None:
+        return Listing.objects.filter(residence=self, bag_status=BagStatus.RESOLVED).order_by("-scraped_at").first()
+
+    @property
+    def title(self) -> str | None:
+        listing = self._freshest_resolved_listing()
+        return listing.title if listing else None
+
+    @property
+    def image_url(self) -> str | None:
+        listing = self._freshest_resolved_listing()
+        return listing.image_url if listing else None
 
 
 class Listing(models.Model):
@@ -121,64 +118,12 @@ class Listing(models.Model):
         return f"{self.website}: {self.url}"
 
 
-class DeadResidence(models.Model):
-    """Residences that fail BAG enrichment terminally — bad input from the
-    source (typo postcode, garbage address) or a BAG miss we can't recover.
-    Kept separate from `residences` so notification/matching never sees them
-    and they're easy to triage from /admin."""
-
-    website = models.CharField(max_length=20, choices=Website.choices)
-    detail_url = models.URLField(max_length=500, unique=True)
-    bag_id = models.CharField(max_length=16, null=True, blank=True)
-    title = models.CharField(max_length=500)
-    price = models.CharField(max_length=100)
-    city = models.CharField(max_length=255)
-    street = models.CharField(max_length=255, null=True, blank=True)
-    house_number = models.PositiveIntegerField(null=True, blank=True)
-    house_letter = models.CharField(max_length=5, null=True, blank=True)
-    house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
-    postcode = models.CharField(max_length=10, null=True, blank=True)
-    image_url = models.URLField(max_length=2000, null=True, blank=True)
-    reason = models.CharField(max_length=40, choices=DeadResidenceReason.choices)
-    scraped_at = models.DateTimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "dead_residences"
-        indexes = [
-            models.Index(fields=["website", "created_at"], name="idx_dead_residences_website"),
-            models.Index(fields=["reason", "created_at"], name="idx_dead_residences_reason"),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.title} ({self.reason})"
-
-    @property
-    def is_promotion_ready(self) -> bool:
-        return not self.missing_promotion_fields
-
-    @property
-    def missing_promotion_fields(self) -> list[str]:
-        return [
-            name
-            for name, value in (
-                ("bag_id", self.bag_id),
-                ("title", self.title),
-                ("price", self.price),
-                ("city", self.city),
-            )
-            if not value
-        ]
-
-
 class ScrapeRun(models.Model):
     website = models.CharField(max_length=20, choices=Website.choices)
     started_at = models.DateTimeField()
     finished_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=ScrapeRunStatus.choices)
     listings_found = models.PositiveIntegerField(default=0)
-    new_residences_count = models.PositiveIntegerField(default=0)
     new_listings_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(null=True, blank=True)
     duration_seconds = models.FloatField(null=True, blank=True)

@@ -21,7 +21,7 @@ def api_key_headers() -> dict[str, str]:
 
 
 @pytest.fixture
-def residence_payload() -> Callable[..., dict[str, Any]]:
+def listing_payload() -> Callable[..., dict[str, Any]]:
     counter = {"n": 0}
 
     def _build(detail_url: str | None = None, **overrides: Any) -> dict[str, Any]:
@@ -33,32 +33,7 @@ def residence_payload() -> Callable[..., dict[str, Any]]:
             "title": "Cozy apartment",
             "price": "€ 350.000 k.k.",
             "city": "Amsterdam",
-            "bag_id": f"00032000{n:08d}",
-            "property_type": "apartment",
-            "bedrooms": 2,
-            "area_sqm": 70.0,
             "image_url": "https://example.com/img.jpg",
-        }
-        data.update(overrides)
-        return data
-
-    return _build
-
-
-@pytest.fixture
-def dead_residence_payload() -> Callable[..., dict[str, Any]]:
-    def _build(
-        detail_url: str = "https://example.com/dead/new",
-        reason: str = "bag_no_match",
-        **overrides: Any,
-    ) -> dict[str, Any]:
-        data: dict[str, Any] = {
-            "website": Website.FUNDA.value,
-            "detail_url": detail_url,
-            "title": "Garbage address listing",
-            "price": "€ 250.000",
-            "city": "Amsterdam",
-            "reason": reason,
         }
         data.update(overrides)
         return data
@@ -70,7 +45,6 @@ def dead_residence_payload() -> Callable[..., dict[str, Any]]:
 def scrape_payload() -> Callable[..., dict[str, Any]]:
     def _build(
         listings: list[dict[str, Any]] | None = None,
-        dead_listings: list[dict[str, Any]] | None = None,
         error_message: str | None = None,
     ) -> dict[str, Any]:
         started = datetime.now(UTC) - timedelta(minutes=5)
@@ -80,7 +54,6 @@ def scrape_payload() -> Callable[..., dict[str, Any]]:
             "finished_at": finished.isoformat(),
             "error_message": error_message,
             "listings": listings or [],
-            "dead_listings": dead_listings or [],
         }
 
     return _build

@@ -4,9 +4,9 @@ from typing import Annotated, Self
 from ninja import Schema
 from pydantic import StringConstraints, model_validator
 
-from scraping.models import DeadResidenceReason, ListingStatus, ScrapeRunStatus, Website
+from scraping.models import ListingStatus, ScrapeRunStatus, Website
 
-# Mirrors Residence.image_url = URLField(max_length=2000). Reject non-http(s) values
+# Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
 # (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
 # 422 from Ninja rather than a Postgres DataError surfacing as a 500. The 2000
 # cap covers fastly/CDN signed URLs with query strings (observed up to ~700
@@ -18,7 +18,7 @@ ImageUrl = Annotated[str, StringConstraints(max_length=2000, pattern=r"^https?:/
 Title = Annotated[str, StringConstraints(min_length=1)]
 
 
-class ResidenceIn(Schema):
+class ListingIn(Schema):
     website: Website
     detail_url: str
     title: Title
@@ -29,12 +29,6 @@ class ResidenceIn(Schema):
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
-    # Optional: scraper-supplied bag_id is the legacy path; absent/empty
-    # routes the listing through API-side BAG resolution (Celery task).
-    bag_id: str | None = None
-    property_type: str | None = None
-    bedrooms: int | None = None
-    area_sqm: float | None = None
     image_url: ImageUrl | None = None
     status: ListingStatus = ListingStatus.NEW
 
@@ -48,21 +42,16 @@ class ListingOut(Schema):
 class ResidenceOut(Schema):
     id: int
     bag_id: str
-    title: str
-    price: str
-    price_eur: int | None = None
     city: str
     street: str | None = None
     house_number: int | None = None
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
-    property_type: str | None = None
-    bedrooms: int | None = None
-    area_sqm: float | None = None
-    image_url: str | None = None
-    status: ListingStatus
-    scraped_at: datetime
+    current_price_eur: int | None = None
+    current_status: ListingStatus
+    last_scraped_at: datetime | None = None
+    status_changed_at: datetime | None = None
     created_at: datetime
     listings: list[ListingOut]
 
@@ -74,33 +63,16 @@ class ScrapeRunOut(Schema):
     finished_at: datetime | None
     status: ScrapeRunStatus
     listings_found: int
-    new_residences_count: int
     new_listings_count: int
     error_message: str | None
     duration_seconds: float | None
-
-
-class DeadResidenceIn(Schema):
-    website: Website
-    detail_url: str
-    title: Title
-    price: str
-    city: str
-    street: str | None = None
-    house_number: int | None = None
-    house_letter: str | None = None
-    house_number_suffix: str | None = None
-    postcode: str | None = None
-    image_url: ImageUrl | None = None
-    reason: DeadResidenceReason
 
 
 class ScrapeResultsIn(Schema):
     started_at: datetime
     finished_at: datetime
     error_message: str | None = None
-    listings: list[ResidenceIn]
-    dead_listings: list[DeadResidenceIn] = []
+    listings: list[ListingIn]
 
     @model_validator(mode="after")
     def _check_timestamps(self) -> Self:
