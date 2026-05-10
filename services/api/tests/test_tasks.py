@@ -128,7 +128,7 @@ def test_resolve_bag_attaches_to_existing_residence_for_cross_portal():
     respx.get(f"{_BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
-    existing = cast(Residence, ResidenceFactory(bag_id="0402200000084467", price_eur=520_000))
+    existing = cast(Residence, ResidenceFactory(bag_id="0402200000084467", current_price_eur=520_000))
     listing = _pending_listing(price_eur=480_000)
 
     resolve_bag.delay(listing.pk).get(timeout=1)

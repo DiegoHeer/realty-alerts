@@ -118,21 +118,14 @@ def resolve_bag(listing_id: int) -> None:
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
-    now = timezone.now()
     return {
-        "title": listing.title or "",
-        "price": listing.price or "",
-        "price_eur": listing.price_eur,
         "city": result.city,
         "street": result.street,
         "house_number": result.house_number,
         "house_letter": result.house_letter,
         "house_number_suffix": result.house_number_suffix,
         "postcode": result.postcode,
-        "image_url": listing.image_url,
-        "status": listing.status,
-        "status_changed_at": now,
-        "scraped_at": listing.scraped_at or now,
         "current_status": listing.status,
+        "status_changed_at": timezone.now(),
         "last_scraped_at": listing.scraped_at,
     }
