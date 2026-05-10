@@ -59,14 +59,26 @@ class BagClient:
         house_number: int | None,
         house_letter: str | None = None,
         house_number_suffix: str | None = None,
+        street: str | None = None,
+        city: str | None = None,
     ) -> BagLookupResult:
-        if not postcode or house_number is None:
+        if house_number is None:
             return BagLookupFailure.MISSING_ADDRESS
 
-        params: dict[str, str | int] = {
-            "postcode": postcode.replace(" ", "").upper(),
-            "huisnummer": house_number,
-        }
+        if postcode:
+            params: dict[str, str | int] = {
+                "postcode": postcode.replace(" ", "").upper(),
+                "huisnummer": house_number,
+            }
+        elif street and city:
+            params = {
+                "openbareRuimteNaam": street,
+                "woonplaatsNaam": city,
+                "huisnummer": house_number,
+            }
+        else:
+            return BagLookupFailure.MISSING_ADDRESS
+
         if house_letter:
             params["huisletter"] = house_letter
         if house_number_suffix:

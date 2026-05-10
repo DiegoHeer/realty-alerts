@@ -98,6 +98,8 @@ def resolve_bag(listing_id: int) -> None:
             house_number=listing.house_number,
             house_letter=listing.house_letter,
             house_number_suffix=listing.house_number_suffix,
+            street=listing.street,
+            city=listing.city,
         )
 
     if isinstance(result, BagLookupSuccess):
