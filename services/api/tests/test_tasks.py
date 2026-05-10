@@ -187,7 +187,7 @@ def test_resolve_bag_marks_ambiguous_when_bag_returns_multiple():
 def test_resolve_bag_marks_missing_address_when_postcode_blank():
     from scraping.tasks import resolve_bag
 
-    listing = _pending_listing(postcode=None)
+    listing = _pending_listing(postcode=None, street=None)
 
     # No respx mock — task must short-circuit before any HTTP call.
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -238,3 +238,25 @@ def test_resolve_bag_propagates_5xx_so_celery_retries():
 
     listing.refresh_from_db()
     assert listing.bag_status == BagStatus.PENDING
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_resolve_bag_uses_street_city_fallback_when_postcode_missing():
+    from scraping.tasks import resolve_bag
+
+    route = respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
+    )
+    listing = _pending_listing(postcode=None, street="Klaterweg", city="Huizen")
+
+    resolve_bag.delay(listing.pk).get(timeout=1)
+
+    listing.refresh_from_db()
+    assert listing.bag_status == BagStatus.RESOLVED
+    assert listing.residence is not None
+    assert listing.residence.bag_id == "0402200000084467"
+    sent = route.calls.last.request.url.params
+    assert sent["openbareRuimteNaam"] == "Klaterweg"
+    assert sent["woonplaatsNaam"] == "Huizen"
+    assert "postcode" not in sent
