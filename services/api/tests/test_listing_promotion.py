@@ -1,5 +1,5 @@
 from typing import cast
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import httpx
 import pytest
@@ -217,7 +217,7 @@ def test_promote_listings_action_reports_success_count(settings):
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     listings = [_failed_listing(), _failed_listing()]
-    queryset = Listing.objects.filter(pk__in=[l.pk for l in listings])
+    queryset = Listing.objects.filter(pk__in=[listing.pk for listing in listings])
 
     modeladmin = MagicMock()
     request = MagicMock()
