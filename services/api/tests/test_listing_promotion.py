@@ -119,9 +119,7 @@ def test_promote_listing_returns_error_on_no_match_and_updates_reason(settings):
     from scraping.admin import _promote_listing
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
-        return_value=httpx.Response(200, json={"_embedded": {"adressen": []}})
-    )
+    respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
     listing = _failed_listing()
 
     with BagClient(api_key=settings.BAG_API_KEY) as client:
@@ -224,9 +222,7 @@ def test_promote_listings_action_reports_success_count(settings):
 
     promote_listings(modeladmin, request, queryset)
 
-    success_calls = [
-        c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.SUCCESS
-    ]
+    success_calls = [c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.SUCCESS]
     assert len(success_calls) == 1
     assert "2" in success_calls[0].args[1]
 
@@ -237,9 +233,7 @@ def test_promote_listings_action_reports_per_listing_failure(settings):
     from scraping.admin import promote_listings
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
-        return_value=httpx.Response(200, json={"_embedded": {"adressen": []}})
-    )
+    respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
     listing = _failed_listing()
     queryset = Listing.objects.filter(pk=listing.pk)
 
@@ -248,9 +242,7 @@ def test_promote_listings_action_reports_per_listing_failure(settings):
 
     promote_listings(modeladmin, request, queryset)
 
-    warning_calls = [
-        c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.WARNING
-    ]
+    warning_calls = [c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.WARNING]
     assert len(warning_calls) == 1
     assert str(listing.pk) in warning_calls[0].args[1]
 
@@ -276,12 +268,8 @@ def test_promote_listings_action_handles_mixed_batch(settings):
 
     promote_listings(modeladmin, request, queryset)
 
-    success_calls = [
-        c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.SUCCESS
-    ]
-    warning_calls = [
-        c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.WARNING
-    ]
+    success_calls = [c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.SUCCESS]
+    warning_calls = [c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.WARNING]
     assert len(success_calls) == 1
     assert "1" in success_calls[0].args[1]
     assert len(warning_calls) == 1
