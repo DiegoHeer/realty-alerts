@@ -93,7 +93,14 @@ class BagClient:
         if not addresses:
             return BagLookupFailure.NO_MATCH
         if len(addresses) > 1:
-            return BagLookupFailure.AMBIGUOUS
+            matches = [
+                a
+                for a in addresses
+                if a.get("huisletter") == house_letter and a.get("huisnummertoevoeging") == house_number_suffix
+            ]
+            if len(matches) != 1:
+                return BagLookupFailure.AMBIGUOUS
+            addresses = matches
 
         address = addresses[0]
         return BagLookupSuccess(
