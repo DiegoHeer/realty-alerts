@@ -91,6 +91,9 @@ class BagClient:
 
         addresses = (response.json().get("_embedded") or {}).get("adressen") or []
         if not addresses:
+            if postcode and (house_letter or house_number_suffix):
+                result = self.lookup(postcode=postcode, house_number=house_number)
+                return BagLookupFailure.NO_MATCH if result is BagLookupFailure.AMBIGUOUS else result
             return BagLookupFailure.NO_MATCH
         if len(addresses) > 1:
             matches = [

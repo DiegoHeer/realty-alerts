@@ -384,6 +384,7 @@ def test_lookup_still_ambiguous_when_multiple_results_match():
 @respx.mock
 def test_lookup_retries_without_letter_when_letter_gives_no_results():
     """Wrong letter (e.g. 'Z') → 0 results → retry → bare address found."""
+
     def handler(request):
         if "huisletter" in str(request.url):
             return httpx.Response(200, json={"_embedded": {"adressen": []}})
@@ -399,7 +400,7 @@ def test_lookup_retries_without_letter_when_letter_gives_no_results():
             },
         )
 
-    respx.get(f"{_TEST_BASE_URL}/adressen").mock(side_effect=handler)
+    route = respx.get(f"{_TEST_BASE_URL}/adressen").mock(side_effect=handler)
 
     with _client() as client:
         result = client.lookup(postcode="1506HC", house_number=10, house_letter="Z")
@@ -407,11 +408,13 @@ def test_lookup_retries_without_letter_when_letter_gives_no_results():
     assert isinstance(result, BagLookupSuccess)
     assert result.bag_id == "001"
     assert result.house_letter is None
+    assert route.call_count == 2
 
 
 @respx.mock
 def test_lookup_retries_without_suffix_when_suffix_gives_no_results():
     """Wrong suffix → 0 results → retry → bare address found."""
+
     def handler(request):
         if "huisnummertoevoeging" in str(request.url):
             return httpx.Response(200, json={"_embedded": {"adressen": []}})
@@ -427,7 +430,7 @@ def test_lookup_retries_without_suffix_when_suffix_gives_no_results():
             },
         )
 
-    respx.get(f"{_TEST_BASE_URL}/adressen").mock(side_effect=handler)
+    route = respx.get(f"{_TEST_BASE_URL}/adressen").mock(side_effect=handler)
 
     with _client() as client:
         result = client.lookup(postcode="1271KE", house_number=9, house_number_suffix="WRONG")
@@ -435,6 +438,7 @@ def test_lookup_retries_without_suffix_when_suffix_gives_no_results():
     assert isinstance(result, BagLookupSuccess)
     assert result.bag_id == "001"
     assert result.house_number_suffix is None
+    assert route.call_count == 2
 
 
 @respx.mock
@@ -468,6 +472,7 @@ def test_lookup_returns_no_match_when_retry_also_finds_nothing():
 @respx.mock
 def test_lookup_returns_no_match_when_retry_finds_no_bare_address():
     """Wrong letter → retry finds only suffixed variants (no bare address) → NO_MATCH after 2 API calls."""
+
     def handler(request):
         if "huisletter" in str(request.url):
             return httpx.Response(200, json={"_embedded": {"adressen": []}})
