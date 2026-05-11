@@ -147,3 +147,137 @@ def test_lookup_sends_api_key_header():
 
     assert route.calls.last.request.headers["X-Api-Key"] == "test-key"
     assert route.calls.last.request.headers["Accept"] == "application/hal+json"
+
+
+# --- Disambiguation tests ---
+# When the API returns multiple results (e.g. postcode+huisnummer matches several
+# variants with/without house letter or suffix), the client must try to narrow
+# to exactly one exact match before giving up with AMBIGUOUS.
+
+
+@respx.mock
+def test_lookup_disambiguates_by_absent_house_letter():
+    """Kauwerspad 10 scenario: API returns the plain address and the 'B' variant;
+    input has no letter so the plain one should be returned."""
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(
+                            nummeraanduidingIdentificatie="0479200000024012", huisletter=None, huisnummertoevoeging=None
+                        ),
+                        _address(
+                            nummeraanduidingIdentificatie="0479200000016659", huisletter="B", huisnummertoevoeging=None
+                        ),
+                    ]
+                }
+            },
+        )
+    )
+
+    with _client() as client:
+        result = client.lookup(postcode="1506HC", house_number=10)
+
+    assert isinstance(result, BagLookupSuccess)
+    assert result.bag_id == "0479200000024012"
+    assert result.house_letter is None
+
+
+@respx.mock
+def test_lookup_disambiguates_by_house_letter_value():
+    """Input specifies letter 'B'; API returns 'A' and 'B' variants; should pick 'B'."""
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(nummeraanduidingIdentificatie="001", huisletter="A", huisnummertoevoeging=None),
+                        _address(nummeraanduidingIdentificatie="002", huisletter="B", huisnummertoevoeging=None),
+                    ]
+                }
+            },
+        )
+    )
+
+    with _client() as client:
+        result = client.lookup(postcode="1271KE", house_number=9, house_letter="B")
+
+    assert isinstance(result, BagLookupSuccess)
+    assert result.bag_id == "002"
+    assert result.house_letter == "B"
+
+
+@respx.mock
+def test_lookup_disambiguates_by_suffix():
+    """Input specifies suffix '2'; API returns '1' and '2' variants; should pick '2'."""
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(nummeraanduidingIdentificatie="001", huisletter=None, huisnummertoevoeging="1"),
+                        _address(nummeraanduidingIdentificatie="002", huisletter=None, huisnummertoevoeging="2"),
+                    ]
+                }
+            },
+        )
+    )
+
+    with _client() as client:
+        result = client.lookup(postcode="1271KE", house_number=9, house_number_suffix="2")
+
+    assert isinstance(result, BagLookupSuccess)
+    assert result.bag_id == "002"
+    assert result.house_number_suffix == "2"
+
+
+@respx.mock
+def test_lookup_disambiguates_by_letter_and_suffix():
+    """Input specifies letter 'A' and suffix '1'; API returns three variants; should pick the one matching both."""
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(nummeraanduidingIdentificatie="001", huisletter=None, huisnummertoevoeging=None),
+                        _address(nummeraanduidingIdentificatie="002", huisletter="A", huisnummertoevoeging=None),
+                        _address(nummeraanduidingIdentificatie="003", huisletter="A", huisnummertoevoeging="1"),
+                    ]
+                }
+            },
+        )
+    )
+
+    with _client() as client:
+        result = client.lookup(postcode="1271KE", house_number=9, house_letter="A", house_number_suffix="1")
+
+    assert isinstance(result, BagLookupSuccess)
+    assert result.bag_id == "003"
+
+
+@respx.mock
+def test_lookup_still_ambiguous_when_multiple_results_match():
+    """Disambiguation finds 2+ matches (truly ambiguous) → still returns AMBIGUOUS."""
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(nummeraanduidingIdentificatie="001", huisletter="A", huisnummertoevoeging=None),
+                        _address(nummeraanduidingIdentificatie="002", huisletter="A", huisnummertoevoeging=None),
+                    ]
+                }
+            },
+        )
+    )
+
+    with _client() as client:
+        result = client.lookup(postcode="1271KE", house_number=9, house_letter="A")
+
+    assert result is BagLookupFailure.AMBIGUOUS
