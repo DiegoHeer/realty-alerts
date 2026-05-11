@@ -373,3 +373,120 @@ def test_lookup_still_ambiguous_when_multiple_results_match():
         result = client.lookup(postcode="1271KE", house_number=9, house_letter="A")
 
     assert result is BagLookupFailure.AMBIGUOUS
+
+
+# --- Wrong-letter/suffix retry tests ---
+# When the API returns 0 results because the house_letter or house_number_suffix
+# doesn't exist, the client must retry without those fields so the bare address
+# can be resolved by the existing disambiguation logic.
+
+
+@respx.mock
+def test_lookup_retries_without_letter_when_letter_gives_no_results():
+    """Wrong letter (e.g. 'Z') → 0 results → retry → bare address found."""
+    def handler(request):
+        if "huisletter" in str(request.url):
+            return httpx.Response(200, json={"_embedded": {"adressen": []}})
+        return httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(nummeraanduidingIdentificatie="001", huisletter=None, huisnummertoevoeging=None),
+                        _address(nummeraanduidingIdentificatie="002", huisletter="B", huisnummertoevoeging=None),
+                    ]
+                }
+            },
+        )
+
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(side_effect=handler)
+
+    with _client() as client:
+        result = client.lookup(postcode="1506HC", house_number=10, house_letter="Z")
+
+    assert isinstance(result, BagLookupSuccess)
+    assert result.bag_id == "001"
+    assert result.house_letter is None
+
+
+@respx.mock
+def test_lookup_retries_without_suffix_when_suffix_gives_no_results():
+    """Wrong suffix → 0 results → retry → bare address found."""
+    def handler(request):
+        if "huisnummertoevoeging" in str(request.url):
+            return httpx.Response(200, json={"_embedded": {"adressen": []}})
+        return httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(nummeraanduidingIdentificatie="001", huisletter=None, huisnummertoevoeging=None),
+                        _address(nummeraanduidingIdentificatie="002", huisletter=None, huisnummertoevoeging="99"),
+                    ]
+                }
+            },
+        )
+
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(side_effect=handler)
+
+    with _client() as client:
+        result = client.lookup(postcode="1271KE", house_number=9, house_number_suffix="WRONG")
+
+    assert isinstance(result, BagLookupSuccess)
+    assert result.bag_id == "001"
+    assert result.house_number_suffix is None
+
+
+@respx.mock
+def test_lookup_does_not_retry_when_no_letter_or_suffix_given():
+    """No letter/suffix in input → 0 results → NO_MATCH with exactly 1 API call (no retry)."""
+    route = respx.get(f"{_TEST_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(200, json={"_embedded": {"adressen": []}})
+    )
+
+    with _client() as client:
+        result = client.lookup(postcode="9999XX", house_number=1)
+
+    assert result is BagLookupFailure.NO_MATCH
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_lookup_returns_no_match_when_retry_also_finds_nothing():
+    """Wrong letter → retry also returns 0 results → NO_MATCH after 2 API calls."""
+    route = respx.get(f"{_TEST_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(200, json={"_embedded": {"adressen": []}})
+    )
+
+    with _client() as client:
+        result = client.lookup(postcode="9999XX", house_number=1, house_letter="A")
+
+    assert result is BagLookupFailure.NO_MATCH
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_lookup_returns_no_match_when_retry_finds_no_bare_address():
+    """Wrong letter → retry finds only suffixed variants (no bare address) → NO_MATCH after 2 API calls."""
+    def handler(request):
+        if "huisletter" in str(request.url):
+            return httpx.Response(200, json={"_embedded": {"adressen": []}})
+        return httpx.Response(
+            200,
+            json={
+                "_embedded": {
+                    "adressen": [
+                        _address(nummeraanduidingIdentificatie="001", huisletter=None, huisnummertoevoeging="1"),
+                        _address(nummeraanduidingIdentificatie="002", huisletter=None, huisnummertoevoeging="2"),
+                    ]
+                }
+            },
+        )
+
+    route = respx.get(f"{_TEST_BASE_URL}/adressen").mock(side_effect=handler)
+
+    with _client() as client:
+        result = client.lookup(postcode="1015BA", house_number=1, house_letter="Z")
+
+    assert result is BagLookupFailure.NO_MATCH
+    assert route.call_count == 2
