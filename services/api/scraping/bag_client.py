@@ -95,6 +95,15 @@ class BagClient:
                 result = self.lookup(postcode=postcode, house_number=house_number)
                 return BagLookupFailure.NO_MATCH if result is BagLookupFailure.AMBIGUOUS else result
             return BagLookupFailure.NO_MATCH
+        return self._resolve(addresses, house_letter=house_letter, house_number_suffix=house_number_suffix)
+
+    def _resolve(
+        self,
+        addresses: list[dict],
+        *,
+        house_letter: str | None,
+        house_number_suffix: str | None,
+    ) -> BagLookupResult:
         if len(addresses) > 1:
             matches = [
                 a
