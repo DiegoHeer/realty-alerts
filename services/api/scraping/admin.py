@@ -1,6 +1,7 @@
 import httpx
 from django.contrib import admin, messages
 from django.conf import settings
+from django.db.models import Count
 from django.utils import timezone
 
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
@@ -156,6 +157,7 @@ class ResidenceAdmin(admin.ModelAdmin):
         "postcode",
         "current_price_eur",
         "current_status",
+        "listing_count",
         "last_scraped_at",
     )
     list_filter = ("current_status", "city")
@@ -163,9 +165,105 @@ class ResidenceAdmin(admin.ModelAdmin):
     # reverse FK rather than a Residence column.
     search_fields = ("listings__title", "street", "postcode", "bag_id")
     ordering = ("-last_scraped_at",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "display_energy_label",
+        "display_room_count",
+        "display_bedroom_count",
+        "display_bathroom_count",
+        "display_surface_area_m2",
+        "display_construction_period",
+        "display_detail_scraped_at",
+    )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "bag_id",
+                    "city",
+                    "street",
+                    "house_number",
+                    "house_letter",
+                    "house_number_suffix",
+                    "postcode",
+                    "current_price_eur",
+                    "current_status",
+                    "last_scraped_at",
+                    "status_changed_at",
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+        (
+            "Listing Details (latest scrape)",
+            {
+                "fields": (
+                    "display_energy_label",
+                    "display_room_count",
+                    "display_bedroom_count",
+                    "display_bathroom_count",
+                    "display_surface_area_m2",
+                    "display_construction_period",
+                    "display_detail_scraped_at",
+                ),
+            },
+        ),
+    )
     inlines = (ListingInline,)
     actions = [scrape_residence_details]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(listing_count=Count("listings"))
+
+    @admin.display(description="Listings", ordering="listing_count")
+    def listing_count(self, obj):
+        return obj.listing_count
+
+    def _get_freshest_listing(self, obj):
+        cached = getattr(obj, "_freshest_listing_cache", None)
+        if cached is not None:
+            return cached
+        listing = obj.listings.filter(detail_scraped_at__isnull=False).order_by("-detail_scraped_at").first()
+        obj._freshest_listing_cache = listing or False
+        return listing or False
+
+    def _detail_field(self, obj, field_name):
+        listing = self._get_freshest_listing(obj)
+        if not listing:
+            return "—"
+        value = getattr(listing, field_name, None)
+        return value if value not in (None, "") else "—"
+
+    @admin.display(description="Energy label")
+    def display_energy_label(self, obj):
+        return self._detail_field(obj, "energy_label")
+
+    @admin.display(description="Rooms")
+    def display_room_count(self, obj):
+        return self._detail_field(obj, "room_count")
+
+    @admin.display(description="Bedrooms")
+    def display_bedroom_count(self, obj):
+        return self._detail_field(obj, "bedroom_count")
+
+    @admin.display(description="Bathrooms")
+    def display_bathroom_count(self, obj):
+        return self._detail_field(obj, "bathroom_count")
+
+    @admin.display(description="Surface area (m²)")
+    def display_surface_area_m2(self, obj):
+        return self._detail_field(obj, "surface_area_m2")
+
+    @admin.display(description="Construction period")
+    def display_construction_period(self, obj):
+        return self._detail_field(obj, "construction_period")
+
+    @admin.display(description="Detail scraped at")
+    def display_detail_scraped_at(self, obj):
+        return self._detail_field(obj, "detail_scraped_at")
 
 
 class BagStatusListFilter(admin.SimpleListFilter):
