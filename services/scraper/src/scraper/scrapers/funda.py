@@ -116,6 +116,9 @@ class FundaScraper(BaseScraper):
 
         energy_label = _parse_dt_dd_text(soup, "Energielabel")
 
+        title_el = soup.select_one("title")
+        postcode = parse_dutch_postcode(title_el.get_text() if title_el else None)
+
         return DetailListing(
             price=price,
             status=status,
@@ -125,6 +128,7 @@ class FundaScraper(BaseScraper):
             room_count=room_count,
             construction_period=construction_period,
             energy_label=energy_label,
+            postcode=postcode,
         )
 
     def _get_last_page(self) -> int:
