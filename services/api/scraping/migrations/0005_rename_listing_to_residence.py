@@ -8,8 +8,8 @@ class Migration(migrations.Migration):
         ("scraping", "0004_listing_status_changed_at"),
     ]
 
-    # `migrations.RenameIndex` is a Django >= 4.1 op; ty / django-types stubs
-    # don't list it yet, so each call carries `# ty: ignore[unresolved-attribute]`.
+    # `migrations.RenameIndex` is a Django >= 4.1 op; ty / django-types stubs don't
+    # list it yet — each RenameIndex call below is suppressed inline.
     operations = [
         migrations.RenameModel(
             old_name="DeadListing",

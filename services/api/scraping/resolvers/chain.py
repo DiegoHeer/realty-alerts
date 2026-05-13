@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Protocol, Self, runtime_checkable
 
 from scraping.resolvers.kadaster import (
     KadasterConfig,
@@ -10,12 +10,17 @@ from scraping.resolvers.pdok import PdokFuzzyResolver
 from scraping.resolvers.types import AddressQuery, AddressResolver, BagLookupFailure, BagLookupResult, BagLookupSuccess
 
 
+@runtime_checkable
+class _Closeable(Protocol):
+    def close(self) -> None: ...
+
+
 class RetryWithoutSpecifics:
     def __init__(self, inner: AddressResolver) -> None:
         self._inner = inner
 
     def close(self) -> None:
-        if hasattr(self._inner, "close"):
+        if isinstance(self._inner, _Closeable):
             self._inner.close()
 
     def resolve(self, query: AddressQuery) -> BagLookupResult | None:
@@ -39,7 +44,7 @@ class ChainedResolver:
 
     def __exit__(self, *_) -> None:
         for resolver in self._resolvers:
-            if hasattr(resolver, "close"):
+            if isinstance(resolver, _Closeable):
                 resolver.close()
 
     def resolve(self, query: AddressQuery) -> BagLookupResult:
