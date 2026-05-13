@@ -12,6 +12,7 @@ class DetailListing(BaseModel):
     room_count: int | None = None
     construction_period: str | None = None
     energy_label: str | None = None
+    postcode: str | None = None
 
 
 class Listing(BaseModel):

@@ -80,6 +80,7 @@ def test_scrape_detail_returns_detail_listing(pararius_scraper):
     assert detail.bathroom_count == 1
     assert detail.construction_period == "1981"
     assert detail.energy_label == "B"
+    assert detail.postcode == "3067ZV"
 
 
 def test_scrape_detail_returns_none_for_absent_fields(static_pararius_scraper):
@@ -99,3 +100,4 @@ def test_scrape_detail_returns_none_for_absent_fields(static_pararius_scraper):
     assert detail.bathroom_count is None
     assert detail.construction_period is None
     assert detail.energy_label is None
+    assert detail.postcode is None

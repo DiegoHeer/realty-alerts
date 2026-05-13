@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
-from scraper.address import parse_dutch_address
+from scraper.address import parse_dutch_address, parse_dutch_postcode
 from scraper.enums import ListingStatus, Website
 from scraper.models import DetailListing, Listing
 from scraper.protocols import FetchStrategy
@@ -105,6 +105,10 @@ class VastgoedNLScraper(BaseScraper):
         bathroom_count = _parse_dt_dd_int(soup, "Aantal badkamers")
         construction_period = _parse_dt_dd_text(soup, "Bouwperiode")
 
+        address_el = soup.select_one("address")
+        address_p = address_el.select_one("p") if address_el else None
+        postcode = parse_dutch_postcode(address_p.get_text() if address_p else None)
+
         return DetailListing(
             price=price,
             status=status,
@@ -114,6 +118,7 @@ class VastgoedNLScraper(BaseScraper):
             room_count=room_count,
             construction_period=construction_period,
             energy_label=energy_label,
+            postcode=postcode,
         )
 
 
