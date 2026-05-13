@@ -62,6 +62,16 @@ class MockFetch:
 
 
 @pytest.fixture
+def static_fetch():
+    """Factory fixture: returns a StaticFetch backed by fixed HTML."""
+
+    def _factory(html: str) -> StaticFetch:
+        return StaticFetch(html)
+
+    return _factory
+
+
+@pytest.fixture
 def static_funda_scraper():
     """Factory fixture: returns a FundaScraper backed by fixed HTML."""
 
