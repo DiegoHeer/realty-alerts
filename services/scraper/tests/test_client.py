@@ -1,4 +1,7 @@
+import json
+
 import httpx
+import pytest
 import respx
 
 from scraper.client import BackendClient
@@ -21,16 +24,13 @@ def test_submit_detail_result_patches_correct_endpoint():
         construction_period="1991-2000",
         energy_label="A",
     )
-    route = respx.patch(f"{BASE_URL}/internal/v1/listings/42/detail").mock(
-        return_value=httpx.Response(200, json={})
-    )
+    route = respx.patch(f"{BASE_URL}/internal/v1/listings/42/detail").mock(return_value=httpx.Response(200, json={}))
 
     client = BackendClient(base_url=BASE_URL, api_key=API_KEY)
     client.submit_detail_result(listing_id=42, detail=detail)
 
     assert route.called
     sent = route.calls.last.request
-    import json
     body = json.loads(sent.content)
     assert body["price"] == "€ 510.000,- k.k."
     assert body["status"] == "new"
@@ -45,12 +45,9 @@ def test_submit_detail_result_patches_correct_endpoint():
 @respx.mock
 def test_submit_detail_result_raises_on_non_2xx():
     detail = DetailListing(price="€ 100.000", status=ListingStatus.NEW)
-    respx.patch(f"{BASE_URL}/internal/v1/listings/99/detail").mock(
-        return_value=httpx.Response(404)
-    )
+    respx.patch(f"{BASE_URL}/internal/v1/listings/99/detail").mock(return_value=httpx.Response(404))
 
     client = BackendClient(base_url=BASE_URL, api_key=API_KEY)
 
-    import pytest
     with pytest.raises(httpx.HTTPStatusError):
         client.submit_detail_result(listing_id=99, detail=detail)
