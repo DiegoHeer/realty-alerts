@@ -1,5 +1,7 @@
-import pytest
 from datetime import UTC, datetime
+from typing import cast
+
+import pytest
 from django.contrib.admin.sites import AdminSite
 
 from scraping.admin import ResidenceAdmin
@@ -15,7 +17,7 @@ def admin():
 @pytest.mark.django_db
 class TestListingCount:
     def test_listing_count_display_method(self, admin, rf):
-        residence = ResidenceFactory()
+        residence = cast(Residence, ResidenceFactory())
         ListingFactory(residence=residence)
 
         request = rf.get("/admin/scraping/residence/")
@@ -24,8 +26,8 @@ class TestListingCount:
         assert admin.listing_count(obj) == 1
 
     def test_listing_count_isolated_per_residence(self, admin, rf):
-        r1 = ResidenceFactory()
-        r2 = ResidenceFactory()
+        r1 = cast(Residence, ResidenceFactory())
+        r2 = cast(Residence, ResidenceFactory())
         ListingFactory(residence=r1)
         ListingFactory(residence=r1)
         ListingFactory(residence=r2)
@@ -36,7 +38,7 @@ class TestListingCount:
         assert qs.get(pk=r2.pk).listing_count == 1
 
     def test_listing_count_zero(self, admin, rf):
-        residence = ResidenceFactory()
+        residence = cast(Residence, ResidenceFactory())
 
         request = rf.get("/admin/scraping/residence/")
         qs = admin.get_queryset(request)
@@ -50,7 +52,7 @@ class TestListingCount:
 @pytest.mark.django_db
 class TestDetailFields:
     def test_fields_from_freshest_listing(self, admin):
-        residence = ResidenceFactory()
+        residence = cast(Residence, ResidenceFactory())
         ListingFactory(
             residence=residence,
             detail_scraped_at=datetime(2026, 1, 1, tzinfo=UTC),
@@ -81,7 +83,7 @@ class TestDetailFields:
         assert admin.display_detail_scraped_at(residence) == datetime(2026, 5, 1, tzinfo=UTC)
 
     def test_fields_empty_when_no_detail_scraped(self, admin):
-        residence = ResidenceFactory()
+        residence = cast(Residence, ResidenceFactory())
         ListingFactory(residence=residence, detail_scraped_at=None)
 
         assert admin.display_energy_label(residence) == "—"
@@ -93,13 +95,13 @@ class TestDetailFields:
         assert admin.display_detail_scraped_at(residence) == "—"
 
     def test_fields_empty_when_no_listings(self, admin):
-        residence = ResidenceFactory()
+        residence = cast(Residence, ResidenceFactory())
 
         assert admin.display_energy_label(residence) == "—"
         assert admin.display_room_count(residence) == "—"
 
     def test_individual_null_fields_show_dash(self, admin):
-        residence = ResidenceFactory()
+        residence = cast(Residence, ResidenceFactory())
         ListingFactory(
             residence=residence,
             detail_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
@@ -111,7 +113,7 @@ class TestDetailFields:
         assert admin.display_room_count(residence) == 3
 
     def test_freshest_listing_cached_across_fields(self, admin, django_assert_num_queries):
-        residence = ResidenceFactory()
+        residence = cast(Residence, ResidenceFactory())
         ListingFactory(
             residence=residence,
             detail_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
