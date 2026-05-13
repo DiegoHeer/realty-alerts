@@ -7,15 +7,15 @@ import pytest
 import respx
 from scraping.models import (
     BagStatus,
+    ListScrapeRun,
+    ListScrapeRunStatus,
     Listing,
     ListingStatus,
     Residence,
-    ScrapeRun,
-    ScrapeRunStatus,
     Website,
 )
 
-from tests.factories import ListingFactory, ResidenceFactory, ScrapeRunFactory
+from tests.factories import ListingFactory, ListScrapeRunFactory, ResidenceFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -27,17 +27,19 @@ def test_last_successful_run_no_runs(client, api_key_headers):
 
 
 def test_last_successful_returns_latest_success(client, api_key_headers):
-    ScrapeRunFactory(
-        website=Website.FUNDA, status=ScrapeRunStatus.SUCCESS, started_at=datetime.now(UTC) - timedelta(hours=2)
+    ListScrapeRunFactory(
+        website=Website.FUNDA, status=ListScrapeRunStatus.SUCCESS, started_at=datetime.now(UTC) - timedelta(hours=2)
     )
     latest = cast(
-        ScrapeRun,
-        ScrapeRunFactory(
-            website=Website.FUNDA, status=ScrapeRunStatus.SUCCESS, started_at=datetime.now(UTC) - timedelta(minutes=10)
+        ListScrapeRun,
+        ListScrapeRunFactory(
+            website=Website.FUNDA,
+            status=ListScrapeRunStatus.SUCCESS,
+            started_at=datetime.now(UTC) - timedelta(minutes=10),
         ),
     )
-    ScrapeRunFactory(
-        website=Website.FUNDA, status=ScrapeRunStatus.FAILED, started_at=datetime.now(UTC) - timedelta(minutes=1)
+    ListScrapeRunFactory(
+        website=Website.FUNDA, status=ListScrapeRunStatus.FAILED, started_at=datetime.now(UTC) - timedelta(minutes=1)
     )
 
     response = client.get(f"/internal/v1/scrape-runs/{Website.FUNDA.value}/last-successful", headers=api_key_headers)
@@ -46,9 +48,9 @@ def test_last_successful_returns_latest_success(client, api_key_headers):
 
 
 def test_active_runs_lists_only_running(client, api_key_headers):
-    ScrapeRunFactory(status=ScrapeRunStatus.SUCCESS)
-    ScrapeRunFactory(status=ScrapeRunStatus.FAILED)
-    running = cast(ScrapeRun, ScrapeRunFactory(status=ScrapeRunStatus.RUNNING, finished_at=None))
+    ListScrapeRunFactory(status=ListScrapeRunStatus.SUCCESS)
+    ListScrapeRunFactory(status=ListScrapeRunStatus.FAILED)
+    running = cast(ListScrapeRun, ListScrapeRunFactory(status=ListScrapeRunStatus.RUNNING, finished_at=None))
 
     response = client.get("/internal/v1/scrape-runs/active", headers=api_key_headers)
     assert response.status_code == 200
@@ -86,8 +88,8 @@ def test_submit_results_creates_run_and_pending_listings(
     assert body["website"] == website.value
     assert body["listings_found"] == 2
     assert body["new_listings_count"] == 2
-    assert body["status"] == ScrapeRunStatus.SUCCESS.value
-    assert ScrapeRun.objects.count() == 1
+    assert body["status"] == ListScrapeRunStatus.SUCCESS.value
+    assert ListScrapeRun.objects.count() == 1
     assert Listing.objects.count() == 2
     # No Residence rows are created synchronously — that's the resolve_bag task's job.
     assert Residence.objects.count() == 0
@@ -129,7 +131,7 @@ def test_submit_results_persists_per_portal_data_on_listing(client, api_key_head
     assert listing.city == "Amsterdam"
     assert listing.bag_status == BagStatus.PENDING
     assert listing.residence is None
-    assert listing.scraped_at is not None
+    assert listing.list_scraped_at is not None
     assert listing.last_seen_at is not None
 
 
@@ -359,7 +361,7 @@ def test_submit_results_marks_run_failed_when_error_message(client, api_key_head
     )
 
     assert response.status_code == 200
-    assert response.json()["status"] == ScrapeRunStatus.FAILED.value
+    assert response.json()["status"] == ListScrapeRunStatus.FAILED.value
 
 
 def test_internal_endpoints_require_api_key(client, scrape_payload):

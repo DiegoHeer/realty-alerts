@@ -45,12 +45,12 @@ def test_reconcile_picks_most_advanced_status():
     assert residence.current_status == ListingStatus.SOLD
 
 
-def test_reconcile_picks_max_scraped_at():
+def test_reconcile_picks_max_list_scraped_at():
     residence = cast(Residence, ResidenceFactory())
     earliest = datetime(2026, 1, 1, tzinfo=UTC)
     latest = datetime(2026, 5, 1, tzinfo=UTC)
-    ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, scraped_at=earliest)
-    ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, scraped_at=latest)
+    ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, list_scraped_at=earliest)
+    ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED, list_scraped_at=latest)
 
     reconcile_residence(residence)
 

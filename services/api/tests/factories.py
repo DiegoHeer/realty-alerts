@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 import factory
 from factory.django import DjangoModelFactory
 
-from scraping.models import Listing, ListingStatus, Residence, ScrapeRun, ScrapeRunStatus, Website
+from scraping.models import ListScrapeRun, ListScrapeRunStatus, Listing, ListingStatus, Residence, Website
 
 
 class ResidenceFactory(DjangoModelFactory):
@@ -27,14 +27,14 @@ class ListingFactory(DjangoModelFactory):
     url = factory.Sequence(lambda n: f"https://example.com/listing/{n}")
 
 
-class ScrapeRunFactory(DjangoModelFactory):
+class ListScrapeRunFactory(DjangoModelFactory):
     class Meta:
-        model = ScrapeRun
+        model = ListScrapeRun
 
     website = Website.FUNDA
     started_at = factory.LazyFunction(lambda: datetime.now(UTC) - timedelta(minutes=5))
     finished_at = factory.LazyFunction(lambda: datetime.now(UTC))
-    status = ScrapeRunStatus.SUCCESS
+    status = ListScrapeRunStatus.SUCCESS
     listings_found = 0
     new_listings_count = 0
     duration_seconds = 300.0

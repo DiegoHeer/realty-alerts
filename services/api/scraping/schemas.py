@@ -4,7 +4,7 @@ from typing import Annotated, Self
 from ninja import Schema
 from pydantic import StringConstraints, model_validator
 
-from scraping.models import ListingStatus, ScrapeRunStatus, Website
+from scraping.models import ListScrapeRunStatus, ListingStatus, Website
 
 # Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
 # (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
@@ -56,12 +56,12 @@ class ResidenceOut(Schema):
     listings: list[ListingOut]
 
 
-class ScrapeRunOut(Schema):
+class ListScrapeRunOut(Schema):
     id: int
     website: Website
     started_at: datetime
     finished_at: datetime | None
-    status: ScrapeRunStatus
+    status: ListScrapeRunStatus
     listings_found: int
     new_listings_count: int
     error_message: str | None
