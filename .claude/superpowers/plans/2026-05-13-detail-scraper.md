@@ -4,7 +4,7 @@
 
 **Goal:** Add on-demand detail-page scraping for all three portals, triggered from the Django admin, enriching `Listing` and `Residence` records with price, status, and six new property attributes.
 
-**Architecture:** Existing Argo Events webhook payload is extended with a mode discriminator (`scrape_mode=detail`, `detail_url`, `listing_id`); the same scraper container branches on `SCRAPE_MODE`. API service is implemented first (data model → schemas → reconciliation → endpoint → task → admin), then the scraper service (foundation → settings → runner → per-portal `scrape_detail`). Each scraper portal needs real HTML fixture files captured from live pages.
+**Architecture:** Existing Argo Events webhook payload is extended with a mode discriminator (`scrape_mode=detail`, `detail_url`, `listing_id`); the same scraper container branches on `SCRAPE_MODE`. Delivered in **4 PRs**: (1) full API infrastructure, (2) scraper foundation + VastgoedNL end-to-end, (3) Funda detail scraper, (4) Pararius detail scraper. Each PR is independently testable with all tests green.
 
 **Tech Stack:** Django 6, Django Ninja, Celery/Redis, Pydantic v2, BeautifulSoup4, Playwright (remote browser for Funda/Pararius), httpx (VastgoedNL), pytest, pytest-django, factory-boy, respx.
 
@@ -46,6 +46,21 @@
 | Modify | `tests/scrapers/test_funda.py` |
 | Modify | `tests/scrapers/test_pararius.py` |
 | Modify | `tests/scrapers/test_vastgoed_nl.py` |
+
+---
+
+## PR Breakdown
+
+| PR | Tasks | What's testable |
+|---|---|---|
+| **PR 1** — API infrastructure | 1–6 | Admin actions on Listing + Residence, `PATCH .../detail` endpoint, `detail_scrape` task, reconciliation — all unit-tested; endpoint callable manually |
+| **PR 2** — Scraper foundation + VastgoedNL | 7–10 | Full E2E for VastgoedNL: admin action → Argo Events → scraper detail job → API update → Residence reconciled |
+| **PR 3** — Funda detail scraper | 11 | Full E2E for Funda (Playwright-backed) |
+| **PR 4** — Pararius detail scraper | 12 | Full E2E for Pararius (Playwright-backed) |
+
+---
+
+## PR 1 — API Infrastructure (Tasks 1–6)
 
 ---
 
@@ -1012,6 +1027,55 @@ git add scraping/admin.py scraping/tasks.py tests/test_detail_scrape.py
 git commit -m "feat(api): add detail_scrape_listings and detail_scrape_residences admin actions"
 ```
 
+### PR 1 Checkpoint
+
+- [ ] **Run full API test suite**
+
+```bash
+cd services/api && uv run pytest tests/ -v
+```
+
+Expected: all tests pass.
+
+- [ ] **Run pre-commit checks**
+
+```bash
+cd services/api && make pre-commit
+```
+
+Fix any lint/format/type failures before opening the PR.
+
+- [ ] **Open PR**
+
+```bash
+git push -u origin <branch-name>
+gh pr create --title "feat(api): add detail scraper infrastructure" --body "$(cat <<'EOF'
+## Summary
+- Add `surface_area_m2`, `bedroom_count`, `bathroom_count`, `room_count`, `construction_period`, `energy_label`, `detail_scraped_at` fields to `Listing` and first six to `Residence` (single nullable migration)
+- Extend `reconcile_residence` to pull detail fields from the most recently detail-scraped resolved listing
+- Add `PATCH /internal/v1/listings/{id}/detail` endpoint for scraper to submit results
+- Add `scraping.detail_scrape` Celery task that dispatches via existing Argo Events webhook with extended payload
+- Add "Detail scrape" admin actions on `ListingAdmin` and `ResidenceAdmin`
+
+## Test plan
+- [ ] All existing tests still pass
+- [ ] `uv run pytest tests/test_detail_scrape.py -v` — all new tests pass
+- [ ] In Django admin: select a Listing → "Detail scrape" → check Celery task is queued
+- [ ] In Django admin: select a Residence → "Detail scrape" → confirms only resolved listings are dispatched
+EOF
+)"
+```
+
+**What's testable in this PR:**
+- Django admin shows "Detail scrape" on both `ListingAdmin` and `ResidenceAdmin`
+- Clicking the action queues one `scraping.detail_scrape` task per listing
+- `PATCH /internal/v1/listings/{id}/detail` accepts a JSON payload and updates the listing + reconciles the residence
+- The Celery task no-ops cleanly when `ARGO_EVENTS_WEBHOOK_URL` is unset (local dev / CI)
+
+---
+
+## PR 2 — Scraper Foundation + VastgoedNL End-to-End (Tasks 7–10)
+
 ---
 
 ## Task 7 — Scraper: Foundation (ScrapeMode enum, DetailListing model, protocol rename)
@@ -1750,6 +1814,50 @@ git add src/scraper/scrapers/vastgoed_nl.py tests/data/vastgoed_nl_detail.html \
 git commit -m "feat(scraper): add VastgoedNL scrape_detail with HTML fixture"
 ```
 
+### PR 2 Checkpoint
+
+- [ ] **Run full scraper test suite**
+
+```bash
+cd services/scraper && uv run pytest tests/ -v
+```
+
+Expected: all tests pass (existing list-scrape tests + new detail tests for VastgoedNL).
+
+- [ ] **Run pre-commit checks**
+
+```bash
+cd services/scraper && make pre-commit
+```
+
+- [ ] **Open PR**
+
+```bash
+git push -u origin <branch-name>
+gh pr create --title "feat(scraper): add detail scrape mode — foundation + VastgoedNL" --body "$(cat <<'EOF'
+## Summary
+- Rename `Scraper` → `ListScraper`, `scrape` → `scrape_list` across all portal scrapers and runner (no behaviour change)
+- Add `ScrapeMode` enum, `DetailListing` Pydantic model, `DetailScraper` protocol
+- Extend `Settings` with `scrape_mode`, `detail_url`, `listing_id` + model validator (fails fast if detail mode is missing required env vars)
+- Add `BackendClient.submit_detail_result`; refactor runner into `_run_list` / `_run_detail`
+- Implement `VastgoedNLScraper.scrape_detail` with HTML fixture and tests
+
+## Test plan
+- [ ] `uv run pytest tests/ -v` — all pass
+- [ ] Trigger a VastgoedNL detail scrape end-to-end: select a VastgoedNL listing in admin → "Detail scrape" → confirm K8s Job runs with `SCRAPE_MODE=detail` → verify `detail_scraped_at`, `bedroom_count`, etc. populate on the listing
+EOF
+)"
+```
+
+**What's testable in this PR:**
+- Existing list-scrape behaviour is unchanged (all existing tests green)
+- VastgoedNL full E2E: admin action → Argo Events → scraper container in detail mode → `scrape_detail` → `submit_detail_result` → Listing + Residence updated
+- `Settings` validator fails fast at Job startup if `DETAIL_URL` or `LISTING_ID` env vars are missing
+
+---
+
+## PR 3 — Funda Detail Scraper (Task 11)
+
 ---
 
 ## Task 11 — Scraper: Funda `scrape_detail`
@@ -1906,6 +2014,45 @@ git add src/scraper/scrapers/funda.py tests/data/funda_detail.html \
 git commit -m "feat(scraper): add Funda scrape_detail with HTML fixture"
 ```
 
+### PR 3 Checkpoint
+
+- [ ] **Run full scraper test suite**
+
+```bash
+cd services/scraper && uv run pytest tests/ -v
+```
+
+Expected: all tests pass.
+
+- [ ] **Run pre-commit checks**
+
+```bash
+cd services/scraper && make pre-commit
+```
+
+- [ ] **Open PR**
+
+```bash
+git push -u origin <branch-name>
+gh pr create --title "feat(scraper): add Funda scrape_detail" --body "$(cat <<'EOF'
+## Summary
+- Implement `FundaScraper.scrape_detail` with HTML fixture captured from a live Funda detail page
+- Parses price, status, surface_area_m2, bedroom/bathroom/room counts, construction_period, energy_label
+- Returns None for any field not found in the HTML (graceful degradation)
+
+## Test plan
+- [ ] `uv run pytest tests/scrapers/test_funda.py -v` — all pass
+- [ ] Trigger a Funda listing detail scrape end-to-end and confirm fields populate on Listing + Residence
+EOF
+)"
+```
+
+**What's testable:** Funda listings now support full detail scraping end-to-end via the same admin action + Argo Events flow established in PR 2.
+
+---
+
+## PR 4 — Pararius Detail Scraper (Task 12)
+
 ---
 
 ## Task 12 — Scraper: Pararius `scrape_detail`
@@ -2060,3 +2207,37 @@ git add src/scraper/scrapers/pararius.py tests/data/pararius_detail.html \
         tests/conftest.py tests/scrapers/test_pararius.py
 git commit -m "feat(scraper): add Pararius scrape_detail with HTML fixture"
 ```
+
+### PR 4 Checkpoint
+
+- [ ] **Run full scraper test suite**
+
+```bash
+cd services/scraper && uv run pytest tests/ -v
+```
+
+Expected: all tests pass.
+
+- [ ] **Run pre-commit checks**
+
+```bash
+cd services/scraper && make pre-commit
+```
+
+- [ ] **Open PR**
+
+```bash
+git push -u origin <branch-name>
+gh pr create --title "feat(scraper): add Pararius scrape_detail" --body "$(cat <<'EOF'
+## Summary
+- Implement `ParariusScraper.scrape_detail` with HTML fixture captured from a live Pararius detail page
+- Same field set as Funda/VastgoedNL: price, status, surface area, bedroom/bathroom/room counts, construction_period, energy_label
+
+## Test plan
+- [ ] `uv run pytest tests/scrapers/test_pararius.py -v` — all pass
+- [ ] Trigger a Pararius listing detail scrape end-to-end and confirm fields populate on Listing + Residence
+EOF
+)"
+```
+
+**What's testable:** All three portals now support full detail scraping. The feature is complete.
