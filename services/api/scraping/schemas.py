@@ -5,12 +5,17 @@ from typing import Annotated, Self
 from ninja import Schema
 from pydantic import StringConstraints, model_validator
 
-from scraping.models import ListScrapeRunStatus, ListingStatus, Website
+from scraping.models import DetailScrapeRunStatus, ListScrapeRunStatus, ListingStatus, Website
 
 
 class ScrapeMode(StrEnum):
     LIST = "list"
     DETAIL = "detail"
+
+
+class DetailResultStatus(StrEnum):
+    SUCCESS = "success"
+    FAILED = "failed"
 
 
 # Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
@@ -96,3 +101,33 @@ class ScrapeDispatchPayload(Schema):
     scrape_mode: ScrapeMode = ScrapeMode.LIST
     detail_url: str | None = None
     listing_id: int | None = None
+
+
+class DetailListingIn(Schema):
+    price: str | None = None
+    status: ListingStatus | None = None
+    surface_area_m2: int | None = None
+    bedroom_count: int | None = None
+    bathroom_count: int | None = None
+    room_count: int | None = None
+    construction_period: str | None = None
+    energy_label: str | None = None
+
+
+class DetailResultIn(Schema):
+    status: DetailResultStatus
+    started_at: datetime
+    finished_at: datetime
+    detail: DetailListingIn | None = None
+    error_message: str | None = None
+
+
+class DetailScrapeRunOut(Schema):
+    id: int
+    listing_id: int
+    website: Website
+    status: DetailScrapeRunStatus
+    dispatched_at: datetime
+    finished_at: datetime | None
+    error_message: str | None
+    duration_seconds: float | None
