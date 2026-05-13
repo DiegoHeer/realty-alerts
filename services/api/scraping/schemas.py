@@ -104,8 +104,8 @@ class ScrapeDispatchPayload(Schema):
 
 
 class DetailListingIn(Schema):
-    price: str | None = None
-    status: ListingStatus | None = None
+    price: str
+    status: ListingStatus
     surface_area_m2: int | None = None
     bedroom_count: int | None = None
     bathroom_count: int | None = None

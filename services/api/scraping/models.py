@@ -101,6 +101,12 @@ class Listing(models.Model):
     status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
     list_scraped_at = models.DateTimeField(null=True, blank=True)
     detail_scraped_at = models.DateTimeField(null=True, blank=True)
+    surface_area_m2 = models.PositiveIntegerField(null=True, blank=True)
+    bedroom_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    bathroom_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    room_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    construction_period = models.CharField(max_length=50, null=True, blank=True)
+    energy_label = models.CharField(max_length=10, null=True, blank=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
     # Raw address bits scraped from the portal — only what BAG needs to resolve
     # to an official record. Canonical address lives on Residence.

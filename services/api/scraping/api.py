@@ -8,8 +8,8 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import BagStatus, ListScrapeRun, ListScrapeRunStatus, Listing, Website
-from scraping.schemas import ListingIn, ListScrapeRunOut, ScrapeResultsIn
+from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, ListScrapeRun, ListScrapeRunStatus, Listing, Website
+from scraping.schemas import DetailResultIn, DetailResultStatus, DetailScrapeRunOut, ListingIn, ListScrapeRunOut, ScrapeResultsIn
 from scraping.tasks import resolve_bag
 
 
@@ -141,6 +141,51 @@ def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
         "city": item.city,
         "bag_status": BagStatus.PENDING,
     }
+
+
+@internal_router.patch("/listings/{listing_id}/detail", response={200: DetailScrapeRunOut, 404: None})
+def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
+    listing = Listing.objects.filter(pk=listing_id).first()
+    if listing is None:
+        return Status(404, None)
+
+    run = (
+        DetailScrapeRun.objects.filter(
+            listing_id=listing_id,
+            status=DetailScrapeRunStatus.DISPATCHED,
+        )
+        .order_by("-dispatched_at")
+        .first()
+    )
+    if run is None:
+        return Status(404, None)
+
+    duration = (payload.finished_at - payload.started_at).total_seconds()
+
+    if payload.status == DetailResultStatus.SUCCESS and payload.detail:
+        listing.price = payload.detail.price
+        listing.status = payload.detail.status
+        listing.detail_scraped_at = payload.finished_at
+        update_fields = ["price", "status", "detail_scraped_at"]
+        for field in ("surface_area_m2", "bedroom_count", "bathroom_count", "room_count", "construction_period", "energy_label"):
+            value = getattr(payload.detail, field)
+            if value is not None:
+                setattr(listing, field, value)
+                update_fields.append(field)
+        listing.save(update_fields=update_fields)
+
+        run.status = DetailScrapeRunStatus.SUCCESS
+        run.finished_at = payload.finished_at
+        run.duration_seconds = duration
+        run.save(update_fields=["status", "finished_at", "duration_seconds"])
+    else:
+        run.status = DetailScrapeRunStatus.FAILED
+        run.error_message = payload.error_message
+        run.finished_at = payload.finished_at
+        run.duration_seconds = duration
+        run.save(update_fields=["status", "error_message", "finished_at", "duration_seconds"])
+
+    return run
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
