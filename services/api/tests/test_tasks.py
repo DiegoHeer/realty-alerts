@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from scraping.bag_client import _BAG_BASE_URL
+from scraping.resolvers.kadaster import _BAG_BASE_URL
 from scraping.models import BagStatus, Listing, ListingStatus, Residence
 from tests.factories import ListingFactory, ResidenceFactory
 
@@ -260,3 +260,33 @@ def test_resolve_bag_uses_street_city_fallback_when_postcode_missing():
     assert sent["openbareRuimteNaam"] == "Klaterweg"
     assert sent["woonplaatsNaam"] == "Huizen"
     assert "postcode" not in sent
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_resolve_bag_falls_back_to_street_city_when_postcode_wrong():
+    """A wrong postcode causes postcode path to return empty, chain advances to street+city."""
+    from scraping.tasks import resolve_bag
+
+    call_count = 0
+
+    def handler(request):
+        nonlocal call_count
+        call_count += 1
+        params = request.url.params
+        if "postcode" in params:
+            return httpx.Response(200, json={"_embedded": {"adressen": []}})
+        return httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
+
+    respx.get(f"{_BAG_BASE_URL}/adressen").mock(side_effect=handler)
+    listing = _pending_listing(
+        postcode="1271XX", street="Klaterweg", city="Huizen", house_letter=None, house_number_suffix=None
+    )
+
+    resolve_bag.delay(listing.pk).get(timeout=1)
+
+    listing.refresh_from_db()
+    assert listing.bag_status == BagStatus.RESOLVED
+    assert listing.residence is not None
+    assert listing.residence.bag_id == "0402200000084467"
+    assert call_count == 2  # postcode attempt + street+city fallback

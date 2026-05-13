@@ -6,7 +6,8 @@ import pytest
 import respx
 from django.contrib import messages
 
-from scraping.bag_client import _BAG_BASE_URL, BagClient
+from scraping.resolvers import create_resolver
+from scraping.resolvers.kadaster import _BAG_BASE_URL
 from scraping.models import BagStatus, Listing, ListingStatus, Residence
 from tests.factories import ListingFactory, ResidenceFactory
 
@@ -57,8 +58,8 @@ def test_promote_listing_resolves_listing_and_creates_residence(settings):
     )
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is None
     listing.refresh_from_db()
@@ -83,8 +84,8 @@ def test_promote_listing_links_to_existing_residence_and_reconciles(settings):
     existing = cast(Residence, ResidenceFactory(bag_id="0402200000084467", current_price_eur=600_000))
     listing = _failed_listing(price_eur=425_000)
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is None
     listing.refresh_from_db()
@@ -104,8 +105,8 @@ def test_promote_listing_skips_listing_not_in_failed_state(settings):
         ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED),
     )
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "resolved" in error.lower()
@@ -122,8 +123,8 @@ def test_promote_listing_returns_error_on_no_match_and_updates_reason(settings):
     respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "no match" in error.lower()
@@ -153,8 +154,8 @@ def test_promote_listing_returns_error_on_ambiguous(settings):
     )
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "ambiguous" in error.lower()
@@ -171,8 +172,8 @@ def test_promote_listing_returns_error_on_missing_address(settings):
     # No respx mock — lookup must short-circuit before HTTP.
     listing = _failed_listing(postcode=None, street=None)
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "address" in error.lower()
@@ -190,8 +191,8 @@ def test_promote_listing_returns_error_on_http_error(settings):
     respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(503))
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "bag api error" in error.lower()
