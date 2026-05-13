@@ -32,7 +32,7 @@ class AddressQuery:
     street: str | None = None
     city: str | None = None
 
-    def without_specifics(self) -> "AddressQuery":
+    def without_specifics(self) -> AddressQuery:
         return AddressQuery(
             postcode=self.postcode,
             house_number=self.house_number,
