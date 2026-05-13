@@ -201,6 +201,7 @@ Skills live in `.claude/skills/` and are auto-loaded by Claude Code. Use the rig
 
 | Skill | When to use |
 |---|---|
+| `new-scraper` | Scaffold a complete scraper for a new Dutch real estate portal — uses Playwright MCP to analyze the site, generates BaseScraper subclass + tests + registration |
 | `web-scraping` | Anti-bot bypass, scraping cascades, content extraction, rate limiting, poison pill detection |
 | `pydantic` | Pydantic v2 models, validators, BaseSettings, serialization |
 | `pytest` | Writing/refactoring tests, fixtures, parametrize, mocking, async testing |
