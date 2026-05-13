@@ -6,7 +6,8 @@ import pytest
 import respx
 from django.contrib import messages
 
-from scraping.bag_client import _BAG_BASE_URL, BagClient
+from scraping.resolvers import create_resolver
+from scraping.resolvers.kadaster import BAG_BASE_URL
 from scraping.models import BagStatus, Listing, ListingStatus, Residence
 from tests.factories import ListingFactory, ResidenceFactory
 
@@ -52,13 +53,13 @@ def test_promote_listing_resolves_listing_and_creates_residence(settings):
     from scraping.admin import _promote_listing
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is None
     listing.refresh_from_db()
@@ -77,14 +78,14 @@ def test_promote_listing_links_to_existing_residence_and_reconciles(settings):
     from scraping.admin import _promote_listing
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     existing = cast(Residence, ResidenceFactory(bag_id="0402200000084467", current_price_eur=600_000))
     listing = _failed_listing(price_eur=425_000)
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is None
     listing.refresh_from_db()
@@ -104,8 +105,8 @@ def test_promote_listing_skips_listing_not_in_failed_state(settings):
         ListingFactory(residence=residence, bag_status=BagStatus.RESOLVED),
     )
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "resolved" in error.lower()
@@ -119,11 +120,11 @@ def test_promote_listing_returns_error_on_no_match_and_updates_reason(settings):
     from scraping.admin import _promote_listing
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "no match" in error.lower()
@@ -138,7 +139,7 @@ def test_promote_listing_returns_error_on_ambiguous(settings):
     from scraping.admin import _promote_listing
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -153,8 +154,8 @@ def test_promote_listing_returns_error_on_ambiguous(settings):
     )
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "ambiguous" in error.lower()
@@ -171,8 +172,8 @@ def test_promote_listing_returns_error_on_missing_address(settings):
     # No respx mock — lookup must short-circuit before HTTP.
     listing = _failed_listing(postcode=None, street=None)
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "address" in error.lower()
@@ -187,11 +188,11 @@ def test_promote_listing_returns_error_on_http_error(settings):
     from scraping.admin import _promote_listing
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(503))
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(503))
     listing = _failed_listing()
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        error = _promote_listing(listing, client)
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        error = _promote_listing(listing, resolver)
 
     assert error is not None
     assert "bag api error" in error.lower()
@@ -211,7 +212,7 @@ def test_promote_listings_action_reports_success_count(settings):
     from scraping.admin import promote_listings
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     listings = [_failed_listing(), _failed_listing()]
@@ -233,7 +234,7 @@ def test_promote_listings_action_reports_per_listing_failure(settings):
     from scraping.admin import promote_listings
 
     settings.BAG_API_KEY = "test-key"
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
     listing = _failed_listing()
     queryset = Listing.objects.filter(pk=listing.pk)
 
@@ -258,7 +259,7 @@ def test_promote_listings_action_handles_mixed_batch(settings):
     bad_listing = _failed_listing(postcode=None, street=None)  # will hit missing_address
 
     # Route: good_listing hits postcode route, bad_listing short-circuits (no HTTP call needed).
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
 

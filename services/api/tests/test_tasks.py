@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from scraping.bag_client import _BAG_BASE_URL
+from scraping.resolvers.kadaster import BAG_BASE_URL
 from scraping.models import BagStatus, Listing, ListingStatus, Residence
 from tests.factories import ListingFactory, ResidenceFactory
 
@@ -102,7 +102,7 @@ def _pending_listing(**overrides) -> Listing:
 def test_resolve_bag_links_listing_to_residence_and_reconciles():
     from scraping.tasks import resolve_bag
 
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     listing = _pending_listing()
@@ -125,7 +125,7 @@ def test_resolve_bag_links_listing_to_residence_and_reconciles():
 def test_resolve_bag_attaches_to_existing_residence_for_cross_portal():
     from scraping.tasks import resolve_bag
 
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     existing = cast(Residence, ResidenceFactory(bag_id="0402200000084467", current_price_eur=520_000))
@@ -144,7 +144,7 @@ def test_resolve_bag_attaches_to_existing_residence_for_cross_portal():
 def test_resolve_bag_marks_no_match_when_bag_returns_empty():
     from scraping.tasks import resolve_bag
 
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -161,7 +161,7 @@ def test_resolve_bag_marks_no_match_when_bag_returns_empty():
 def test_resolve_bag_marks_ambiguous_when_bag_returns_multiple():
     from scraping.tasks import resolve_bag
 
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -230,7 +230,7 @@ def test_resolve_bag_propagates_5xx_so_celery_retries():
     error and leave the listing terminally stuck."""
     from scraping.tasks import resolve_bag
 
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(503))
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(503))
     listing = _pending_listing()
 
     with pytest.raises(httpx.HTTPStatusError):
@@ -245,7 +245,7 @@ def test_resolve_bag_propagates_5xx_so_celery_retries():
 def test_resolve_bag_uses_street_city_fallback_when_postcode_missing():
     from scraping.tasks import resolve_bag
 
-    route = respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    route = respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     listing = _pending_listing(postcode=None, street="Klaterweg", city="Huizen")
@@ -260,3 +260,76 @@ def test_resolve_bag_uses_street_city_fallback_when_postcode_missing():
     assert sent["openbareRuimteNaam"] == "Klaterweg"
     assert sent["woonplaatsNaam"] == "Huizen"
     assert "postcode" not in sent
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_resolve_bag_falls_back_to_street_city_when_postcode_wrong():
+    """A wrong postcode causes postcode path to return empty, chain advances to street+city."""
+    from scraping.tasks import resolve_bag
+
+    call_count = 0
+
+    def handler(request):
+        nonlocal call_count
+        call_count += 1
+        params = request.url.params
+        if "postcode" in params:
+            return httpx.Response(200, json={"_embedded": {"adressen": []}})
+        return httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
+
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(side_effect=handler)
+    listing = _pending_listing(
+        postcode="1271XX", street="Klaterweg", city="Huizen", house_letter=None, house_number_suffix=None
+    )
+
+    resolve_bag.delay(listing.pk).get(timeout=1)
+
+    listing.refresh_from_db()
+    assert listing.bag_status == BagStatus.RESOLVED
+    assert listing.residence is not None
+    assert listing.residence.bag_id == "0402200000084467"
+    assert call_count == 2  # postcode attempt + street+city fallback
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_resolve_bag_falls_back_to_pdok_when_both_kadaster_paths_empty():
+    """Both Kadaster paths return empty results, PDOK resolves via fuzzy match."""
+    from scraping.tasks import resolve_bag
+
+    _PDOK_BASE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1"
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
+    respx.get(f"{_PDOK_BASE_URL}/suggest").mock(
+        return_value=httpx.Response(200, json={"response": {"docs": [{"type": "adres", "id": "adr-x", "score": 12.5}]}})
+    )
+    respx.get(f"{_PDOK_BASE_URL}/lookup").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "response": {
+                    "docs": [
+                        {
+                            "nummeraanduiding_id": "0402200000084467",
+                            "straatnaam": "Klaterweg",
+                            "huisnummer": 9,
+                            "huisletter": None,
+                            "huisnummertoevoeging": None,
+                            "postcode": "1271KE",
+                            "woonplaatsnaam": "Huizen",
+                        }
+                    ]
+                }
+            },
+        )
+    )
+    listing = _pending_listing(
+        postcode="9999ZZ", street="Klaterwg", city="Huizen", house_letter=None, house_number_suffix=None
+    )
+
+    resolve_bag.delay(listing.pk).get(timeout=1)
+
+    listing.refresh_from_db()
+    assert listing.bag_status == BagStatus.RESOLVED
+    assert listing.residence is not None
+    assert listing.residence.bag_id == "0402200000084467"
