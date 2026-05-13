@@ -6,7 +6,7 @@ import pytest
 import respx
 
 from scraper.client import BackendClient
-from scraper.enums import ListingStatus
+from scraper.enums import DetailResultStatus, ListingStatus
 from scraper.models import DetailListing
 
 BASE_URL = "http://test-api"
@@ -32,7 +32,7 @@ def test_submit_detail_result_patches_correct_endpoint():
 
     client = BackendClient(base_url=BASE_URL, api_key=API_KEY)
     client.submit_detail_result(
-        listing_id=42, status="success", started_at=_STARTED, finished_at=_FINISHED, detail=detail
+        listing_id=42, status=DetailResultStatus.SUCCESS, started_at=_STARTED, finished_at=_FINISHED, detail=detail
     )
 
     assert route.called
@@ -52,7 +52,11 @@ def test_submit_detail_result_failed_includes_error():
 
     client = BackendClient(base_url=BASE_URL, api_key=API_KEY)
     client.submit_detail_result(
-        listing_id=42, status="failed", started_at=_STARTED, finished_at=_FINISHED, error_message="Bot detected"
+        listing_id=42,
+        status=DetailResultStatus.FAILED,
+        started_at=_STARTED,
+        finished_at=_FINISHED,
+        error_message="Bot detected",
     )
 
     assert route.called
@@ -71,7 +75,7 @@ def test_submit_detail_result_raises_on_non_2xx():
     with pytest.raises(httpx.HTTPStatusError):
         client.submit_detail_result(
             listing_id=99,
-            status="success",
+            status=DetailResultStatus.SUCCESS,
             started_at=_STARTED,
             finished_at=_FINISHED,
             detail=DetailListing(price="€ 100.000", status=ListingStatus.NEW),

@@ -6,8 +6,6 @@ class Migration(migrations.Migration):
         ("scraping", "0005_rename_listing_to_residence"),
     ]
 
-    # `migrations.RenameIndex` is a Django >= 4.1 op; ty / django-types stubs
-    # don't list it yet, so each call carries `# ty: ignore[unresolved-attribute]`.
     operations = [
         migrations.RenameModel(
             old_name="ListingUrl",

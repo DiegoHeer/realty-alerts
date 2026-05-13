@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
+from pydantic import ValidationError
 
 from scraping.models import (
     DetailScrapeRun,
@@ -15,21 +16,30 @@ from tests.factories import ListingFactory
 pytestmark = pytest.mark.django_db
 
 
-def test_detail_result_in_success_requires_detail():
+def test_detail_result_in_success_with_detail():
     payload = DetailResultIn(
         status=DetailResultStatus.SUCCESS,
-        started_at="2026-05-13T10:00:00Z",
-        finished_at="2026-05-13T10:01:00Z",
-        detail=DetailListingIn(price="€ 350.000 k.k.", status="new"),
+        started_at=datetime(2026, 5, 13, 10, 0, tzinfo=UTC),
+        finished_at=datetime(2026, 5, 13, 10, 1, tzinfo=UTC),
+        detail=DetailListingIn(price="€ 350.000 k.k.", status=ListingStatus.NEW),
     )
     assert payload.detail is not None
+
+
+def test_detail_result_in_success_rejects_missing_detail():
+    with pytest.raises(ValidationError, match="detail is required"):
+        DetailResultIn(
+            status=DetailResultStatus.SUCCESS,
+            started_at=datetime(2026, 5, 13, 10, 0, tzinfo=UTC),
+            finished_at=datetime(2026, 5, 13, 10, 1, tzinfo=UTC),
+        )
 
 
 def test_detail_result_in_failed_allows_no_detail():
     payload = DetailResultIn(
         status=DetailResultStatus.FAILED,
-        started_at="2026-05-13T10:00:00Z",
-        finished_at="2026-05-13T10:01:00Z",
+        started_at=datetime(2026, 5, 13, 10, 0, tzinfo=UTC),
+        finished_at=datetime(2026, 5, 13, 10, 1, tzinfo=UTC),
         error_message="Bot detected",
     )
     assert payload.detail is None

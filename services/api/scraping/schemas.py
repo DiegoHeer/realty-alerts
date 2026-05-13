@@ -121,6 +121,12 @@ class DetailResultIn(Schema):
     detail: DetailListingIn | None = None
     error_message: str | None = None
 
+    @model_validator(mode="after")
+    def _success_requires_detail(self) -> Self:
+        if self.status == DetailResultStatus.SUCCESS and self.detail is None:
+            raise ValueError("detail is required when status is 'success'")
+        return self
+
 
 class DetailScrapeRunOut(Schema):
     id: int
