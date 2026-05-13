@@ -48,6 +48,17 @@ mcp__playwright__browser_navigate(url=<user_url>)
 mcp__playwright__browser_snapshot()
 ```
 
+**Dismiss cookie consent if present:**
+- Check the snapshot for cookie consent overlays (common selectors: buttons with text "Accepteren", "Akkoord", "Accept all", or elements matching `[id*="cookie"]` / `[class*="consent"]`)
+- If found, click the accept/dismiss button:
+  ```
+  mcp__playwright__browser_click(element="Accept cookies button")
+  ```
+- Re-take the snapshot after dismissal:
+  ```
+  mcp__playwright__browser_snapshot()
+  ```
+
 **Determine if this is a listing search page:**
 - Look for repeated card-like elements in the snapshot (groups of sibling elements each containing a link, price text with `€`, and optionally an image)
 - If cards are found → this is the listing page. Record the URL as `LISTING_URL`. Proceed to Step 3.
@@ -60,7 +71,7 @@ Compare plain HTTP fetch against the Playwright-rendered page to determine fetch
 **Fetch with plain HTTP using Bash:**
 
 ```bash
-curl -s -o $CLAUDE_JOB_DIR/http_response.html \
+curl -s -o /tmp/http_response.html \
   -w "%{http_code}" \
   -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
   -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
@@ -74,7 +85,7 @@ curl -s -o $CLAUDE_JOB_DIR/http_response.html \
 mcp__playwright__browser_evaluate(expression="document.querySelectorAll('<CARD_SELECTOR>').length")
 ```
 
-Also count the cards in the HTTP response (read `$CLAUDE_JOB_DIR/http_response.html` and grep/count the card selector pattern).
+Also count the cards in the HTTP response (read `/tmp/http_response.html` and grep/count the card selector pattern).
 
 **Compare and decide:**
 
@@ -241,6 +252,8 @@ mcp__playwright__browser_evaluate(expression="document.documentElement.outerHTML
 
 Write the output to `services/scraper/tests/data/{name}_listing.html`.
 
+> **Note:** If the HTML output is too large for `browser_evaluate`, use `browser_evaluate` on a trimmed version (e.g., `document.body.outerHTML` wrapped in a minimal `<html>` shell), or use `browser_run_code_unsafe` to write the file to disk directly and then read it.
+
 **Save detail page HTML:**
 
 Navigate back to the detail page used in Step 5:
@@ -252,6 +265,8 @@ mcp__playwright__browser_evaluate(expression="document.documentElement.outerHTML
 
 Write the output to `services/scraper/tests/data/{name}_detail.html`.
 
+> **Note:** Same size caveat as above — use a trimmed version or `browser_run_code_unsafe` if the response is too large.
+
 ### Step 7: Generate scraper class
 
 Create `services/scraper/src/scraper/scrapers/{name}.py` following the existing pattern. The generated code must:
@@ -259,7 +274,6 @@ Create `services/scraper/src/scraper/scrapers/{name}.py` following the existing 
 **Imports** — follow the same import style as existing scrapers:
 
 ```python
-import re
 from datetime import datetime
 
 from bs4 import BeautifulSoup, Tag
@@ -273,10 +287,11 @@ from scraper.scrapers.base import BaseScraper
 from scraper.status import detect_status
 ```
 
-Add `import json` only if JSON-LD extraction is needed (for postcode).
-Add URL parsing imports only as needed:
-- `from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse` for query-param pagination
-- `from pathlib import PurePosixPath` for path-segment pagination
+Add conditional imports only when needed (ruff will flag unused imports):
+- `import re` — only if regex helpers like `_parse_first_int` are used
+- `import json` — only if JSON-LD extraction is needed (for postcode)
+- `from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse` — for query-param pagination
+- `from pathlib import PurePosixPath` — for path-segment pagination
 
 **Class structure:**
 
