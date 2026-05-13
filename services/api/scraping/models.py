@@ -163,4 +163,4 @@ class DetailScrapeRun(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Detail {self.website} {self.status} listing={self.listing_id} @ {self.dispatched_at:%Y-%m-%d %H:%M}"
+        return f"Detail {self.website} {self.status} listing={self.listing.pk} @ {self.dispatched_at:%Y-%m-%d %H:%M}"

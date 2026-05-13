@@ -1,10 +1,15 @@
 from datetime import UTC, datetime
 from typing import cast
+from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
+import respx
+from django.contrib import messages
 
-from scraping.models import DetailScrapeRun, DetailScrapeRunStatus, Listing, Website
-from tests.factories import ListingFactory
+from scraping.models import DetailScrapeRun, DetailScrapeRunStatus, Listing, Residence, Website
+from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
+from tests.factories import ListingFactory, ResidenceFactory
 
 
 pytestmark = pytest.mark.django_db
@@ -28,9 +33,6 @@ def test_listing_detail_scraped_at_defaults_to_none():
     assert listing.detail_scraped_at is None
 
 
-from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
-
-
 def test_scrape_dispatch_payload_defaults_to_list_mode():
     payload = ScrapeDispatchPayload(website=Website.FUNDA, run_id="abc")
     data = payload.model_dump(mode="json")
@@ -51,10 +53,6 @@ def test_scrape_dispatch_payload_detail_mode():
     assert data["scrape_mode"] == "detail"
     assert data["detail_url"] == "https://funda.nl/listing/123"
     assert data["listing_id"] == 42
-
-
-import httpx
-import respx
 
 
 @respx.mock
@@ -100,12 +98,6 @@ def test_dispatch_detail_scrape_marks_failed_when_no_webhook(settings):
     assert "not configured" in run.error_message
 
 
-from unittest.mock import MagicMock, patch
-from django.contrib import messages
-from scraping.models import Residence
-from tests.factories import ResidenceFactory
-
-
 def test_scrape_details_action_dispatches_tasks():
     from scraping.admin import scrape_details
 
@@ -132,8 +124,8 @@ def test_scrape_residence_details_dispatches_for_all_linked_listings():
     from scraping.admin import scrape_residence_details
 
     residence = cast(Residence, ResidenceFactory())
-    listing1 = cast(Listing, ListingFactory(residence=residence, website=Website.FUNDA))
-    listing2 = cast(Listing, ListingFactory(residence=residence, website=Website.PARARIUS))
+    cast(Listing, ListingFactory(residence=residence, website=Website.FUNDA))
+    cast(Listing, ListingFactory(residence=residence, website=Website.PARARIUS))
     queryset = Residence.objects.filter(pk=residence.pk)
 
     modeladmin = MagicMock()
