@@ -1,6 +1,6 @@
 {
     "python.analysis.extraPaths": ["${workspaceFolder}/services/scraper/.venv/lib/python3.14/site-packages", "${workspaceFolder}/services/api/.venv/lib/python3.14/site-packages"],
-
+    "python.terminal.activateEnvironment": false,
     "python.analysis.typeCheckingMode": "off",
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false,
