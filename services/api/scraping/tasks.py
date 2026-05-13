@@ -132,5 +132,5 @@ def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) 
         "postcode": result.postcode,
         "current_status": listing.status,
         "status_changed_at": timezone.now(),
-        "last_scraped_at": listing.scraped_at,
+        "last_scraped_at": listing.list_scraped_at,
     }

@@ -15,7 +15,7 @@ def reconcile_residence(residence: Residence) -> None:
     """Recompute Residence's stored aggregates from its resolved Listings.
 
     Run this after every Listing create/update that affects price, status, or
-    scraped_at. Idempotent: safe to call multiple times for the same residence."""
+    list_scraped_at. Idempotent: safe to call multiple times for the same residence."""
     resolved = list(Listing.objects.filter(residence=residence, bag_status=BagStatus.RESOLVED))
     if not resolved:
         return
@@ -23,7 +23,7 @@ def reconcile_residence(residence: Residence) -> None:
     prices = [listing.price_eur for listing in resolved if listing.price_eur is not None]
     new_price_eur = min(prices) if prices else None
     new_status = max((listing.status for listing in resolved), key=lambda s: _STATUS_ORDER[ListingStatus(s)])
-    scraped_ats = [listing.scraped_at for listing in resolved if listing.scraped_at is not None]
+    scraped_ats = [listing.list_scraped_at for listing in resolved if listing.list_scraped_at is not None]
     new_last_scraped_at = max(scraped_ats) if scraped_ats else None
 
     update_fields: list[str] = []

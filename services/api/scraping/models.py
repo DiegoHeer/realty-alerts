@@ -13,7 +13,7 @@ class ListingStatus(models.TextChoices):
     SOLD = "sold", "Verkocht"
 
 
-class ScrapeRunStatus(models.TextChoices):
+class ListScrapeRunStatus(models.TextChoices):
     RUNNING = "running", "Running"
     SUCCESS = "success", "Success"
     FAILED = "failed", "Failed"
@@ -61,7 +61,9 @@ class Residence(models.Model):
         return f"{self.title or '(no title)'} ({self.city})"
 
     def _freshest_resolved_listing(self) -> Listing | None:
-        return Listing.objects.filter(residence=self, bag_status=BagStatus.RESOLVED).order_by("-scraped_at").first()
+        return (
+            Listing.objects.filter(residence=self, bag_status=BagStatus.RESOLVED).order_by("-list_scraped_at").first()
+        )
 
     @property
     def title(self) -> str | None:
@@ -91,7 +93,7 @@ class Listing(models.Model):
     price_eur = models.BigIntegerField(null=True, blank=True)
     image_url = models.URLField(max_length=2000, null=True, blank=True)
     status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
-    scraped_at = models.DateTimeField(null=True, blank=True)
+    list_scraped_at = models.DateTimeField(null=True, blank=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
     # Raw address bits scraped from the portal — only what BAG needs to resolve
     # to an official record. Canonical address lives on Residence.
@@ -118,20 +120,20 @@ class Listing(models.Model):
         return f"{self.website}: {self.url}"
 
 
-class ScrapeRun(models.Model):
+class ListScrapeRun(models.Model):
     website = models.CharField(max_length=20, choices=Website.choices)
     started_at = models.DateTimeField()
     finished_at = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=10, choices=ScrapeRunStatus.choices)
+    status = models.CharField(max_length=10, choices=ListScrapeRunStatus.choices)
     listings_found = models.PositiveIntegerField(default=0)
     new_listings_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(null=True, blank=True)
     duration_seconds = models.FloatField(null=True, blank=True)
 
     class Meta:
-        db_table = "scrape_runs"
+        db_table = "list_scrape_runs"
         indexes = [
-            models.Index(fields=["website", "started_at"], name="idx_scrape_runs_started"),
+            models.Index(fields=["website", "started_at"], name="idx_list_scrape_runs_started"),
         ]
 
     def __str__(self) -> str:

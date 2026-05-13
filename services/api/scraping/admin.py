@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
 from scraping.resolvers.types import AddressQuery
-from scraping.models import BagStatus, Listing, Residence, ScrapeRun
+from scraping.models import BagStatus, Listing, ListScrapeRun, Residence
 from scraping.reconciliation import reconcile_residence
 
 _FAILED_BAG_STATUSES = frozenset(
@@ -66,7 +66,7 @@ def _promote_listing(listing: Listing, resolver: ChainedResolver) -> str | None:
             "postcode": result.postcode,
             "current_status": listing.status,
             "status_changed_at": timezone.now(),
-            "last_scraped_at": listing.scraped_at,
+            "last_scraped_at": listing.list_scraped_at,
         },
     )
     listing.residence = residence
@@ -171,8 +171,8 @@ class ListingAdmin(admin.ModelAdmin):
     actions = [promote_listings]
 
 
-@admin.register(ScrapeRun)
-class ScrapeRunAdmin(admin.ModelAdmin):
+@admin.register(ListScrapeRun)
+class ListScrapeRunAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "website",

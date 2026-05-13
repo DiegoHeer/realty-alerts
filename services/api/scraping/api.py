@@ -8,8 +8,8 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import BagStatus, Listing, ScrapeRun, ScrapeRunStatus, Website
-from scraping.schemas import ListingIn, ScrapeResultsIn, ScrapeRunOut
+from scraping.models import BagStatus, ListScrapeRun, ListScrapeRunStatus, Listing, Website
+from scraping.schemas import ListingIn, ListScrapeRunOut, ScrapeResultsIn
 from scraping.tasks import resolve_bag
 
 
@@ -46,26 +46,30 @@ def readyz(request):
 internal_router = Router()
 
 
-@internal_router.get("/scrape-runs/{website}/last-successful", response=ScrapeRunOut | None)
+@internal_router.get("/scrape-runs/{website}/last-successful", response=ListScrapeRunOut | None)
 def get_last_successful_run(request, website: Website):
-    return ScrapeRun.objects.filter(website=website, status=ScrapeRunStatus.SUCCESS).order_by("-started_at").first()
+    return (
+        ListScrapeRun.objects.filter(website=website, status=ListScrapeRunStatus.SUCCESS)
+        .order_by("-started_at")
+        .first()
+    )
 
 
-@internal_router.get("/scrape-runs/active", response=list[ScrapeRunOut])
+@internal_router.get("/scrape-runs/active", response=list[ListScrapeRunOut])
 def get_active_runs(request):
-    return list(ScrapeRun.objects.filter(status=ScrapeRunStatus.RUNNING))
+    return list(ListScrapeRun.objects.filter(status=ListScrapeRunStatus.RUNNING))
 
 
-@internal_router.post("/scrape-runs/{website}/results", response=ScrapeRunOut)
+@internal_router.post("/scrape-runs/{website}/results", response=ListScrapeRunOut)
 def submit_scrape_results(request, website: Website, payload: ScrapeResultsIn):
     now = datetime.now(UTC)
     duration = (payload.finished_at - payload.started_at).total_seconds()
-    run_status = ScrapeRunStatus.FAILED if payload.error_message else ScrapeRunStatus.SUCCESS
+    run_status = ListScrapeRunStatus.FAILED if payload.error_message else ListScrapeRunStatus.SUCCESS
 
     with transaction.atomic():
         new_listings_count = _ingest_listings(payload.listings, scraped_at=now)
 
-        scrape_run = ScrapeRun.objects.create(
+        scrape_run = ListScrapeRun.objects.create(
             website=website,
             started_at=payload.started_at,
             finished_at=payload.finished_at,
@@ -127,7 +131,7 @@ def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
         "price_eur": _parse_price_eur(item.price),
         "image_url": item.image_url,
         "status": item.status,
-        "scraped_at": scraped_at,
+        "list_scraped_at": scraped_at,
         "last_seen_at": scraped_at,
         "street": item.street,
         "house_number": item.house_number,
