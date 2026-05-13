@@ -45,7 +45,7 @@ def test_get_last_page_parses_query_string(html, expected):
 
 def test_scrape_yields_listings(funda_scraper, monkeypatch):
     monkeypatch.setattr(funda_scraper, "MAX_PAGES", 2)
-    listings = funda_scraper.scrape(since=None)
+    listings = funda_scraper.scrape_list(since=None)
 
     assert len(listings) > 0
     for listing in listings:
@@ -65,7 +65,7 @@ def test_scrape_yields_listings(funda_scraper, monkeypatch):
 
 def test_scrape_specific_card(funda_scraper, monkeypatch):
     monkeypatch.setattr(funda_scraper, "MAX_PAGES", 2)
-    listings = funda_scraper.scrape(since=None)
+    listings = funda_scraper.scrape_list(since=None)
 
     heerhugowaard = next(
         listing

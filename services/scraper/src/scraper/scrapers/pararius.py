@@ -27,7 +27,7 @@ class ParariusScraper(BaseScraper):
         super().__init__(fetch)
         self.base_url = base_url
 
-    def scrape(self, since: datetime | None) -> list[Listing]:
+    def scrape_list(self, since: datetime | None) -> list[Listing]:
         logger.info(f"Scraping Pararius (since={since})")
         last_page = self._get_last_page()
         listings: list[Listing] = []

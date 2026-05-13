@@ -11,3 +11,8 @@ class ListingStatus(StrEnum):
     NEW = "new"
     SALE_PENDING = "sale_pending"
     SOLD = "sold"
+
+
+class ScrapeMode(StrEnum):
+    LIST = "list"
+    DETAIL = "detail"

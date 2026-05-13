@@ -3,7 +3,7 @@ from datetime import datetime
 import httpx
 from loguru import logger
 
-from scraper.models import Listing
+from scraper.models import DetailListing, Listing
 
 
 class BackendClient:
@@ -52,3 +52,10 @@ class BackendClient:
             f"{result['new_listings_count']} new listings) for {website}"
         )
         return result
+
+    def submit_detail_result(self, listing_id: int, detail: DetailListing) -> None:
+        response = self.client.patch(
+            f"/internal/v1/listings/{listing_id}/detail",
+            json=detail.model_dump(),
+        )
+        response.raise_for_status()

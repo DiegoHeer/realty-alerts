@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Protocol, Self
 
 from scraper.enums import Website
-from scraper.models import Listing
+from scraper.models import DetailListing, Listing
 
 
 class FetchStrategy(Protocol):
@@ -12,7 +12,13 @@ class FetchStrategy(Protocol):
     def __exit__(self, *exc: object) -> None: ...
 
 
-class Scraper(Protocol):
+class ListScraper(Protocol):
     website: Website
 
-    def scrape(self, since: datetime | None) -> list[Listing]: ...
+    def scrape_list(self, since: datetime | None) -> list[Listing]: ...
+
+
+class DetailScraper(Protocol):
+    website: Website
+
+    def scrape_detail(self, url: str) -> DetailListing: ...

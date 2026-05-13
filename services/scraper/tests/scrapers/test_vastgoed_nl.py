@@ -1,4 +1,41 @@
 from scraper.enums import ListingStatus
+from scraper.models import DetailListing
+
+DETAIL_URL = "https://aanbod.vastgoednederland.nl/koopwoningen/well-l/woning-636480-wolfsven-11"
+
+
+def test_scrape_detail_returns_detail_listing(vastgoed_nl_scraper):
+    detail = vastgoed_nl_scraper.scrape_detail(DETAIL_URL)
+
+    assert isinstance(detail, DetailListing)
+    assert detail.price == "€ 510.000,- k.k."
+    assert detail.status == ListingStatus.NEW
+    assert detail.surface_area_m2 == 95
+    assert detail.room_count == 3
+    assert detail.bedroom_count == 2
+    assert detail.bathroom_count == 1
+    assert detail.construction_period == "1991-2000"
+    assert detail.energy_label == "A"
+
+
+def test_scrape_detail_returns_none_for_absent_fields(static_vastgoed_nl_scraper):
+    minimal_html = """
+    <html><body>
+    <span class="price">€ 250.000,- k.k.</span>
+    <span class="info-badge primary">beschikbaar</span>
+    </body></html>
+    """
+    scraper = static_vastgoed_nl_scraper(minimal_html)
+    detail = scraper.scrape_detail("https://example.com/listing")
+
+    assert detail.price == "€ 250.000,- k.k."
+    assert detail.status == ListingStatus.NEW
+    assert detail.surface_area_m2 is None
+    assert detail.bedroom_count is None
+    assert detail.bathroom_count is None
+    assert detail.room_count is None
+    assert detail.construction_period is None
+    assert detail.energy_label is None
 
 
 def test_scrape_first_page(vastgoed_nl_scraper):

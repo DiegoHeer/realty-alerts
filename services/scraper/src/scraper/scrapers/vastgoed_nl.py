@@ -1,12 +1,13 @@
+import re
 from datetime import datetime
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
 from scraper.address import parse_dutch_address
-from scraper.enums import Website
-from scraper.models import Listing
+from scraper.enums import ListingStatus, Website
+from scraper.models import DetailListing, Listing
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
 from scraper.status import detect_status
@@ -22,7 +23,7 @@ class VastgoedNLScraper(BaseScraper):
         super().__init__(fetch)
         self.base_url = base_url
 
-    def scrape(self, since: datetime | None) -> list[Listing]:
+    def scrape_list(self, since: datetime | None) -> list[Listing]:
         logger.info(f"Scraping Vastgoed NL (since={since})")
         last_page = self._get_last_page()
         listings = []
@@ -30,6 +31,10 @@ class VastgoedNLScraper(BaseScraper):
             listings.extend(self._scrape_page(page_number))
         logger.info(f"Found {len(listings)} listings across {last_page} pages")
         return listings
+
+    def scrape_detail(self, url: str) -> DetailListing:
+        soup = self.get_soup(url)
+        return self._parse_detail_page(soup)
 
     def _get_last_page(self) -> int:
         soup = self.get_soup(self.base_url)
@@ -83,3 +88,69 @@ class VastgoedNLScraper(BaseScraper):
             website=self.website,
             status=detect_status(card),
         )
+
+    def _parse_detail_page(self, soup: BeautifulSoup) -> DetailListing:
+        price_el = soup.select_one("span.price")
+        price = price_el.get_text(strip=True) if price_el else ""
+
+        status_el = soup.select_one("span.info-badge.primary")
+        status = _parse_status(status_el.get_text(strip=True).lower() if status_el else "")
+
+        energy_el = soup.select_one("span.energielabel")
+        energy_label = energy_el.get_text(strip=True) if energy_el else None
+
+        surface_area_m2 = _parse_summary_int(soup, "Woonoppervlakte")
+        room_count = _parse_summary_int(soup, "Aantal kamers")
+        bedroom_count = _parse_dt_dd_int(soup, "Aantal slaapkamers")
+        bathroom_count = _parse_dt_dd_int(soup, "Aantal badkamers")
+        construction_period = _parse_dt_dd_text(soup, "Bouwperiode")
+
+        return DetailListing(
+            price=price,
+            status=status,
+            surface_area_m2=surface_area_m2,
+            bedroom_count=bedroom_count,
+            bathroom_count=bathroom_count,
+            room_count=room_count,
+            construction_period=construction_period,
+            energy_label=energy_label,
+        )
+
+
+def _parse_status(text: str) -> ListingStatus:
+    if "voorbehoud" in text:
+        return ListingStatus.SALE_PENDING
+    if "verkocht" in text:
+        return ListingStatus.SOLD
+    return ListingStatus.NEW
+
+
+def _parse_summary_int(soup: BeautifulSoup, label: str) -> int | None:
+    """Return the first integer from span.value in the div.col-6 summary card matching label."""
+    for div in soup.select("div.col-6"):
+        strong = div.select_one("strong")
+        if strong and strong.get_text(strip=True) == label:
+            value_el = div.select_one("span.value")
+            if value_el:
+                m = re.search(r"\d+", value_el.get_text(strip=True))
+                return int(m.group()) if m else None
+    return None
+
+
+def _parse_dt_dd_int(soup: BeautifulSoup, label: str) -> int | None:
+    """Return the dd value of a dt/dd kenmerken pair as an integer."""
+    text = _parse_dt_dd_text(soup, label)
+    if text is None:
+        return None
+    digits = re.sub(r"[^\d]", "", text)
+    return int(digits) if digits else None
+
+
+def _parse_dt_dd_text(soup: BeautifulSoup, label: str) -> str | None:
+    """Return the dd value of a dt/dd kenmerken pair as a string, or None if absent."""
+    for dt in soup.find_all("dt"):
+        if dt.get_text(strip=True) == label:
+            dd = dt.find_next_sibling("dd")
+            if dd:
+                return dd.get_text(strip=True) or None
+    return None
