@@ -29,21 +29,19 @@ def ping() -> str:
 
 
 @shared_task(
-    name="scraping.dispatch_scrape",
+    name="scraping.dispatch_list_scrape",
     autoretry_for=(httpx.HTTPError,),
     retry_backoff=True,
     retry_backoff_max=60,
     max_retries=3,
 )
-def dispatch_scrape(website: str, run_id: str | None = None) -> str:
-    """POST a scrape dispatch event to the Argo Events webhook.
+def dispatch_list_scrape(website: str, run_id: str | None = None) -> str:
+    """POST a list-scrape dispatch event to the Argo Events webhook.
 
     Beat fires this task on a schedule defined in Django admin. Argo
     Events' webhook EventSource turns the POST into an event; the
-    scraper Sensor turns the event into a one-shot K8s Job.
-
-    Returns the run_id (generated if not provided) so callers can
-    correlate with downstream pod logs (`SCRAPE_RUN_ID` env).
+    scraper Sensor turns the event into a one-shot K8s Job that runs
+    the list scraper for the given website.
     """
     payload = ScrapeDispatchPayload(
         website=Website(website),
