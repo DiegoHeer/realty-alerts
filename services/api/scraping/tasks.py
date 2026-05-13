@@ -6,11 +6,11 @@ from django.conf import settings
 from django.utils import timezone
 from loguru import logger
 
-from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
-from scraping.resolvers.types import AddressQuery
 from scraping.cleanup import delete_expired_terminal_residences
 from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, Listing, Residence, Website
 from scraping.reconciliation import reconcile_residence
+from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
+from scraping.resolvers.types import AddressQuery
 from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
 
 # BagLookupFailure → BagStatus. The client's MISSING_ADDRESS short-circuits
@@ -71,7 +71,7 @@ def dispatch_list_scrape(website: str, run_id: str | None = None) -> str:
     retry_backoff=True,
     retry_backoff_max=60,
     max_retries=3,
-    rate_limit="6/m",
+    rate_limit="20/m",
 )
 def dispatch_detail_scrape(listing_id: int, detail_scrape_run_id: int) -> str:
     listing = Listing.objects.get(pk=listing_id)
@@ -121,7 +121,7 @@ def cleanup_expired_residences() -> int:
     retry_backoff=True,
     retry_backoff_max=300,
     max_retries=5,
-    rate_limit="5/s",
+    rate_limit="20/s",
 )
 def resolve_bag(listing_id: int) -> None:
     """Resolve a Listing's raw address bits to a BAG-canonical Residence.
