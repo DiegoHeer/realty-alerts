@@ -98,3 +98,78 @@ def test_dispatch_detail_scrape_marks_failed_when_no_webhook(settings):
     assert run.status == DetailScrapeRunStatus.FAILED
     assert run.finished_at is not None
     assert "not configured" in run.error_message
+
+
+from unittest.mock import MagicMock, patch
+from django.contrib import messages
+from scraping.models import Residence
+from tests.factories import ResidenceFactory
+
+
+def test_scrape_details_action_dispatches_tasks():
+    from scraping.admin import scrape_details
+
+    listing1 = cast(Listing, ListingFactory())
+    listing2 = cast(Listing, ListingFactory())
+    queryset = Listing.objects.filter(pk__in=[listing1.pk, listing2.pk])
+
+    modeladmin = MagicMock()
+    request = MagicMock()
+
+    with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
+        scrape_details(modeladmin, request, queryset)
+
+    assert mock_delay.call_count == 2
+    assert DetailScrapeRun.objects.count() == 2
+    assert DetailScrapeRun.objects.filter(status=DetailScrapeRunStatus.DISPATCHED).count() == 2
+
+    success_calls = [c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.SUCCESS]
+    assert len(success_calls) == 1
+    assert "2" in success_calls[0].args[1]
+
+
+def test_scrape_residence_details_dispatches_for_all_linked_listings():
+    from scraping.admin import scrape_residence_details
+
+    residence = cast(Residence, ResidenceFactory())
+    listing1 = cast(Listing, ListingFactory(residence=residence, website=Website.FUNDA))
+    listing2 = cast(Listing, ListingFactory(residence=residence, website=Website.PARARIUS))
+    queryset = Residence.objects.filter(pk=residence.pk)
+
+    modeladmin = MagicMock()
+    request = MagicMock()
+
+    with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
+        scrape_residence_details(modeladmin, request, queryset)
+
+    assert mock_delay.call_count == 2
+    assert DetailScrapeRun.objects.count() == 2
+
+    success_calls = [c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.SUCCESS]
+    assert len(success_calls) == 1
+    assert "2 listing(s)" in success_calls[0].args[1]
+    assert "1 residence(s)" in success_calls[0].args[1]
+
+
+def test_scrape_residence_details_handles_multiple_residences():
+    from scraping.admin import scrape_residence_details
+
+    r1 = cast(Residence, ResidenceFactory())
+    r2 = cast(Residence, ResidenceFactory())
+    cast(Listing, ListingFactory(residence=r1))
+    cast(Listing, ListingFactory(residence=r2))
+    cast(Listing, ListingFactory(residence=r2))
+    queryset = Residence.objects.filter(pk__in=[r1.pk, r2.pk])
+
+    modeladmin = MagicMock()
+    request = MagicMock()
+
+    with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
+        scrape_residence_details(modeladmin, request, queryset)
+
+    assert mock_delay.call_count == 3
+    assert DetailScrapeRun.objects.count() == 3
+
+    success_calls = [c for c in modeladmin.message_user.call_args_list if c.args[2] == messages.SUCCESS]
+    assert "3 listing(s)" in success_calls[0].args[1]
+    assert "2 residence(s)" in success_calls[0].args[1]
