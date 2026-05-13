@@ -1,4 +1,5 @@
 import pytest
+from datetime import UTC, datetime
 from django.contrib.admin.sites import AdminSite
 
 from scraping.admin import ResidenceAdmin
@@ -44,3 +45,80 @@ class TestListingCount:
 
     def test_listing_count_in_list_display(self, admin):
         assert "listing_count" in admin.list_display
+
+
+@pytest.mark.django_db
+class TestDetailFields:
+    def test_fields_from_freshest_listing(self, admin):
+        residence = ResidenceFactory()
+        ListingFactory(
+            residence=residence,
+            detail_scraped_at=datetime(2026, 1, 1, tzinfo=UTC),
+            energy_label="A",
+            room_count=4,
+            bedroom_count=2,
+            bathroom_count=1,
+            surface_area_m2=85,
+            construction_period="2000-2010",
+        )
+        ListingFactory(
+            residence=residence,
+            detail_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+            energy_label="B",
+            room_count=5,
+            bedroom_count=3,
+            bathroom_count=2,
+            surface_area_m2=110,
+            construction_period="1990-2000",
+        )
+
+        assert admin.display_energy_label(residence) == "B"
+        assert admin.display_room_count(residence) == 5
+        assert admin.display_bedroom_count(residence) == 3
+        assert admin.display_bathroom_count(residence) == 2
+        assert admin.display_surface_area_m2(residence) == 110
+        assert admin.display_construction_period(residence) == "1990-2000"
+        assert admin.display_detail_scraped_at(residence) == datetime(2026, 5, 1, tzinfo=UTC)
+
+    def test_fields_empty_when_no_detail_scraped(self, admin):
+        residence = ResidenceFactory()
+        ListingFactory(residence=residence, detail_scraped_at=None)
+
+        assert admin.display_energy_label(residence) == "—"
+        assert admin.display_room_count(residence) == "—"
+        assert admin.display_bedroom_count(residence) == "—"
+        assert admin.display_bathroom_count(residence) == "—"
+        assert admin.display_surface_area_m2(residence) == "—"
+        assert admin.display_construction_period(residence) == "—"
+        assert admin.display_detail_scraped_at(residence) == "—"
+
+    def test_fields_empty_when_no_listings(self, admin):
+        residence = ResidenceFactory()
+
+        assert admin.display_energy_label(residence) == "—"
+        assert admin.display_room_count(residence) == "—"
+
+    def test_individual_null_fields_show_dash(self, admin):
+        residence = ResidenceFactory()
+        ListingFactory(
+            residence=residence,
+            detail_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+            energy_label=None,
+            room_count=3,
+        )
+
+        assert admin.display_energy_label(residence) == "—"
+        assert admin.display_room_count(residence) == 3
+
+    def test_freshest_listing_cached_across_fields(self, admin, django_assert_num_queries):
+        residence = ResidenceFactory()
+        ListingFactory(
+            residence=residence,
+            detail_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+            energy_label="A",
+            room_count=4,
+        )
+
+        with django_assert_num_queries(1):
+            admin.display_energy_label(residence)
+            admin.display_room_count(residence)

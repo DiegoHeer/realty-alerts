@@ -176,6 +176,49 @@ class ResidenceAdmin(admin.ModelAdmin):
     def listing_count(self, obj):
         return obj.listing_count
 
+    def _get_freshest_listing(self, obj):
+        cached = getattr(obj, "_freshest_listing_cache", None)
+        if cached is not None:
+            return cached
+        listing = obj.listings.filter(detail_scraped_at__isnull=False).order_by("-detail_scraped_at").first()
+        obj._freshest_listing_cache = listing or False
+        return listing or False
+
+    def _detail_field(self, obj, field_name):
+        listing = self._get_freshest_listing(obj)
+        if not listing:
+            return "—"
+        value = getattr(listing, field_name, None)
+        return value if value not in (None, "") else "—"
+
+    @admin.display(description="Energy label")
+    def display_energy_label(self, obj):
+        return self._detail_field(obj, "energy_label")
+
+    @admin.display(description="Rooms")
+    def display_room_count(self, obj):
+        return self._detail_field(obj, "room_count")
+
+    @admin.display(description="Bedrooms")
+    def display_bedroom_count(self, obj):
+        return self._detail_field(obj, "bedroom_count")
+
+    @admin.display(description="Bathrooms")
+    def display_bathroom_count(self, obj):
+        return self._detail_field(obj, "bathroom_count")
+
+    @admin.display(description="Surface area (m²)")
+    def display_surface_area_m2(self, obj):
+        return self._detail_field(obj, "surface_area_m2")
+
+    @admin.display(description="Construction period")
+    def display_construction_period(self, obj):
+        return self._detail_field(obj, "construction_period")
+
+    @admin.display(description="Detail scraped at")
+    def display_detail_scraped_at(self, obj):
+        return self._detail_field(obj, "detail_scraped_at")
+
 
 class BagStatusListFilter(admin.SimpleListFilter):
     title = "BAG status"
