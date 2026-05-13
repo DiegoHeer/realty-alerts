@@ -1,6 +1,7 @@
 import httpx
 from django.contrib import admin, messages
 from django.conf import settings
+from django.db.models import Count
 from django.utils import timezone
 
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
@@ -156,6 +157,7 @@ class ResidenceAdmin(admin.ModelAdmin):
         "postcode",
         "current_price_eur",
         "current_status",
+        "listing_count",
         "last_scraped_at",
     )
     list_filter = ("current_status", "city")
@@ -166,6 +168,13 @@ class ResidenceAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     inlines = (ListingInline,)
     actions = [scrape_residence_details]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(listing_count=Count("listings"))
+
+    @admin.display(description="Listings", ordering="listing_count")
+    def listing_count(self, obj):
+        return obj.listing_count
 
 
 class BagStatusListFilter(admin.SimpleListFilter):
