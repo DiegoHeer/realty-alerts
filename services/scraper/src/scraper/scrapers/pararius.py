@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import datetime
 from pathlib import PurePosixPath
@@ -65,6 +66,8 @@ class ParariusScraper(BaseScraper):
         label_el = soup.select_one('dd[class*="listing-features__description--energy-label-"]')
         energy_label = label_el.get_text(strip=True) or None if label_el else None
 
+        postcode = _parse_json_ld_postcode(soup)
+
         return DetailListing(
             price=price,
             status=status,
@@ -74,6 +77,7 @@ class ParariusScraper(BaseScraper):
             room_count=room_count,
             construction_period=construction_period,
             energy_label=energy_label,
+            postcode=postcode,
         )
 
     def _get_last_page(self) -> int:
@@ -162,3 +166,18 @@ def _parse_status(text: str) -> ListingStatus:
     if "verkocht" in text:
         return ListingStatus.SOLD
     return ListingStatus.NEW
+
+
+def _parse_json_ld_postcode(soup: BeautifulSoup) -> str | None:
+    """Extract postcode from schema.org JSON-LD address block."""
+    script = soup.select_one('script[type="application/ld+json"]')
+    if not script or not script.string:
+        return None
+    try:
+        data = json.loads(script.string)
+    except json.JSONDecodeError:
+        return None
+    address = data.get("address") if isinstance(data, dict) else None
+    if not isinstance(address, dict):
+        return None
+    return parse_dutch_postcode(address.get("postalCode"))
