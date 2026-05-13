@@ -90,3 +90,41 @@ def test_is_scraping_detected_true_when_blocked(funda_scraper):
 def test_is_scraping_detected_false_for_normal_page(funda_scraper):
     normal_html = (MOCK_DATA_DIR / "funda_listing.html").read_text(encoding="utf-8")
     assert funda_scraper.is_scraping_detected(normal_html) is False
+
+
+DETAIL_URL = "https://www.funda.nl/detail/koop/ede/huis-molenstraat-192/43365278/"
+
+
+def test_scrape_detail_returns_detail_listing(funda_scraper):
+    from scraper.models import DetailListing
+
+    detail = funda_scraper.scrape_detail(DETAIL_URL)
+
+    assert isinstance(detail, DetailListing)
+    assert detail.price == "€ 619.000 k.k."
+    assert detail.status == ListingStatus.NEW
+    assert detail.surface_area_m2 == 96
+    assert detail.room_count == 4
+    assert detail.bedroom_count == 2
+    assert detail.bathroom_count == 1
+    assert detail.construction_period == "1928"
+    assert detail.energy_label == "C"
+
+
+def test_scrape_detail_returns_none_for_absent_fields(static_funda_scraper):
+    minimal_html = """
+    <html><body>
+    <div class="flex flex-col font-bold text-xl">€ 300.000 k.k.</div>
+    </body></html>
+    """
+    scraper = static_funda_scraper(minimal_html)
+    detail = scraper.scrape_detail("https://www.funda.nl/detail/koop/any/123/")
+
+    assert detail.price == "€ 300.000 k.k."
+    assert detail.status == ListingStatus.NEW
+    assert detail.surface_area_m2 is None
+    assert detail.room_count is None
+    assert detail.bedroom_count is None
+    assert detail.bathroom_count is None
+    assert detail.construction_period is None
+    assert detail.energy_label is None

@@ -7,8 +7,8 @@ from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
 from scraper.address import parse_dutch_address, parse_dutch_postcode
-from scraper.enums import Website
-from scraper.models import Listing
+from scraper.enums import ListingStatus, Website
+from scraper.models import DetailListing, Listing
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
 from scraper.status import detect_status
@@ -91,6 +91,42 @@ class FundaScraper(BaseScraper):
             status=detect_status(card),
         )
 
+    def scrape_detail(self, url: str) -> DetailListing:
+        soup = self.get_soup(url)
+        return self._parse_detail_page(soup)
+
+    def _parse_detail_page(self, soup: BeautifulSoup) -> DetailListing:
+        price_el = soup.select_one("div.flex.flex-col.font-bold.text-xl")
+        price = price_el.get_text(strip=True) if price_el else ""
+
+        status_text = _parse_dt_dd_text(soup, "Status") or ""
+        status = _parse_status(status_text.lower())
+
+        wonen = _parse_dt_dd_text(soup, "Wonen")
+        surface_area_m2 = _parse_first_int(wonen) if wonen else None
+
+        kamers = _parse_dt_dd_text(soup, "Aantal kamers")
+        room_count = _parse_kamers_total(kamers) if kamers else None
+        bedroom_count = _parse_slaapkamers(kamers) if kamers else None
+
+        badkamers = _parse_dt_dd_text(soup, "Aantal badkamers")
+        bathroom_count = _parse_first_int(badkamers) if badkamers else None
+
+        construction_period = _parse_dt_dd_text(soup, "Bouwjaar")
+
+        energy_label = _parse_dt_dd_text(soup, "Energielabel")
+
+        return DetailListing(
+            price=price,
+            status=status,
+            surface_area_m2=surface_area_m2,
+            bedroom_count=bedroom_count,
+            bathroom_count=bathroom_count,
+            room_count=room_count,
+            construction_period=construction_period,
+            energy_label=energy_label,
+        )
+
     def _get_last_page(self) -> int:
         soup = self.get_soup(self.base_url)
         page_numbers: list[int] = []
@@ -151,3 +187,39 @@ def _extract_image(card: Tag) -> str | None:
         if data_src.startswith(("http://", "https://")):
             return data_src
     return None
+
+
+def _parse_dt_dd_text(soup: BeautifulSoup, label: str) -> str | None:
+    """Return the dd value of a dt/dd pair as a string, or None if absent."""
+    for dt in soup.find_all("dt"):
+        if dt.get_text(strip=True) == label:
+            dd = dt.find_next_sibling("dd")
+            if dd:
+                return dd.get_text(strip=True) or None
+    return None
+
+
+def _parse_first_int(text: str) -> int | None:
+    """Return the first integer found in text, or None."""
+    m = re.search(r"\d+", text)
+    return int(m.group()) if m else None
+
+
+def _parse_kamers_total(text: str) -> int | None:
+    """Return total room count from '4 kamers (2 slaapkamers)' style text."""
+    m = re.search(r"(\d+)\s+kamers?", text)
+    return int(m.group(1)) if m else None
+
+
+def _parse_slaapkamers(text: str) -> int | None:
+    """Return bedroom count from '4 kamers (2 slaapkamers)' style text."""
+    m = re.search(r"(\d+)\s+slaapkamers?", text)
+    return int(m.group(1)) if m else None
+
+
+def _parse_status(text: str) -> ListingStatus:
+    if "voorbehoud" in text or "onder bod" in text:
+        return ListingStatus.SALE_PENDING
+    if "verkocht" in text:
+        return ListingStatus.SOLD
+    return ListingStatus.NEW
