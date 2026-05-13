@@ -122,3 +122,36 @@ class TestDetailFields:
         with django_assert_num_queries(1):
             admin.display_energy_label(residence)
             admin.display_room_count(residence)
+
+
+class TestFieldsets:
+    def test_detail_fieldset_present(self, admin):
+        fieldset_names = [name for name, _ in admin.fieldsets]
+        assert "Listing Details (latest scrape)" in fieldset_names
+
+    def test_detail_fieldset_contains_display_methods(self, admin):
+        detail_fieldset = None
+        for name, options in admin.fieldsets:
+            if name == "Listing Details (latest scrape)":
+                detail_fieldset = options
+                break
+        expected_fields = {
+            "display_energy_label",
+            "display_room_count",
+            "display_bedroom_count",
+            "display_bathroom_count",
+            "display_surface_area_m2",
+            "display_construction_period",
+            "display_detail_scraped_at",
+        }
+        assert detail_fieldset is not None, "Listing Details fieldset not found"
+        assert expected_fields == set(detail_fieldset["fields"])
+
+    def test_detail_display_methods_in_readonly_fields(self, admin):
+        assert "display_energy_label" in admin.readonly_fields
+        assert "display_room_count" in admin.readonly_fields
+        assert "display_bedroom_count" in admin.readonly_fields
+        assert "display_bathroom_count" in admin.readonly_fields
+        assert "display_surface_area_m2" in admin.readonly_fields
+        assert "display_construction_period" in admin.readonly_fields
+        assert "display_detail_scraped_at" in admin.readonly_fields

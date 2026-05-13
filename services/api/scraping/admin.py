@@ -165,7 +165,53 @@ class ResidenceAdmin(admin.ModelAdmin):
     # reverse FK rather than a Residence column.
     search_fields = ("listings__title", "street", "postcode", "bag_id")
     ordering = ("-last_scraped_at",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "display_energy_label",
+        "display_room_count",
+        "display_bedroom_count",
+        "display_bathroom_count",
+        "display_surface_area_m2",
+        "display_construction_period",
+        "display_detail_scraped_at",
+    )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "bag_id",
+                    "city",
+                    "street",
+                    "house_number",
+                    "house_letter",
+                    "house_number_suffix",
+                    "postcode",
+                    "current_price_eur",
+                    "current_status",
+                    "last_scraped_at",
+                    "status_changed_at",
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+        (
+            "Listing Details (latest scrape)",
+            {
+                "fields": (
+                    "display_energy_label",
+                    "display_room_count",
+                    "display_bedroom_count",
+                    "display_bathroom_count",
+                    "display_surface_area_m2",
+                    "display_construction_period",
+                    "display_detail_scraped_at",
+                ),
+            },
+        ),
+    )
     inlines = (ListingInline,)
     actions = [scrape_residence_details]
 
