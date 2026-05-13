@@ -3,6 +3,17 @@ from pydantic import BaseModel
 from scraper.enums import ListingStatus, Website
 
 
+class DetailListing(BaseModel):
+    price: str
+    status: ListingStatus
+    surface_area_m2: int | None = None
+    bedroom_count: int | None = None
+    bathroom_count: int | None = None
+    room_count: int | None = None
+    construction_period: str | None = None
+    energy_label: str | None = None
+
+
 class Listing(BaseModel):
     detail_url: str
     title: str
