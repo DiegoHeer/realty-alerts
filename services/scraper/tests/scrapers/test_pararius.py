@@ -1,4 +1,5 @@
 from scraper.enums import ListingStatus
+from scraper.models import DetailListing
 
 
 def test_scrape_last_page_number(pararius_scraper):
@@ -62,3 +63,39 @@ def test_house_number_with_letter_suffix(pararius_scraper):
     assert listing.house_number == 31
     assert listing.house_letter == "a"
     assert listing.house_number_suffix is None
+
+
+DETAIL_URL = "https://www.pararius.nl/huis-te-koop/rotterdam/cca868ff/vigohof"
+
+
+def test_scrape_detail_returns_detail_listing(pararius_scraper):
+    detail = pararius_scraper.scrape_detail(DETAIL_URL)
+
+    assert isinstance(detail, DetailListing)
+    assert detail.price == "Prijs op aanvraag"
+    assert detail.status == ListingStatus.NEW
+    assert detail.surface_area_m2 == 114
+    assert detail.room_count == 4
+    assert detail.bedroom_count == 3
+    assert detail.bathroom_count == 1
+    assert detail.construction_period == "1981"
+    assert detail.energy_label == "B"
+
+
+def test_scrape_detail_returns_none_for_absent_fields(static_pararius_scraper):
+    minimal_html = """
+    <html><body>
+    <div class="listing-detail-summary__price">€ 500.000 k.k.</div>
+    </body></html>
+    """
+    scraper = static_pararius_scraper(minimal_html)
+    detail = scraper.scrape_detail("https://www.pararius.nl/huis-te-koop/any/")
+
+    assert detail.price == "€ 500.000 k.k."
+    assert detail.status == ListingStatus.NEW
+    assert detail.surface_area_m2 is None
+    assert detail.room_count is None
+    assert detail.bedroom_count is None
+    assert detail.bathroom_count is None
+    assert detail.construction_period is None
+    assert detail.energy_label is None

@@ -20,6 +20,7 @@ URL_TO_FILE = {
     "https://aanbod.vastgoednederland.nl/koopwoningen?q=den%20haag&p=1": "vastgoed_nl_listing.html",
     "https://aanbod.vastgoednederland.nl/koopwoningen/well-l/woning-636480-wolfsven-11": "vastgoed_nl_detail.html",
     "https://www.funda.nl/detail/koop/ede/huis-molenstraat-192/43365278/": "funda_detail.html",
+    "https://www.pararius.nl/huis-te-koop/rotterdam/cca868ff/vigohof": "pararius_detail.html",
 }
 
 
@@ -77,6 +78,16 @@ def static_funda_scraper():
 
     def _factory(html: str) -> FundaScraper:
         return FundaScraper(fetch=StaticFetch(html))
+
+    return _factory
+
+
+@pytest.fixture
+def static_pararius_scraper():
+    """Factory fixture: returns a ParariusScraper backed by fixed HTML."""
+
+    def _factory(html: str) -> ParariusScraper:
+        return ParariusScraper(fetch=StaticFetch(html))
 
     return _factory
 

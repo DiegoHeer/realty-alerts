@@ -3,12 +3,12 @@ from datetime import datetime
 from pathlib import PurePosixPath
 from urllib.parse import urlparse, urlunparse
 
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
 from scraper.address import parse_dutch_address, parse_dutch_postcode
-from scraper.enums import Website
-from scraper.models import Listing
+from scraper.enums import ListingStatus, Website
+from scraper.models import DetailListing, Listing
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
 from scraper.status import detect_status
@@ -35,6 +35,46 @@ class ParariusScraper(BaseScraper):
             listings.extend(self._scrape_page(page_number))
         logger.info(f"Found {len(listings)} listings across {last_page} pages")
         return listings
+
+    def scrape_detail(self, url: str) -> DetailListing:
+        soup = self.get_soup(url)
+        return self._parse_detail_page(soup)
+
+    def _parse_detail_page(self, soup: BeautifulSoup) -> DetailListing:
+        price_el = soup.select_one("div.listing-detail-summary__price")
+        price = price_el.get_text(strip=True) if price_el else ""
+
+        status_text = _parse_dd_text(soup, "Status") or ""
+        status = _parse_status(status_text.lower())
+
+        surface_el = soup.select_one("dd.listing-features__description--surface_area")
+        surface_area_m2 = _parse_first_int(surface_el.get_text(strip=True)) if surface_el else None
+
+        rooms_el = soup.select_one("dd.listing-features__description--number_of_rooms")
+        room_count = _parse_first_int(rooms_el.get_text(strip=True)) if rooms_el else None
+
+        beds_el = soup.select_one("dd.listing-features__description--number_of_bedrooms")
+        bedroom_count = _parse_first_int(beds_el.get_text(strip=True)) if beds_el else None
+
+        baths_el = soup.select_one("dd.listing-features__description--number_of_bathrooms")
+        bathroom_count = _parse_first_int(baths_el.get_text(strip=True)) if baths_el else None
+
+        period_el = soup.select_one("dd.listing-features__description--construction_period")
+        construction_period = period_el.get_text(strip=True) or None if period_el else None
+
+        label_el = soup.select_one('dd[class*="listing-features__description--energy-label-"]')
+        energy_label = label_el.get_text(strip=True) or None if label_el else None
+
+        return DetailListing(
+            price=price,
+            status=status,
+            surface_area_m2=surface_area_m2,
+            bedroom_count=bedroom_count,
+            bathroom_count=bathroom_count,
+            room_count=room_count,
+            construction_period=construction_period,
+            energy_label=energy_label,
+        )
 
     def _get_last_page(self) -> int:
         soup = self.get_soup(self.base_url)
@@ -98,3 +138,27 @@ class ParariusScraper(BaseScraper):
         without_postcode = _PARARIUS_POSTCODE_PREFIX.sub("", text)
         city = _PARARIUS_NEIGHBORHOOD_SUFFIX.sub("", without_postcode).strip()
         return postcode, city
+
+
+def _parse_dd_text(soup: BeautifulSoup, label: str) -> str | None:
+    """Return the dd value of a dt/dd kenmerken pair as a string, or None if absent."""
+    for dt in soup.find_all("dt"):
+        if dt.get_text(strip=True) == label:
+            dd = dt.find_next_sibling("dd")
+            if dd:
+                return dd.get_text(strip=True) or None
+    return None
+
+
+def _parse_first_int(text: str) -> int | None:
+    """Return the first integer found in text, or None."""
+    m = re.search(r"\d+", text)
+    return int(m.group()) if m else None
+
+
+def _parse_status(text: str) -> ListingStatus:
+    if "voorbehoud" in text or "onder bod" in text:
+        return ListingStatus.SALE_PENDING
+    if "verkocht" in text:
+        return ListingStatus.SOLD
+    return ListingStatus.NEW
