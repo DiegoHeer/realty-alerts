@@ -5,32 +5,50 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0012_rename_scrape_run_and_scraped_at'),
+        ("scraping", "0012_rename_scrape_run_and_scraped_at"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='detail_scraped_at',
+            model_name="listing",
+            name="detail_scraped_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.CreateModel(
-            name='DetailScrapeRun',
+            name="DetailScrapeRun",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('website', models.CharField(choices=[('funda', 'Funda'), ('pararius', 'Pararius'), ('vastgoed_nl', 'VastgoedNL')], max_length=20)),
-                ('status', models.CharField(choices=[('DISPATCHED', 'Dispatched'), ('SUCCESS', 'Success'), ('FAILED', 'Failed')], max_length=12)),
-                ('dispatched_at', models.DateTimeField(auto_now_add=True)),
-                ('finished_at', models.DateTimeField(blank=True, null=True)),
-                ('error_message', models.TextField(blank=True, null=True)),
-                ('duration_seconds', models.FloatField(blank=True, null=True)),
-                ('listing', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='detail_scrape_runs', to='scraping.listing')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "website",
+                    models.CharField(
+                        choices=[("funda", "Funda"), ("pararius", "Pararius"), ("vastgoed_nl", "VastgoedNL")],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("DISPATCHED", "Dispatched"), ("SUCCESS", "Success"), ("FAILED", "Failed")],
+                        max_length=12,
+                    ),
+                ),
+                ("dispatched_at", models.DateTimeField(auto_now_add=True)),
+                ("finished_at", models.DateTimeField(blank=True, null=True)),
+                ("error_message", models.TextField(blank=True, null=True)),
+                ("duration_seconds", models.FloatField(blank=True, null=True)),
+                (
+                    "listing",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="detail_scrape_runs",
+                        to="scraping.listing",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'detail_scrape_runs',
-                'indexes': [models.Index(fields=['listing', 'dispatched_at'], name='idx_detail_runs_dispatched')],
+                "db_table": "detail_scrape_runs",
+                "indexes": [models.Index(fields=["listing", "dispatched_at"], name="idx_detail_runs_dispatched")],
             },
         ),
     ]

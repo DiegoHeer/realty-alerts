@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from typing import cast
 from unittest.mock import MagicMock, patch
 
