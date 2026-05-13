@@ -126,6 +126,7 @@ def _parse_status(text: str) -> ListingStatus:
 
 
 def _parse_summary_int(soup: BeautifulSoup, label: str) -> int | None:
+    """Return the first integer from span.value in the div.col-6 summary card matching label."""
     for div in soup.select("div.col-6"):
         strong = div.select_one("strong")
         if strong and strong.get_text(strip=True) == label:
@@ -137,6 +138,7 @@ def _parse_summary_int(soup: BeautifulSoup, label: str) -> int | None:
 
 
 def _parse_dt_dd_int(soup: BeautifulSoup, label: str) -> int | None:
+    """Return the dd value of a dt/dd kenmerken pair as an integer."""
     text = _parse_dt_dd_text(soup, label)
     if text is None:
         return None
@@ -145,6 +147,7 @@ def _parse_dt_dd_int(soup: BeautifulSoup, label: str) -> int | None:
 
 
 def _parse_dt_dd_text(soup: BeautifulSoup, label: str) -> str | None:
+    """Return the dd value of a dt/dd kenmerken pair as a string, or None if absent."""
     for dt in soup.find_all("dt"):
         if dt.get_text(strip=True) == label:
             dd = dt.find_next_sibling("dd")
