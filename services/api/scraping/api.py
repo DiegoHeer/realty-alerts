@@ -162,6 +162,7 @@ def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
 def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
     listing = Listing.objects.filter(pk=listing_id).first()
     if listing is None:
+        logger.warning(f"Detail result for unknown listing_id={listing_id}")
         return Status(404, None)
 
     run = (
@@ -173,6 +174,7 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
         .first()
     )
     if run is None:
+        logger.warning(f"No DISPATCHED DetailScrapeRun for listing_id={listing_id}")
         return Status(404, None)
 
     duration = (payload.finished_at - payload.started_at).total_seconds()
@@ -201,12 +203,14 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
         run.finished_at = payload.finished_at
         run.duration_seconds = duration
         run.save(update_fields=["status", "finished_at", "duration_seconds"])
+        logger.info(f"Detail scrape succeeded for listing_id={listing_id} in {duration:.1f}s")
     else:
         run.status = DetailScrapeRunStatus.FAILED
         run.error_message = payload.error_message
         run.finished_at = payload.finished_at
         run.duration_seconds = duration
         run.save(update_fields=["status", "error_message", "finished_at", "duration_seconds"])
+        logger.warning(f"Detail scrape failed for listing_id={listing_id} in {duration:.1f}s: {payload.error_message}")
 
     return run
 
