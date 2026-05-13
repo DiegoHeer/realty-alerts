@@ -1,8 +1,5 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import pytest
-
-from scraper.enums import ScrapeMode
 from scraper.runner import run
 
 
