@@ -106,6 +106,7 @@ def _run_detail(
     logger.info(f"Starting detail scraper for {website}, listing_id={listing_id}")
 
     client = BackendClient(base_url=backend_api_url, api_key=realty_api_key)
+    started_at = datetime.now(UTC)
 
     try:
         with _make_fetch(website, browser_url) as fetch:
@@ -114,13 +115,42 @@ def _run_detail(
             logger.info(f"Scraped detail for listing {listing_id} from {website}")
     except ScrapingException as exc:
         logger.error(f"Bot detection triggered for listing {listing_id}: {exc}")
+        finished_at = datetime.now(UTC)
+        try:
+            client.submit_detail_result(
+                listing_id=listing_id,
+                status="failed",
+                started_at=started_at,
+                finished_at=finished_at,
+                error_message=str(exc),
+            )
+        except httpx.HTTPError as submit_exc:
+            logger.error(f"Failed to report failure for listing {listing_id}: {submit_exc}")
         sys.exit(1)
     except Exception as exc:
         logger.exception(f"Detail scraping failed for listing {listing_id}: {exc}")
+        finished_at = datetime.now(UTC)
+        try:
+            client.submit_detail_result(
+                listing_id=listing_id,
+                status="failed",
+                started_at=started_at,
+                finished_at=finished_at,
+                error_message=str(exc),
+            )
+        except httpx.HTTPError as submit_exc:
+            logger.error(f"Failed to report failure for listing {listing_id}: {submit_exc}")
         sys.exit(1)
 
+    finished_at = datetime.now(UTC)
     try:
-        client.submit_detail_result(listing_id=listing_id, detail=detail)
+        client.submit_detail_result(
+            listing_id=listing_id,
+            status="success",
+            started_at=started_at,
+            finished_at=finished_at,
+            detail=detail,
+        )
     except httpx.HTTPError as exc:
         logger.error(f"Failed to submit detail result for listing {listing_id}: {exc}")
         sys.exit(1)
