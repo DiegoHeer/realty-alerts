@@ -82,7 +82,7 @@ class KadasterPostcodeResolver:
             params["huisnummertoevoeging"] = query.house_number_suffix
 
         response = self._client.get("/adressen", params=params)
-        if response.status_code == 404:
+        if response.is_client_error:
             return None
         response.raise_for_status()
 
@@ -122,7 +122,7 @@ class KadasterStreetCityResolver:
             params["huisnummertoevoeging"] = query.house_number_suffix
 
         response = self._client.get("/adressen", params=params)
-        if response.status_code == 404:
+        if response.is_client_error:
             return None
         response.raise_for_status()
 

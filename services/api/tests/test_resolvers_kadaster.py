@@ -169,6 +169,14 @@ def test_postcode_resolver_returns_none_on_404():
 
 
 @respx.mock
+def test_postcode_resolver_returns_none_on_400():
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(return_value=httpx.Response(400))
+    with _postcode_resolver() as resolver:
+        result = resolver.resolve(AddressQuery(postcode="INVALID", house_number=9))
+    assert result is None
+
+
+@respx.mock
 def test_postcode_resolver_propagates_5xx():
     respx.get(f"{_TEST_BASE_URL}/adressen").mock(return_value=httpx.Response(503))
     with _postcode_resolver() as resolver, pytest.raises(httpx.HTTPStatusError):
@@ -231,6 +239,14 @@ def test_street_city_resolver_returns_none_on_empty_results():
 @respx.mock
 def test_street_city_resolver_returns_none_on_404():
     respx.get(f"{_TEST_BASE_URL}/adressen").mock(return_value=httpx.Response(404))
+    with _street_city_resolver() as resolver:
+        result = resolver.resolve(AddressQuery(postcode=None, house_number=9, street="Klaterweg", city="Huizen"))
+    assert result is None
+
+
+@respx.mock
+def test_street_city_resolver_returns_none_on_400():
+    respx.get(f"{_TEST_BASE_URL}/adressen").mock(return_value=httpx.Response(400))
     with _street_city_resolver() as resolver:
         result = resolver.resolve(AddressQuery(postcode=None, house_number=9, street="Klaterweg", city="Huizen"))
     assert result is None
