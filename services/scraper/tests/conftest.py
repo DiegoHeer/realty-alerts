@@ -18,6 +18,7 @@ URL_TO_FILE = {
     "https://www.pararius.nl/koopwoningen/nederland/page-1": "pararius_listing.html",
     "https://aanbod.vastgoednederland.nl/koopwoningen?q=den+haag": "vastgoed_nl_listing.html",
     "https://aanbod.vastgoednederland.nl/koopwoningen?q=den%20haag&p=1": "vastgoed_nl_listing.html",
+    "https://aanbod.vastgoednederland.nl/koopwoningen/well-l/woning-636480-wolfsven-11": "vastgoed_nl_detail.html",
 }
 
 
