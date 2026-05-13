@@ -4,28 +4,27 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0011_drop_legacy_residence_columns'),
+        ("scraping", "0011_drop_legacy_residence_columns"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='ScrapeRun',
-            new_name='ListScrapeRun',
+            old_name="ScrapeRun",
+            new_name="ListScrapeRun",
         ),
         migrations.RenameField(
-            model_name='listing',
-            old_name='scraped_at',
-            new_name='list_scraped_at',
+            model_name="listing",
+            old_name="scraped_at",
+            new_name="list_scraped_at",
         ),
         migrations.RenameIndex(  # ty: ignore[unresolved-attribute]
-            model_name='listscraperun',
-            new_name='idx_list_scrape_runs_started',
-            old_name='idx_scrape_runs_started',
+            model_name="listscraperun",
+            new_name="idx_list_scrape_runs_started",
+            old_name="idx_scrape_runs_started",
         ),
         migrations.AlterModelTable(
-            name='listscraperun',
-            table='list_scrape_runs',
+            name="listscraperun",
+            table="list_scrape_runs",
         ),
     ]
