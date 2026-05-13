@@ -146,8 +146,9 @@ def test_retry_retries_without_letter_when_initial_returns_none():
     original_returns = [None, _SUCCESS]
 
     class SequentialMock:
-        calls: list[AddressQuery] = []
-        closed = False
+        def __init__(self) -> None:
+            self.calls: list[AddressQuery] = []
+            self.closed = False
 
         def resolve(self, query: AddressQuery) -> BagLookupResult | None:
             self.calls.append(query)
@@ -170,8 +171,9 @@ def test_retry_returns_none_when_retry_is_ambiguous():
     results = [None, BagLookupFailure.AMBIGUOUS]
 
     class SequentialMock:
-        calls: list[AddressQuery] = []
-        closed = False
+        def __init__(self) -> None:
+            self.calls: list[AddressQuery] = []
+            self.closed = False
 
         def resolve(self, query: AddressQuery) -> BagLookupResult | None:
             self.calls.append(query)

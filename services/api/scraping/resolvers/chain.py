@@ -1,10 +1,10 @@
 from typing import Protocol, Self, runtime_checkable
 
 from scraping.resolvers.kadaster import (
+    BAG_BASE_URL,
     KadasterConfig,
     KadasterPostcodeResolver,
     KadasterStreetCityResolver,
-    _BAG_BASE_URL,
 )
 from scraping.resolvers.pdok import PdokFuzzyResolver
 from scraping.resolvers.types import AddressQuery, AddressResolver, BagLookupFailure, BagLookupResult, BagLookupSuccess
@@ -31,6 +31,7 @@ class RetryWithoutSpecifics:
             return None
         retried = self._inner.resolve(query.without_specifics())
         if retried is BagLookupFailure.AMBIGUOUS:
+            # bare-address still ambiguous — this resolver can't uniquely resolve, let the chain continue
             return None
         return retried
 
@@ -65,7 +66,7 @@ class ChainedResolver:
         return BagLookupFailure.AMBIGUOUS if saw_ambiguous else BagLookupFailure.NO_MATCH
 
 
-def create_resolver(*, api_key: str, base_url: str = _BAG_BASE_URL, timeout: float = 10.0) -> ChainedResolver:
+def create_resolver(*, api_key: str, base_url: str = BAG_BASE_URL, timeout: float = 10.0) -> ChainedResolver:
     config = KadasterConfig(api_key=api_key, base_url=base_url, timeout=timeout)
     return ChainedResolver(
         [

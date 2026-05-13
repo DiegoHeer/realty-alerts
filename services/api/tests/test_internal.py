@@ -249,9 +249,9 @@ def test_submit_results_resolves_end_to_end(client, api_key_headers, scrape_payl
     lands as RESOLVED with a Residence linked. `transaction=True` is needed
     so `transaction.on_commit` callbacks actually fire (the default
     non-transactional pytest-django marker swallows them)."""
-    from scraping.resolvers.kadaster import _BAG_BASE_URL
+    from scraping.resolvers.kadaster import BAG_BASE_URL
 
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+    respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(
             200,
             json={

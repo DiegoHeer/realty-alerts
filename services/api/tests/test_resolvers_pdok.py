@@ -102,6 +102,15 @@ def test_pdok_resolver_returns_none_on_lookup_500():
     assert result is None
 
 
+@respx.mock
+def test_pdok_resolver_accepts_score_at_threshold():
+    respx.get(f"{_TEST_PDOK_URL}/suggest").mock(return_value=httpx.Response(200, json=_suggest_response(score=10.0)))
+    respx.get(f"{_TEST_PDOK_URL}/lookup").mock(return_value=httpx.Response(200, json=_lookup_response()))
+    with _resolver() as resolver:
+        result = resolver.resolve(AddressQuery(postcode=None, house_number=46, street="Corn.", city="Delft"))
+    assert isinstance(result, BagLookupSuccess)
+
+
 def test_pdok_resolver_returns_none_when_street_missing():
     with _resolver() as resolver:
         result = resolver.resolve(AddressQuery(postcode=None, house_number=9, street=None, city="Huizen"))

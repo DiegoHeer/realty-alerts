@@ -6,13 +6,13 @@ import httpx
 
 from scraping.resolvers.types import AddressQuery, BagLookupFailure, BagLookupResult, BagLookupSuccess
 
-_BAG_BASE_URL = "https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2"
+BAG_BASE_URL = "https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2"
 
 
 @dataclass(frozen=True)
 class KadasterConfig:
     api_key: str
-    base_url: str = _BAG_BASE_URL
+    base_url: str = BAG_BASE_URL
     timeout: float = 10.0
 
 
