@@ -8,9 +8,8 @@ from scraping.models import (
     DetailScrapeRunStatus,
     Listing,
     ListingStatus,
-    Website,
 )
-from scraping.schemas import DetailListingIn, DetailResultIn, DetailResultStatus, DetailScrapeRunOut
+from scraping.schemas import DetailListingIn, DetailResultIn, DetailResultStatus
 from tests.factories import ListingFactory
 
 pytestmark = pytest.mark.django_db

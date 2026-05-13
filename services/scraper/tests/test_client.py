@@ -70,6 +70,9 @@ def test_submit_detail_result_raises_on_non_2xx():
 
     with pytest.raises(httpx.HTTPStatusError):
         client.submit_detail_result(
-            listing_id=99, status="success", started_at=_STARTED, finished_at=_FINISHED,
+            listing_id=99,
+            status="success",
+            started_at=_STARTED,
+            finished_at=_FINISHED,
             detail=DetailListing(price="€ 100.000", status=ListingStatus.NEW),
         )

@@ -4,40 +4,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0013_add_detail_scrape_run'),
+        ("scraping", "0013_add_detail_scrape_run"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='bathroom_count',
+            model_name="listing",
+            name="bathroom_count",
             field=models.PositiveSmallIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='bedroom_count',
+            model_name="listing",
+            name="bedroom_count",
             field=models.PositiveSmallIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='construction_period',
+            model_name="listing",
+            name="construction_period",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='energy_label',
+            model_name="listing",
+            name="energy_label",
             field=models.CharField(blank=True, max_length=10, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='room_count',
+            model_name="listing",
+            name="room_count",
             field=models.PositiveSmallIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='surface_area_m2',
+            model_name="listing",
+            name="surface_area_m2",
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
     ]

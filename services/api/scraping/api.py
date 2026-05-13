@@ -8,8 +8,23 @@ from ninja import NinjaAPI, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
-from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, ListScrapeRun, ListScrapeRunStatus, Listing, Website
-from scraping.schemas import DetailResultIn, DetailResultStatus, DetailScrapeRunOut, ListingIn, ListScrapeRunOut, ScrapeResultsIn
+from scraping.models import (
+    BagStatus,
+    DetailScrapeRun,
+    DetailScrapeRunStatus,
+    ListScrapeRun,
+    ListScrapeRunStatus,
+    Listing,
+    Website,
+)
+from scraping.schemas import (
+    DetailResultIn,
+    DetailResultStatus,
+    DetailScrapeRunOut,
+    ListingIn,
+    ListScrapeRunOut,
+    ScrapeResultsIn,
+)
 from scraping.tasks import resolve_bag
 
 
@@ -167,7 +182,15 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
         listing.status = payload.detail.status
         listing.detail_scraped_at = payload.finished_at
         update_fields = ["price", "status", "detail_scraped_at"]
-        for field in ("surface_area_m2", "bedroom_count", "bathroom_count", "room_count", "construction_period", "energy_label"):
+        detail_fields = (
+            "surface_area_m2",
+            "bedroom_count",
+            "bathroom_count",
+            "room_count",
+            "construction_period",
+            "energy_label",
+        )
+        for field in detail_fields:
             value = getattr(payload.detail, field)
             if value is not None:
                 setattr(listing, field, value)
