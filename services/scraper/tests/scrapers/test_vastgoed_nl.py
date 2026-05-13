@@ -1,8 +1,5 @@
-from typing import Self
-
 from scraper.enums import ListingStatus
 from scraper.models import DetailListing
-from scraper.scrapers.vastgoed_nl import VastgoedNLScraper
 
 DETAIL_URL = "https://aanbod.vastgoednederland.nl/koopwoningen/well-l/woning-636480-wolfsven-11"
 
@@ -21,28 +18,14 @@ def test_scrape_detail_returns_detail_listing(vastgoed_nl_scraper):
     assert detail.energy_label == "A"
 
 
-def test_scrape_detail_returns_none_for_absent_fields():
+def test_scrape_detail_returns_none_for_absent_fields(static_vastgoed_nl_scraper):
     minimal_html = """
     <html><body>
     <span class="price">€ 250.000,- k.k.</span>
     <span class="info-badge primary">beschikbaar</span>
     </body></html>
     """
-
-    class _Fetch:
-        def fetch(self, url: str) -> str:
-            return minimal_html
-
-        def close(self) -> None:
-            pass
-
-        def __enter__(self) -> Self:
-            return self
-
-        def __exit__(self, *_exc: object) -> None:
-            pass
-
-    scraper = VastgoedNLScraper(fetch=_Fetch())
+    scraper = static_vastgoed_nl_scraper(minimal_html)
     detail = scraper.scrape_detail("https://example.com/listing")
 
     assert detail.price == "€ 250.000,- k.k."

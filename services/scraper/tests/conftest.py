@@ -22,6 +22,25 @@ URL_TO_FILE = {
 }
 
 
+class StaticFetch:
+    """FetchStrategy that always returns the same HTML, regardless of URL."""
+
+    def __init__(self, html: str) -> None:
+        self.html = html
+
+    def fetch(self, url: str) -> str:
+        return self.html
+
+    def close(self) -> None:
+        pass
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
+
+
 class MockFetch:
     """FetchStrategy implementation that returns local HTML files."""
 
@@ -39,6 +58,16 @@ class MockFetch:
 
     def __exit__(self, *_exc: object) -> None:
         self.close()
+
+
+@pytest.fixture
+def static_vastgoed_nl_scraper():
+    """Factory fixture: returns a VastgoedNLScraper backed by fixed HTML."""
+
+    def _factory(html: str) -> VastgoedNLScraper:
+        return VastgoedNLScraper(fetch=StaticFetch(html))
+
+    return _factory
 
 
 @pytest.fixture
