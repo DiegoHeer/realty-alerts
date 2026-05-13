@@ -14,6 +14,22 @@ from tests.factories import ListingFactory, ResidenceFactory
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture()
+def listing_with_dispatched_run():
+    listing = cast(Listing, ListingFactory())
+    run = DetailScrapeRun.objects.create(
+        listing=listing,
+        website=listing.website,
+        status=DetailScrapeRunStatus.DISPATCHED,
+    )
+    return listing, run
+
+
+@pytest.fixture()
+def admin_mocks():
+    return MagicMock(), MagicMock()
+
+
 def test_detail_scrape_run_creation():
     listing = cast(Listing, ListingFactory())
     run = DetailScrapeRun.objects.create(
@@ -55,16 +71,11 @@ def test_scrape_dispatch_payload_detail_mode():
 
 
 @respx.mock
-def test_dispatch_detail_scrape_posts_to_webhook(settings):
+def test_dispatch_detail_scrape_posts_to_webhook(settings, listing_with_dispatched_run):
     from scraping.tasks import dispatch_detail_scrape
 
     settings.ARGO_EVENTS_WEBHOOK_URL = "http://webhook.test/scrape"
-    listing = cast(Listing, ListingFactory())
-    run = DetailScrapeRun.objects.create(
-        listing=listing,
-        website=listing.website,
-        status=DetailScrapeRunStatus.DISPATCHED,
-    )
+    listing, run = listing_with_dispatched_run
     route = respx.post("http://webhook.test/scrape").mock(return_value=httpx.Response(200))
 
     run_id = dispatch_detail_scrape.delay(listing_id=listing.pk, detail_scrape_run_id=run.pk).get(timeout=1)
@@ -77,16 +88,11 @@ def test_dispatch_detail_scrape_posts_to_webhook(settings):
     assert listing.url in body
 
 
-def test_dispatch_detail_scrape_marks_failed_when_no_webhook(settings):
+def test_dispatch_detail_scrape_marks_failed_when_no_webhook(settings, listing_with_dispatched_run):
     from scraping.tasks import dispatch_detail_scrape
 
     settings.ARGO_EVENTS_WEBHOOK_URL = None
-    listing = cast(Listing, ListingFactory())
-    run = DetailScrapeRun.objects.create(
-        listing=listing,
-        website=listing.website,
-        status=DetailScrapeRunStatus.DISPATCHED,
-    )
+    listing, run = listing_with_dispatched_run
 
     run_id = dispatch_detail_scrape.delay(listing_id=listing.pk, detail_scrape_run_id=run.pk).get(timeout=1)
 
@@ -97,15 +103,14 @@ def test_dispatch_detail_scrape_marks_failed_when_no_webhook(settings):
     assert "not configured" in run.error_message
 
 
-def test_scrape_details_action_dispatches_tasks():
+def test_scrape_details_action_dispatches_tasks(admin_mocks):
     from scraping.admin import scrape_details
 
     listing1 = cast(Listing, ListingFactory())
     listing2 = cast(Listing, ListingFactory())
     queryset = Listing.objects.filter(pk__in=[listing1.pk, listing2.pk])
 
-    modeladmin = MagicMock()
-    request = MagicMock()
+    modeladmin, request = admin_mocks
 
     with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
         scrape_details(modeladmin, request, queryset)
@@ -119,7 +124,7 @@ def test_scrape_details_action_dispatches_tasks():
     assert "2" in success_calls[0].args[1]
 
 
-def test_scrape_residence_details_dispatches_for_all_linked_listings():
+def test_scrape_residence_details_dispatches_for_all_linked_listings(admin_mocks):
     from scraping.admin import scrape_residence_details
 
     residence = cast(Residence, ResidenceFactory())
@@ -127,8 +132,7 @@ def test_scrape_residence_details_dispatches_for_all_linked_listings():
     cast(Listing, ListingFactory(residence=residence, website=Website.PARARIUS))
     queryset = Residence.objects.filter(pk=residence.pk)
 
-    modeladmin = MagicMock()
-    request = MagicMock()
+    modeladmin, request = admin_mocks
 
     with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
         scrape_residence_details(modeladmin, request, queryset)
@@ -142,7 +146,7 @@ def test_scrape_residence_details_dispatches_for_all_linked_listings():
     assert "1 residence(s)" in success_calls[0].args[1]
 
 
-def test_scrape_residence_details_handles_multiple_residences():
+def test_scrape_residence_details_handles_multiple_residences(admin_mocks):
     from scraping.admin import scrape_residence_details
 
     r1 = cast(Residence, ResidenceFactory())
@@ -152,8 +156,7 @@ def test_scrape_residence_details_handles_multiple_residences():
     cast(Listing, ListingFactory(residence=r2))
     queryset = Residence.objects.filter(pk__in=[r1.pk, r2.pk])
 
-    modeladmin = MagicMock()
-    request = MagicMock()
+    modeladmin, request = admin_mocks
 
     with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
         scrape_residence_details(modeladmin, request, queryset)
