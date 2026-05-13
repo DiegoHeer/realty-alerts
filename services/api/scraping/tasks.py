@@ -6,7 +6,8 @@ from django.conf import settings
 from django.utils import timezone
 from loguru import logger
 
-from scraping.bag_client import BagClient, BagLookupFailure, BagLookupSuccess
+from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
+from scraping.resolvers.types import AddressQuery
 from scraping.cleanup import delete_expired_terminal_residences
 from scraping.models import BagStatus, Listing, Residence, Website
 from scraping.reconciliation import reconcile_residence
@@ -92,14 +93,16 @@ def resolve_bag(listing_id: int) -> None:
     if listing is None or listing.bag_status != BagStatus.PENDING:
         return
 
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
-        result = client.lookup(
-            postcode=listing.postcode,
-            house_number=listing.house_number,
-            house_letter=listing.house_letter,
-            house_number_suffix=listing.house_number_suffix,
-            street=listing.street,
-            city=listing.city,
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
+        result = resolver.resolve(
+            AddressQuery(
+                postcode=listing.postcode,
+                house_number=listing.house_number,
+                house_letter=listing.house_letter,
+                house_number_suffix=listing.house_number_suffix,
+                street=listing.street,
+                city=listing.city,
+            )
         )
 
     if isinstance(result, BagLookupSuccess):

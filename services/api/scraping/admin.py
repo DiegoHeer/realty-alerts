@@ -3,7 +3,8 @@ from django.contrib import admin, messages
 from django.conf import settings
 from django.utils import timezone
 
-from scraping.bag_client import BagClient, BagLookupFailure
+from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
+from scraping.resolvers.types import AddressQuery
 from scraping.models import BagStatus, Listing, Residence, ScrapeRun
 from scraping.reconciliation import reconcile_residence
 
@@ -29,19 +30,21 @@ _FAILURE_MESSAGES = {
 }
 
 
-def _promote_listing(listing: Listing, client: BagClient) -> str | None:
+def _promote_listing(listing: Listing, resolver: ChainedResolver) -> str | None:
     """Returns None on success, or an error message string on failure."""
     if listing.bag_status not in _FAILED_BAG_STATUSES:
         return f"skipped — bag_status is {listing.bag_status}, not a failed state"
 
     try:
-        result = client.lookup(
-            postcode=listing.postcode,
-            house_number=listing.house_number,
-            house_letter=listing.house_letter,
-            house_number_suffix=listing.house_number_suffix,
-            street=listing.street,
-            city=listing.city,
+        result = resolver.resolve(
+            AddressQuery(
+                postcode=listing.postcode,
+                house_number=listing.house_number,
+                house_letter=listing.house_letter,
+                house_number_suffix=listing.house_number_suffix,
+                street=listing.street,
+                city=listing.city,
+            )
         )
     except httpx.HTTPError as exc:
         return f"BAG API error — {exc}"
@@ -78,9 +81,9 @@ def _promote_listing(listing: Listing, client: BagClient) -> str | None:
 @admin.action(description="Promote selected listings")
 def promote_listings(modeladmin, request, queryset):
     succeeded = 0
-    with BagClient(api_key=settings.BAG_API_KEY) as client:
+    with create_resolver(api_key=settings.BAG_API_KEY) as resolver:
         for listing in queryset:
-            error = _promote_listing(listing, client)
+            error = _promote_listing(listing, resolver)
             if error is None:
                 succeeded += 1
             else:
