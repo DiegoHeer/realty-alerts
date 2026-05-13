@@ -19,6 +19,12 @@ class ListScrapeRunStatus(models.TextChoices):
     FAILED = "failed", "Failed"
 
 
+class DetailScrapeRunStatus(models.TextChoices):
+    DISPATCHED = "DISPATCHED", "Dispatched"
+    SUCCESS = "SUCCESS", "Success"
+    FAILED = "FAILED", "Failed"
+
+
 class BagStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     RESOLVED = "resolved", "Resolved"
@@ -94,6 +100,7 @@ class Listing(models.Model):
     image_url = models.URLField(max_length=2000, null=True, blank=True)
     status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
     list_scraped_at = models.DateTimeField(null=True, blank=True)
+    detail_scraped_at = models.DateTimeField(null=True, blank=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
     # Raw address bits scraped from the portal — only what BAG needs to resolve
     # to an official record. Canonical address lives on Residence.
@@ -138,3 +145,22 @@ class ListScrapeRun(models.Model):
 
     def __str__(self) -> str:
         return f"{self.website} {self.status} @ {self.started_at:%Y-%m-%d %H:%M}"
+
+
+class DetailScrapeRun(models.Model):
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="detail_scrape_runs")
+    website = models.CharField(max_length=20, choices=Website.choices)
+    status = models.CharField(max_length=12, choices=DetailScrapeRunStatus.choices)
+    dispatched_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+    duration_seconds = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        db_table = "detail_scrape_runs"
+        indexes = [
+            models.Index(fields=["listing", "dispatched_at"], name="idx_detail_runs_dispatched"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Detail {self.website} {self.status} listing={self.listing.pk} @ {self.dispatched_at:%Y-%m-%d %H:%M}"

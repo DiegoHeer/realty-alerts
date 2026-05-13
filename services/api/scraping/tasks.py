@@ -9,9 +9,9 @@ from loguru import logger
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
 from scraping.resolvers.types import AddressQuery
 from scraping.cleanup import delete_expired_terminal_residences
-from scraping.models import BagStatus, Listing, Residence, Website
+from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, Listing, Residence, Website
 from scraping.reconciliation import reconcile_residence
-from scraping.schemas import ScrapeDispatchPayload
+from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
 
 # BagLookupFailure → BagStatus. The client's MISSING_ADDRESS short-circuits
 # before any HTTP call (postcode/house_number missing); NO_MATCH and
@@ -29,21 +29,19 @@ def ping() -> str:
 
 
 @shared_task(
-    name="scraping.dispatch_scrape",
+    name="scraping.dispatch_list_scrape",
     autoretry_for=(httpx.HTTPError,),
     retry_backoff=True,
     retry_backoff_max=60,
     max_retries=3,
 )
-def dispatch_scrape(website: str, run_id: str | None = None) -> str:
-    """POST a scrape dispatch event to the Argo Events webhook.
+def dispatch_list_scrape(website: str, run_id: str | None = None) -> str:
+    """POST a list-scrape dispatch event to the Argo Events webhook.
 
     Beat fires this task on a schedule defined in Django admin. Argo
     Events' webhook EventSource turns the POST into an event; the
-    scraper Sensor turns the event into a one-shot K8s Job.
-
-    Returns the run_id (generated if not provided) so callers can
-    correlate with downstream pod logs (`SCRAPE_RUN_ID` env).
+    scraper Sensor turns the event into a one-shot K8s Job that runs
+    the list scraper for the given website.
     """
     payload = ScrapeDispatchPayload(
         website=Website(website),
@@ -64,6 +62,49 @@ def dispatch_scrape(website: str, run_id: str | None = None) -> str:
         response.raise_for_status()
 
     logger.info("Dispatched scrape for {} (run_id={})", payload.website, payload.run_id)
+    return payload.run_id
+
+
+@shared_task(
+    name="scraping.dispatch_detail_scrape",
+    autoretry_for=(httpx.HTTPError,),
+    retry_backoff=True,
+    retry_backoff_max=60,
+    max_retries=3,
+    rate_limit="6/m",
+)
+def dispatch_detail_scrape(listing_id: int, detail_scrape_run_id: int) -> str:
+    listing = Listing.objects.get(pk=listing_id)
+    payload = ScrapeDispatchPayload(
+        website=listing.website,
+        run_id=uuid.uuid4().hex,
+        scrape_mode=ScrapeMode.DETAIL,
+        detail_url=listing.url,
+        listing_id=listing.pk,
+    )
+
+    webhook_url = settings.ARGO_EVENTS_WEBHOOK_URL
+    if not webhook_url:
+        logger.warning(
+            "ARGO_EVENTS_WEBHOOK_URL is not set; marking detail run {} as FAILED",
+            detail_scrape_run_id,
+        )
+        DetailScrapeRun.objects.filter(pk=detail_scrape_run_id).update(
+            status=DetailScrapeRunStatus.FAILED,
+            finished_at=timezone.now(),
+            error_message="ARGO_EVENTS_WEBHOOK_URL not configured",
+        )
+        return payload.run_id
+
+    with httpx.Client(timeout=10.0) as client:
+        response = client.post(webhook_url, json=payload.model_dump(mode="json"))
+        response.raise_for_status()
+
+    logger.info(
+        "Dispatched detail scrape for listing {} (run_id={})",
+        listing_id,
+        payload.run_id,
+    )
     return payload.run_id
 
 

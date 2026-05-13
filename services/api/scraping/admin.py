@@ -5,7 +5,8 @@ from django.utils import timezone
 
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
 from scraping.resolvers.types import AddressQuery
-from scraping.models import BagStatus, Listing, ListScrapeRun, Residence
+from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, Listing, ListScrapeRun, Residence
+from scraping.tasks import dispatch_detail_scrape
 from scraping.reconciliation import reconcile_residence
 
 _FAILED_BAG_STATUSES = frozenset(
@@ -100,6 +101,40 @@ def promote_listings(modeladmin, request, queryset):
         )
 
 
+def _dispatch_detail_scrapes(listings) -> int:
+    dispatched = 0
+    for listing in listings:
+        run = DetailScrapeRun.objects.create(
+            listing=listing,
+            website=listing.website,
+            status=DetailScrapeRunStatus.DISPATCHED,
+        )
+        dispatch_detail_scrape.delay(listing_id=listing.pk, detail_scrape_run_id=run.pk)
+        dispatched += 1
+    return dispatched
+
+
+@admin.action(description="Scrape details for selected listings")
+def scrape_details(modeladmin, request, queryset):
+    dispatched = _dispatch_detail_scrapes(queryset)
+    modeladmin.message_user(
+        request,
+        f"Dispatched detail scrape for {dispatched} listing(s).",
+        messages.SUCCESS,
+    )
+
+
+@admin.action(description="Scrape details for selected residences")
+def scrape_residence_details(modeladmin, request, queryset):
+    listings = Listing.objects.filter(residence__in=queryset)
+    dispatched = _dispatch_detail_scrapes(listings)
+    modeladmin.message_user(
+        request,
+        f"Dispatched detail scrape for {dispatched} listing(s) across {queryset.count()} residence(s).",
+        messages.SUCCESS,
+    )
+
+
 class ListingInline(admin.TabularInline):
     model = Listing
     extra = 0
@@ -130,6 +165,7 @@ class ResidenceAdmin(admin.ModelAdmin):
     ordering = ("-last_scraped_at",)
     readonly_fields = ("created_at", "updated_at")
     inlines = (ListingInline,)
+    actions = [scrape_residence_details]
 
 
 class BagStatusListFilter(admin.SimpleListFilter):
@@ -168,7 +204,7 @@ class ListingAdmin(admin.ModelAdmin):
     search_fields = ("url", "title", "postcode", "street")
     ordering = ("-first_seen_at",)
     readonly_fields = ("first_seen_at",)
-    actions = [promote_listings]
+    actions = [promote_listings, scrape_details]
 
 
 @admin.register(ListScrapeRun)
@@ -185,3 +221,27 @@ class ListScrapeRunAdmin(admin.ModelAdmin):
     )
     list_filter = ("website", "status")
     ordering = ("-started_at",)
+
+
+@admin.register(DetailScrapeRun)
+class DetailScrapeRunAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "listing",
+        "website",
+        "status",
+        "dispatched_at",
+        "finished_at",
+        "duration_seconds",
+    )
+    list_filter = ("website", "status")
+    ordering = ("-dispatched_at",)
+    readonly_fields = (
+        "listing",
+        "website",
+        "status",
+        "dispatched_at",
+        "finished_at",
+        "error_message",
+        "duration_seconds",
+    )
