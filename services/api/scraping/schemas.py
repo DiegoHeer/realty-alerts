@@ -1,10 +1,16 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Annotated, Self
 
 from ninja import Schema
 from pydantic import StringConstraints, model_validator
 
 from scraping.models import ListScrapeRunStatus, ListingStatus, Website
+
+
+class ScrapeMode(StrEnum):
+    LIST = "list"
+    DETAIL = "detail"
 
 # Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
 # (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
@@ -86,3 +92,6 @@ class ScrapeDispatchPayload(Schema):
 
     website: Website
     run_id: str
+    scrape_mode: ScrapeMode = ScrapeMode.LIST
+    detail_url: str | None = None
+    listing_id: int | None = None
