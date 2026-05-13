@@ -197,6 +197,15 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
             if value is not None:
                 setattr(listing, field, value)
                 update_fields.append(field)
+        if payload.detail.postcode:
+            if listing.postcode and listing.postcode != payload.detail.postcode:
+                logger.warning(
+                    f"Postcode mismatch for listing_id={listing_id}: "
+                    f"existing={listing.postcode}, scraped={payload.detail.postcode}"
+                )
+            elif not listing.postcode:
+                listing.postcode = payload.detail.postcode
+                update_fields.append("postcode")
         listing.save(update_fields=update_fields)
 
         run.status = DetailScrapeRunStatus.SUCCESS

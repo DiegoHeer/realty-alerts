@@ -190,3 +190,81 @@ def test_detail_result_correlates_to_latest_dispatched_run(client, api_key_heade
 
     old_run.refresh_from_db()
     assert old_run.status == DetailScrapeRunStatus.DISPATCHED
+
+
+def test_detail_result_success_fills_empty_postcode(client, api_key_headers):
+    listing = cast(Listing, ListingFactory(postcode=None))
+    DetailScrapeRun.objects.create(
+        listing=listing,
+        website=listing.website,
+        status=DetailScrapeRunStatus.DISPATCHED,
+    )
+    payload = _detail_payload(
+        detail={
+            "price": "€ 350.000 k.k.",
+            "status": "new",
+            "postcode": "1234 AB",
+        }
+    )
+
+    response = client.patch(
+        f"/internal/v1/listings/{listing.pk}/detail",
+        json=payload,
+        headers=api_key_headers,
+    )
+
+    assert response.status_code == 200
+    listing.refresh_from_db()
+    assert listing.postcode == "1234 AB"
+
+
+def test_detail_result_success_postcode_mismatch_does_not_overwrite(client, api_key_headers):
+    listing = cast(Listing, ListingFactory(postcode="5678 CD"))
+    DetailScrapeRun.objects.create(
+        listing=listing,
+        website=listing.website,
+        status=DetailScrapeRunStatus.DISPATCHED,
+    )
+    payload = _detail_payload(
+        detail={
+            "price": "€ 350.000 k.k.",
+            "status": "new",
+            "postcode": "1234 AB",
+        }
+    )
+
+    response = client.patch(
+        f"/internal/v1/listings/{listing.pk}/detail",
+        json=payload,
+        headers=api_key_headers,
+    )
+
+    assert response.status_code == 200
+    listing.refresh_from_db()
+    assert listing.postcode == "5678 CD"
+
+
+def test_detail_result_success_matching_postcode_no_change(client, api_key_headers):
+    listing = cast(Listing, ListingFactory(postcode="1234 AB"))
+    DetailScrapeRun.objects.create(
+        listing=listing,
+        website=listing.website,
+        status=DetailScrapeRunStatus.DISPATCHED,
+    )
+    payload = _detail_payload(
+        detail={
+            "price": "€ 350.000 k.k.",
+            "status": "new",
+            "postcode": "1234 AB",
+        }
+    )
+
+    response = client.patch(
+        f"/internal/v1/listings/{listing.pk}/detail",
+        json=payload,
+        headers=api_key_headers,
+    )
+
+    assert response.status_code == 200
+    listing.refresh_from_db()
+    assert listing.postcode == "1234 AB"
