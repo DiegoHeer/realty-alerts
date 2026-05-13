@@ -16,13 +16,13 @@ def test_settings_list_mode_no_detail_fields_required(monkeypatch):
     assert settings.listing_id is None
 
 
-def test_settings_list_mode_treats_empty_strings_as_none(monkeypatch):
-    """Argo Events injects empty strings for null payload fields."""
+def test_settings_list_mode_treats_null_strings_as_none(monkeypatch):
+    """Argo Events injects literal 'null' for JSON null payload fields."""
     monkeypatch.setenv("WEBSITE", "funda")
     monkeypatch.setenv("REALTY_API_KEY", "testkey")
     monkeypatch.setenv("SCRAPE_MODE", "list")
-    monkeypatch.setenv("DETAIL_URL", "")
-    monkeypatch.setenv("LISTING_ID", "")
+    monkeypatch.setenv("DETAIL_URL", "null")
+    monkeypatch.setenv("LISTING_ID", "null")
 
     settings = Settings()
 
