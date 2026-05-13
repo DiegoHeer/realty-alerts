@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -10,6 +11,9 @@ from scraper.models import DetailListing
 
 BASE_URL = "http://test-api"
 API_KEY = "testkey"
+
+_STARTED = datetime(2026, 5, 13, 10, 0, 0, tzinfo=UTC)
+_FINISHED = _STARTED + timedelta(minutes=1)
 
 
 @respx.mock
@@ -27,27 +31,45 @@ def test_submit_detail_result_patches_correct_endpoint():
     route = respx.patch(f"{BASE_URL}/internal/v1/listings/42/detail").mock(return_value=httpx.Response(200, json={}))
 
     client = BackendClient(base_url=BASE_URL, api_key=API_KEY)
-    client.submit_detail_result(listing_id=42, detail=detail)
+    client.submit_detail_result(
+        listing_id=42, status="success", started_at=_STARTED, finished_at=_FINISHED, detail=detail
+    )
 
     assert route.called
     sent = route.calls.last.request
     body = json.loads(sent.content)
-    assert body["price"] == "€ 510.000,- k.k."
-    assert body["status"] == "new"
-    assert body["surface_area_m2"] == 95
-    assert body["bedroom_count"] == 2
-    assert body["bathroom_count"] == 1
-    assert body["room_count"] == 3
-    assert body["construction_period"] == "1991-2000"
-    assert body["energy_label"] == "A"
+    assert body["status"] == "success"
+    assert body["started_at"] == _STARTED.isoformat()
+    assert body["finished_at"] == _FINISHED.isoformat()
+    assert body["detail"]["price"] == "€ 510.000,- k.k."
+    assert body["detail"]["status"] == "new"
+    assert body["detail"]["surface_area_m2"] == 95
+
+
+@respx.mock
+def test_submit_detail_result_failed_includes_error():
+    route = respx.patch(f"{BASE_URL}/internal/v1/listings/42/detail").mock(return_value=httpx.Response(200, json={}))
+
+    client = BackendClient(base_url=BASE_URL, api_key=API_KEY)
+    client.submit_detail_result(
+        listing_id=42, status="failed", started_at=_STARTED, finished_at=_FINISHED, error_message="Bot detected"
+    )
+
+    assert route.called
+    body = json.loads(route.calls.last.request.content)
+    assert body["status"] == "failed"
+    assert body["error_message"] == "Bot detected"
+    assert "detail" not in body
 
 
 @respx.mock
 def test_submit_detail_result_raises_on_non_2xx():
-    detail = DetailListing(price="€ 100.000", status=ListingStatus.NEW)
     respx.patch(f"{BASE_URL}/internal/v1/listings/99/detail").mock(return_value=httpx.Response(404))
 
     client = BackendClient(base_url=BASE_URL, api_key=API_KEY)
 
     with pytest.raises(httpx.HTTPStatusError):
-        client.submit_detail_result(listing_id=99, detail=detail)
+        client.submit_detail_result(
+            listing_id=99, status="success", started_at=_STARTED, finished_at=_FINISHED,
+            detail=DetailListing(price="€ 100.000", status=ListingStatus.NEW),
+        )

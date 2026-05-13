@@ -53,9 +53,26 @@ class BackendClient:
         )
         return result
 
-    def submit_detail_result(self, listing_id: int, detail: DetailListing) -> None:
+    def submit_detail_result(
+        self,
+        listing_id: int,
+        status: str,
+        started_at: datetime,
+        finished_at: datetime,
+        detail: DetailListing | None = None,
+        error_message: str | None = None,
+    ) -> None:
+        payload: dict = {
+            "status": status,
+            "started_at": started_at.isoformat(),
+            "finished_at": finished_at.isoformat(),
+        }
+        if detail:
+            payload["detail"] = detail.model_dump()
+        if error_message:
+            payload["error_message"] = error_message
         response = self.client.patch(
             f"/internal/v1/listings/{listing_id}/detail",
-            json=detail.model_dump(),
+            json=payload,
         )
         response.raise_for_status()
