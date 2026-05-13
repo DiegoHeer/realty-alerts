@@ -3,6 +3,7 @@ from datetime import datetime
 import httpx
 from loguru import logger
 
+from scraper.enums import DetailResultStatus
 from scraper.models import DetailListing, Listing
 
 
@@ -56,7 +57,7 @@ class BackendClient:
     def submit_detail_result(
         self,
         listing_id: int,
-        status: str,
+        status: DetailResultStatus,
         started_at: datetime,
         finished_at: datetime,
         detail: DetailListing | None = None,

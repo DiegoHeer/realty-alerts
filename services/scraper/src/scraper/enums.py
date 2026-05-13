@@ -16,3 +16,8 @@ class ListingStatus(StrEnum):
 class ScrapeMode(StrEnum):
     LIST = "list"
     DETAIL = "detail"
+
+
+class DetailResultStatus(StrEnum):
+    SUCCESS = "success"
+    FAILED = "failed"

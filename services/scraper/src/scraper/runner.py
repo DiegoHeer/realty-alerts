@@ -6,7 +6,7 @@ import httpx
 from loguru import logger
 
 from scraper.client import BackendClient
-from scraper.enums import ScrapeMode, Website
+from scraper.enums import DetailResultStatus, ScrapeMode, Website
 from scraper.fetch.http import HttpFetch
 from scraper.fetch.playwright import PlaywrightFetch
 from scraper.models import Listing
@@ -113,27 +113,15 @@ def _run_detail(
             scraper = cast(DetailScraper, PORTAL_SCRAPER_MAP[website](fetch=fetch))
             detail = scraper.scrape_detail(detail_url)
             logger.info(f"Scraped detail for listing {listing_id} from {website}")
-    except ScrapingException as exc:
-        logger.error(f"Bot detection triggered for listing {listing_id}: {exc}")
-        finished_at = datetime.now(UTC)
-        try:
-            client.submit_detail_result(
-                listing_id=listing_id,
-                status="failed",
-                started_at=started_at,
-                finished_at=finished_at,
-                error_message=str(exc),
-            )
-        except httpx.HTTPError as submit_exc:
-            logger.error(f"Failed to report failure for listing {listing_id}: {submit_exc}")
-        sys.exit(1)
     except Exception as exc:
-        logger.exception(f"Detail scraping failed for listing {listing_id}: {exc}")
+        log_fn = logger.error if isinstance(exc, ScrapingException) else logger.exception
+        msg = "Bot detection triggered" if isinstance(exc, ScrapingException) else "Detail scraping failed"
+        log_fn(f"{msg} for listing {listing_id}: {exc}")
         finished_at = datetime.now(UTC)
         try:
             client.submit_detail_result(
                 listing_id=listing_id,
-                status="failed",
+                status=DetailResultStatus.FAILED,
                 started_at=started_at,
                 finished_at=finished_at,
                 error_message=str(exc),
@@ -146,7 +134,7 @@ def _run_detail(
     try:
         client.submit_detail_result(
             listing_id=listing_id,
-            status="success",
+            status=DetailResultStatus.SUCCESS,
             started_at=started_at,
             finished_at=finished_at,
             detail=detail,
