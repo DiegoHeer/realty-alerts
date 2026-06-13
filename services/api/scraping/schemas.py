@@ -60,11 +60,16 @@ class ResidenceOut(Schema):
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    neighbourhood: str | None = None
+    district: str | None = None
     current_price_eur: int | None = None
     current_status: ListingStatus
     last_scraped_at: datetime | None = None
     status_changed_at: datetime | None = None
     created_at: datetime
+    updated_at: datetime
     listings: list[ListingOut]
 
 
