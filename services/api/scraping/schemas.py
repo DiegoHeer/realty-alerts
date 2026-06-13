@@ -48,7 +48,7 @@ class ListingIn(Schema):
 class ListingOut(Schema):
     url: str
     website: Website
-    first_seen_at: datetime
+    image_url: str | None = None
 
 
 class ResidenceOut(Schema):
