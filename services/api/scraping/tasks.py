@@ -167,16 +167,30 @@ def resolve_bag(listing_id: int) -> None:
 
 
 def _enrich_residence(residence: Residence) -> None:
-    if residence.latitude is None or residence.longitude is None:
-        _enrich_location(residence)
+    needs_coordinates = residence.latitude is None or residence.longitude is None
+    needs_neighbourhood = residence.neighbourhood is None
+    if not needs_coordinates and not needs_neighbourhood:
+        return
+    _enrich_location(residence)
 
 
 def _enrich_location(residence: Residence) -> None:
     with PdokLocationLookup() as lookup:
         result = lookup.lookup(bag_id=residence.bag_id)
-    if result is not None:
-        residence.latitude, residence.longitude = result.latitude, result.longitude
-        residence.save(update_fields=["latitude", "longitude"])
+    if result is None:
+        return
+
+    update_fields: list[str] = []
+    if residence.latitude is None or residence.longitude is None:
+        residence.latitude = result.latitude
+        residence.longitude = result.longitude
+        update_fields += ["latitude", "longitude"]
+    if residence.neighbourhood is None and result.neighbourhood is not None:
+        residence.neighbourhood = result.neighbourhood
+        residence.district = result.district
+        update_fields += ["neighbourhood", "district"]
+    if update_fields:
+        residence.save(update_fields=update_fields)
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
