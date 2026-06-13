@@ -49,6 +49,12 @@ class ListingOut(Schema):
     url: str
     website: Website
     image_url: str | None = None
+    surface_area_m2: int | None = None
+    bedroom_count: int | None = None
+    bathroom_count: int | None = None
+    room_count: int | None = None
+    construction_period: str | None = None
+    energy_label: str | None = None
 
 
 class ResidenceOut(Schema):
