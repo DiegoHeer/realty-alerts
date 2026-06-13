@@ -143,12 +143,14 @@ def test_resolve_bag_enriches_coordinates_on_new_residence():
 
 @pytest.mark.django_db
 @respx.mock
-def test_resolve_bag_skips_coordinates_when_residence_already_has_them():
+def test_resolve_bag_skips_pdok_when_residence_fully_enriched():
     from scraping.tasks import resolve_bag
 
     existing = cast(
         Residence,
-        ResidenceFactory(bag_id="0363200000218780", latitude=52.0, longitude=4.0),
+        ResidenceFactory(
+            bag_id="0363200000218780", latitude=52.0, longitude=4.0, neighbourhood="Jordaan", district="Centrum"
+        ),
     )
     respx.get(f"{_BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
@@ -161,6 +163,8 @@ def test_resolve_bag_skips_coordinates_when_residence_already_has_them():
     existing.refresh_from_db()
     assert existing.latitude == pytest.approx(52.0)
     assert existing.longitude == pytest.approx(4.0)
+    assert existing.neighbourhood == "Jordaan"
+    assert existing.district == "Centrum"
     assert not pdok_route.called
 
 
@@ -233,5 +237,132 @@ def test_backfill_handles_pdok_failures_gracefully():
 
     out = StringIO()
     call_command("backfill_coordinates", "--batch-size=10", "--sleep=0", stdout=out)
+
+    assert "failed 1" in out.getvalue()
+
+
+# --- PdokLocationLookup neighbourhood-specific tests ---
+
+
+@respx.mock
+def test_lookup_returns_none_neighbourhood_when_fields_missing():
+    respx.get(_PDOK_FREE_URL).mock(
+        return_value=httpx.Response(200, json={"response": {"docs": [{"centroide_ll": "POINT(4.893 52.376)"}]}})
+    )
+    with PdokLocationLookup() as lookup:
+        result = lookup.lookup("0363200000218780")
+    assert result is not None
+    assert result.latitude == pytest.approx(52.376)
+    assert result.longitude == pytest.approx(4.893)
+    assert result.neighbourhood is None
+    assert result.district is None
+
+
+# --- resolve_bag neighbourhood integration tests ---
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_resolve_bag_enriches_neighbourhood_on_new_residence():
+    from scraping.tasks import resolve_bag
+
+    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
+    )
+    respx.get(_PDOK_FREE_URL).mock(
+        return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
+    )
+    listing = _pending_listing()
+
+    resolve_bag.delay(listing.pk).get(timeout=1)
+
+    listing.refresh_from_db()
+    assert listing.residence is not None
+    assert listing.residence.neighbourhood == "Jordaan"
+    assert listing.residence.district == "Centrum"
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_resolve_bag_enriches_neighbourhood_when_only_coordinates_exist():
+    from scraping.tasks import resolve_bag
+
+    existing = cast(
+        Residence,
+        ResidenceFactory(bag_id="0363200000218780", latitude=52.0, longitude=4.0),
+    )
+    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
+        return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
+    )
+    respx.get(_PDOK_FREE_URL).mock(
+        return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
+    )
+    listing = _pending_listing()
+
+    resolve_bag.delay(listing.pk).get(timeout=1)
+
+    existing.refresh_from_db()
+    assert existing.latitude == pytest.approx(52.0)
+    assert existing.longitude == pytest.approx(4.0)
+    assert existing.neighbourhood == "Jordaan"
+    assert existing.district == "Centrum"
+
+
+# --- backfill_neighbourhoods management command tests ---
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_backfill_neighbourhoods_enriches_residences_missing_neighbourhood():
+    from django.core.management import call_command
+
+    r1 = cast(Residence, ResidenceFactory(bag_id="0363200000000001", latitude=52.0, longitude=4.0))
+    r2 = cast(Residence, ResidenceFactory(bag_id="0363200000000002", latitude=52.1, longitude=4.1))
+    respx.get(_PDOK_FREE_URL).mock(
+        return_value=httpx.Response(200, json=_pdok_response(4.5, 52.3, "Jordaan", "Centrum"))
+    )
+
+    out = StringIO()
+    call_command("backfill_neighbourhoods", "--batch-size=10", "--sleep=0", stdout=out)
+
+    r1.refresh_from_db()
+    r2.refresh_from_db()
+    assert r1.neighbourhood == "Jordaan"
+    assert r1.district == "Centrum"
+    assert r2.neighbourhood == "Jordaan"
+    assert r2.district == "Centrum"
+    assert "Enriched 2" in out.getvalue()
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_backfill_neighbourhoods_skips_residences_with_neighbourhood():
+    from django.core.management import call_command
+
+    cast(
+        Residence,
+        ResidenceFactory(
+            bag_id="0363200000000001", latitude=52.0, longitude=4.0, neighbourhood="Jordaan", district="Centrum"
+        ),
+    )
+    pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
+
+    out = StringIO()
+    call_command("backfill_neighbourhoods", "--batch-size=10", "--sleep=0", stdout=out)
+
+    assert not pdok_route.called
+    assert "All residences already have neighbourhood data" in out.getvalue()
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_backfill_neighbourhoods_handles_pdok_failures_gracefully():
+    from django.core.management import call_command
+
+    cast(Residence, ResidenceFactory(bag_id="0363200000000001"))
+    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(503))
+
+    out = StringIO()
+    call_command("backfill_neighbourhoods", "--batch-size=10", "--sleep=0", stdout=out)
 
     assert "failed 1" in out.getvalue()
