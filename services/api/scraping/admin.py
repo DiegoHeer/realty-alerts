@@ -155,12 +155,14 @@ class ResidenceAdmin(admin.ModelAdmin):
         "street",
         "house_number",
         "postcode",
+        "neighbourhood",
+        "district",
         "current_price_eur",
         "current_status",
         "listing_count",
         "last_scraped_at",
     )
-    list_filter = ("current_status", "city")
+    list_filter = ("current_status", "city", "neighbourhood")
     # `title` lives on per-portal Listing now, so search joins through the
     # reverse FK rather than a Residence column.
     search_fields = ("listings__title", "street", "postcode", "bag_id")
@@ -190,6 +192,8 @@ class ResidenceAdmin(admin.ModelAdmin):
                     "postcode",
                     "latitude",
                     "longitude",
+                    "neighbourhood",
+                    "district",
                     "current_price_eur",
                     "current_status",
                     "last_scraped_at",
