@@ -154,8 +154,3 @@ class ResidenceFilters(Schema):
     min_price: int | None = None
     max_price: int | None = None
     status: ListingStatus | None = None
-
-
-class PaginatedResidenceOut(Schema):
-    count: int
-    results: list[ResidenceOut]
