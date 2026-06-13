@@ -48,6 +48,8 @@ class Residence(models.Model):
     house_letter = models.CharField(max_length=5, null=True, blank=True)
     house_number_suffix = models.CharField(max_length=20, null=True, blank=True)
     postcode = models.CharField(max_length=10, null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence
     # whenever a child Listing is created or updated. The matcher reads these.
     current_price_eur = models.BigIntegerField(null=True, blank=True)
