@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 import pytest
 from django.conf import settings
@@ -10,9 +11,21 @@ from scraping.api import api
 from scraping.models import Website
 
 
+class _TestClient(TestClient):
+    """TestClient that sends GET data as query string parameters."""
+
+    def get(self, path: str, data: dict | None = None, **request_params: Any) -> Any:
+        if data:
+            qs = urlencode({k: v for k, v in data.items() if v is not None})
+            separator = "&" if "?" in path else "?"
+            path = f"{path}{separator}{qs}"
+            data = None
+        return super().get(path, data, **request_params)
+
+
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(api)
+def client() -> _TestClient:
+    return _TestClient(api)
 
 
 @pytest.fixture

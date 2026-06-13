@@ -1,10 +1,11 @@
 import hmac
 from datetime import UTC, datetime
+from typing import Annotated
 
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from loguru import logger
-from ninja import NinjaAPI, Router, Schema
+from ninja import NinjaAPI, Query, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
@@ -15,6 +16,7 @@ from scraping.models import (
     ListScrapeRun,
     ListScrapeRunStatus,
     Listing,
+    Residence,
     Website,
 )
 from scraping.schemas import (
@@ -23,6 +25,8 @@ from scraping.schemas import (
     DetailScrapeRunOut,
     ListingIn,
     ListScrapeRunOut,
+    PaginatedResidenceOut,
+    ResidenceFilters,
     ScrapeResultsIn,
 )
 from scraping.tasks import resolve_bag
@@ -56,6 +60,41 @@ def readyz(request):
     except OperationalError:
         return Status(503, {"status": "unavailable"})
     return {"status": "ok"}
+
+
+public_router = Router(tags=["public"])
+
+
+@public_router.get("/residences", response=PaginatedResidenceOut)
+def list_residences(
+    request,
+    filters: Query[ResidenceFilters],
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
+):
+    qs = Residence.objects.prefetch_related("listings").order_by("-created_at")
+
+    if filters.city:
+        qs = qs.filter(city__icontains=filters.city)
+    if filters.neighbourhood:
+        qs = qs.filter(neighbourhood__icontains=filters.neighbourhood)
+    if filters.district:
+        qs = qs.filter(district__icontains=filters.district)
+    if filters.street:
+        qs = qs.filter(street__icontains=filters.street)
+    if filters.postcode:
+        qs = qs.filter(postcode__iexact=filters.postcode)
+    if filters.min_price is not None:
+        qs = qs.filter(current_price_eur__gte=filters.min_price)
+    if filters.max_price is not None:
+        qs = qs.filter(current_price_eur__lte=filters.max_price)
+    if filters.status:
+        qs = qs.filter(current_status=filters.status)
+
+    count = qs.count()
+    results = list(qs[offset : offset + limit])
+
+    return {"count": count, "results": results}
 
 
 internal_router = Router()
@@ -225,6 +264,7 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
+api.add_router("/v1", public_router)
 
 
 def _parse_price_eur(price_str: str) -> int | None:
