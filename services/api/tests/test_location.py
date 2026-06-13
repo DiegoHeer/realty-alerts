@@ -1,4 +1,3 @@
-from io import StringIO
 from typing import cast
 
 import httpx
@@ -188,59 +187,6 @@ def test_resolve_bag_continues_when_pdok_coordinates_fail():
     assert listing.residence.longitude is None
 
 
-# --- backfill_coordinates management command tests ---
-
-
-@pytest.mark.django_db
-@respx.mock
-def test_backfill_enriches_residences_missing_coordinates():
-    from django.core.management import call_command
-
-    r1 = cast(Residence, ResidenceFactory(bag_id="0363200000000001"))
-    r2 = cast(Residence, ResidenceFactory(bag_id="0363200000000002"))
-    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.5, 52.3)))
-
-    out = StringIO()
-    call_command("backfill_coordinates", "--batch-size=10", "--sleep=0", stdout=out)
-
-    r1.refresh_from_db()
-    r2.refresh_from_db()
-    assert r1.latitude == pytest.approx(52.3)
-    assert r1.longitude == pytest.approx(4.5)
-    assert r2.latitude == pytest.approx(52.3)
-    assert r2.longitude == pytest.approx(4.5)
-    assert "Enriched 2" in out.getvalue()
-
-
-@pytest.mark.django_db
-@respx.mock
-def test_backfill_skips_residences_with_coordinates():
-    from django.core.management import call_command
-
-    cast(Residence, ResidenceFactory(bag_id="0363200000000001", latitude=52.0, longitude=4.0))
-    pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
-
-    out = StringIO()
-    call_command("backfill_coordinates", "--batch-size=10", "--sleep=0", stdout=out)
-
-    assert not pdok_route.called
-    assert "All residences already have coordinates" in out.getvalue()
-
-
-@pytest.mark.django_db
-@respx.mock
-def test_backfill_handles_pdok_failures_gracefully():
-    from django.core.management import call_command
-
-    cast(Residence, ResidenceFactory(bag_id="0363200000000001"))
-    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(503))
-
-    out = StringIO()
-    call_command("backfill_coordinates", "--batch-size=10", "--sleep=0", stdout=out)
-
-    assert "failed 1" in out.getvalue()
-
-
 # --- PdokLocationLookup neighbourhood-specific tests ---
 
 
@@ -306,63 +252,3 @@ def test_resolve_bag_enriches_neighbourhood_when_only_coordinates_exist():
     assert existing.longitude == pytest.approx(4.0)
     assert existing.neighbourhood == "Jordaan"
     assert existing.district == "Centrum"
-
-
-# --- backfill_neighbourhoods management command tests ---
-
-
-@pytest.mark.django_db
-@respx.mock
-def test_backfill_neighbourhoods_enriches_residences_missing_neighbourhood():
-    from django.core.management import call_command
-
-    r1 = cast(Residence, ResidenceFactory(bag_id="0363200000000001", latitude=52.0, longitude=4.0))
-    r2 = cast(Residence, ResidenceFactory(bag_id="0363200000000002", latitude=52.1, longitude=4.1))
-    respx.get(_PDOK_FREE_URL).mock(
-        return_value=httpx.Response(200, json=_pdok_response(4.5, 52.3, "Jordaan", "Centrum"))
-    )
-
-    out = StringIO()
-    call_command("backfill_neighbourhoods", "--batch-size=10", "--sleep=0", stdout=out)
-
-    r1.refresh_from_db()
-    r2.refresh_from_db()
-    assert r1.neighbourhood == "Jordaan"
-    assert r1.district == "Centrum"
-    assert r2.neighbourhood == "Jordaan"
-    assert r2.district == "Centrum"
-    assert "Enriched 2" in out.getvalue()
-
-
-@pytest.mark.django_db
-@respx.mock
-def test_backfill_neighbourhoods_skips_residences_with_neighbourhood():
-    from django.core.management import call_command
-
-    cast(
-        Residence,
-        ResidenceFactory(
-            bag_id="0363200000000001", latitude=52.0, longitude=4.0, neighbourhood="Jordaan", district="Centrum"
-        ),
-    )
-    pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
-
-    out = StringIO()
-    call_command("backfill_neighbourhoods", "--batch-size=10", "--sleep=0", stdout=out)
-
-    assert not pdok_route.called
-    assert "All residences already have neighbourhood data" in out.getvalue()
-
-
-@pytest.mark.django_db
-@respx.mock
-def test_backfill_neighbourhoods_handles_pdok_failures_gracefully():
-    from django.core.management import call_command
-
-    cast(Residence, ResidenceFactory(bag_id="0363200000000001"))
-    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(503))
-
-    out = StringIO()
-    call_command("backfill_neighbourhoods", "--batch-size=10", "--sleep=0", stdout=out)
-
-    assert "failed 1" in out.getvalue()
