@@ -60,11 +60,16 @@ class ResidenceOut(Schema):
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    neighbourhood: str | None = None
+    district: str | None = None
     current_price_eur: int | None = None
     current_status: ListingStatus
     last_scraped_at: datetime | None = None
     status_changed_at: datetime | None = None
     created_at: datetime
+    updated_at: datetime
     listings: list[ListingOut]
 
 
@@ -138,3 +143,19 @@ class DetailScrapeRunOut(Schema):
     finished_at: datetime | None
     error_message: str | None
     duration_seconds: float | None
+
+
+class ResidenceFilters(Schema):
+    city: str | None = None
+    neighbourhood: str | None = None
+    district: str | None = None
+    street: str | None = None
+    postcode: str | None = None
+    min_price: int | None = None
+    max_price: int | None = None
+    status: ListingStatus | None = None
+
+
+class PaginatedResidenceOut(Schema):
+    count: int
+    results: list[ResidenceOut]
