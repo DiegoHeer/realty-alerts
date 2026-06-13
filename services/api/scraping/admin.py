@@ -188,6 +188,8 @@ class ResidenceAdmin(admin.ModelAdmin):
                     "house_letter",
                     "house_number_suffix",
                     "postcode",
+                    "latitude",
+                    "longitude",
                     "current_price_eur",
                     "current_status",
                     "last_scraped_at",

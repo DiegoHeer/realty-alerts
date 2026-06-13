@@ -273,6 +273,9 @@ def test_submit_results_resolves_end_to_end(client, api_key_headers, scrape_payl
             },
         )
     )
+    respx.get("https://api.pdok.nl/bzk/locatieserver/search/v3_1/free").mock(
+        return_value=httpx.Response(200, json={"response": {"docs": [{"centroide_ll": "POINT(5.2513 52.2975)"}]}})
+    )
     item = listing_payload(
         detail_url="https://funda.nl/listing/e2e",
         postcode="1271 KE",
