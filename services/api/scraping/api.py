@@ -25,8 +25,8 @@ from scraping.schemas import (
     DetailScrapeRunOut,
     ListingIn,
     ListScrapeRunOut,
-    PaginatedResidenceOut,
     ResidenceFilters,
+    ResidenceOut,
     ScrapeResultsIn,
 )
 from scraping.tasks import resolve_bag
@@ -65,7 +65,7 @@ def readyz(request):
 public_router = Router(tags=["public"])
 
 
-@public_router.get("/residences", response=PaginatedResidenceOut)
+@public_router.get("/residences", response=list[ResidenceOut])
 def list_residences(
     request,
     filters: Query[ResidenceFilters],
@@ -91,10 +91,7 @@ def list_residences(
     if filters.status:
         qs = qs.filter(current_status=filters.status)
 
-    count = qs.count()
-    results = list(qs[offset : offset + limit])
-
-    return {"count": count, "results": results}
+    return list(qs[offset : offset + limit])
 
 
 internal_router = Router()
