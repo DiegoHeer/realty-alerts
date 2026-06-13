@@ -10,7 +10,7 @@ from scraping.cleanup import delete_expired_terminal_residences
 from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, Listing, Residence, Website
 from scraping.reconciliation import reconcile_residence
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
-from scraping.resolvers.coordinates import PdokCoordinateLookup
+from scraping.resolvers.location import PdokLocationLookup
 from scraping.resolvers.types import AddressQuery
 from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
 
@@ -167,19 +167,15 @@ def resolve_bag(listing_id: int) -> None:
 
 
 def _enrich_residence(residence: Residence) -> None:
-    """Includes additional fields to the Residence model, like coordinates and neigbourhood."""
     if residence.latitude is None or residence.longitude is None:
-        _enrich_coordinates(residence)
+        _enrich_location(residence)
 
 
-def _enrich_coordinates(residence: Residence) -> None:
-    lookup = PdokCoordinateLookup()
-    try:
-        coords = lookup.lookup(bag_id=residence.bag_id)
-    finally:
-        lookup.close()
-    if coords is not None:
-        residence.latitude, residence.longitude = coords
+def _enrich_location(residence: Residence) -> None:
+    with PdokLocationLookup() as lookup:
+        result = lookup.lookup(bag_id=residence.bag_id)
+    if result is not None:
+        residence.latitude, residence.longitude = result.latitude, result.longitude
         residence.save(update_fields=["latitude", "longitude"])
 
 

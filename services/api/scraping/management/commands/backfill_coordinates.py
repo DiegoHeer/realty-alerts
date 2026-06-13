@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from loguru import logger
 
 from scraping.models import Residence
-from scraping.resolvers.coordinates import PdokCoordinateLookup
+from scraping.resolvers.location import PdokLocationLookup
 
 
 class Command(BaseCommand):
@@ -28,9 +28,8 @@ class Command(BaseCommand):
 
         enriched = 0
         failed = 0
-        lookup = PdokCoordinateLookup()
 
-        try:
+        with PdokLocationLookup() as lookup:
             for offset in range(0, total, batch_size):
                 batch = list(qs[offset : offset + batch_size])
                 if not batch:
@@ -38,9 +37,9 @@ class Command(BaseCommand):
 
                 to_update: list[Residence] = []
                 for residence in batch:
-                    coords = lookup.lookup(residence.bag_id)
-                    if coords is not None:
-                        residence.latitude, residence.longitude = coords
+                    result = lookup.lookup(residence.bag_id)
+                    if result is not None:
+                        residence.latitude, residence.longitude = result.latitude, result.longitude
                         to_update.append(residence)
                         enriched += 1
                     else:
@@ -53,7 +52,5 @@ class Command(BaseCommand):
 
                 if offset + batch_size < total:
                     time.sleep(sleep_seconds)
-        finally:
-            lookup.close()
 
         self.stdout.write(f"Done. Enriched {enriched}/{total}, failed {failed}.")

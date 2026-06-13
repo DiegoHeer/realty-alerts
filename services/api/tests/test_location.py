@@ -6,7 +6,7 @@ import pytest
 import respx
 
 from scraping.models import BagStatus, Listing, ListingStatus, Residence
-from scraping.resolvers.coordinates import PdokCoordinateLookup
+from scraping.resolvers.location import PdokLocationLookup
 from tests.factories import ListingFactory, ResidenceFactory
 
 _PDOK_BASE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1"
@@ -14,50 +14,51 @@ _PDOK_FREE_URL = f"{_PDOK_BASE_URL}/free"
 _BAG_BASE_URL = "https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2"
 
 
-def _pdok_coords_response(lon: float = 4.89348311, lat: float = 52.37588008) -> dict:
-    return {"response": {"docs": [{"centroide_ll": f"POINT({lon} {lat})"}]}}
+def _pdok_response(
+    lon: float = 4.89348311,
+    lat: float = 52.37588008,
+    buurtnaam: str = "Centrum",
+    wijknaam: str = "Centrum",
+) -> dict:
+    return {
+        "response": {"docs": [{"centroide_ll": f"POINT({lon} {lat})", "buurtnaam": buurtnaam, "wijknaam": wijknaam}]}
+    }
 
 
 def _pdok_empty_response() -> dict:
     return {"response": {"docs": []}}
 
 
-# --- PdokCoordinateLookup unit tests ---
+# --- PdokLocationLookup unit tests ---
 
 
 @respx.mock
-def test_lookup_returns_lat_lon_on_success():
-    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_coords_response(4.893, 52.376)))
-    lookup = PdokCoordinateLookup()
-    try:
+def test_lookup_returns_location_result_on_success():
+    respx.get(_PDOK_FREE_URL).mock(
+        return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
+    )
+    with PdokLocationLookup() as lookup:
         result = lookup.lookup("0363200000218780")
-    finally:
-        lookup.close()
     assert result is not None
-    lat, lon = result
-    assert lat == pytest.approx(52.376)
-    assert lon == pytest.approx(4.893)
+    assert result.latitude == pytest.approx(52.376)
+    assert result.longitude == pytest.approx(4.893)
+    assert result.neighbourhood == "Jordaan"
+    assert result.district == "Centrum"
 
 
 @respx.mock
 def test_lookup_returns_none_on_empty_docs():
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_empty_response()))
-    lookup = PdokCoordinateLookup()
-    try:
+    with PdokLocationLookup() as lookup:
         result = lookup.lookup("0000000000000000")
-    finally:
-        lookup.close()
     assert result is None
 
 
 @respx.mock
 def test_lookup_returns_none_on_http_error():
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(503))
-    lookup = PdokCoordinateLookup()
-    try:
+    with PdokLocationLookup() as lookup:
         result = lookup.lookup("0363200000218780")
-    finally:
-        lookup.close()
     assert result is None
 
 
@@ -66,36 +67,27 @@ def test_lookup_returns_none_on_malformed_wkt():
     respx.get(_PDOK_FREE_URL).mock(
         return_value=httpx.Response(200, json={"response": {"docs": [{"centroide_ll": "GARBAGE"}]}})
     )
-    lookup = PdokCoordinateLookup()
-    try:
+    with PdokLocationLookup() as lookup:
         result = lookup.lookup("0363200000218780")
-    finally:
-        lookup.close()
     assert result is None
 
 
 @respx.mock
 def test_lookup_returns_none_on_missing_centroide_ll():
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json={"response": {"docs": [{}]}}))
-    lookup = PdokCoordinateLookup()
-    try:
+    with PdokLocationLookup() as lookup:
         result = lookup.lookup("0363200000218780")
-    finally:
-        lookup.close()
     assert result is None
 
 
 @respx.mock
 def test_lookup_sends_correct_query_params():
-    route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_coords_response()))
-    lookup = PdokCoordinateLookup()
-    try:
+    route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
+    with PdokLocationLookup() as lookup:
         lookup.lookup("0363200000218780")
-    finally:
-        lookup.close()
     params = route.calls.last.request.url.params
     assert params["q"] == "nummeraanduiding_id:0363200000218780"
-    assert params["fl"] == "centroide_ll"
+    assert params["fl"] == "centroide_ll,buurtnaam,wijknaam"
     assert params["rows"] == "1"
 
 
@@ -138,7 +130,7 @@ def test_resolve_bag_enriches_coordinates_on_new_residence():
     respx.get(f"{_BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
-    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_coords_response(4.893, 52.376)))
+    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -161,9 +153,7 @@ def test_resolve_bag_skips_coordinates_when_residence_already_has_them():
     respx.get(f"{_BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
-    pdok_route = respx.get(_PDOK_FREE_URL).mock(
-        return_value=httpx.Response(200, json=_pdok_coords_response(4.893, 52.376))
-    )
+    pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -204,7 +194,7 @@ def test_backfill_enriches_residences_missing_coordinates():
 
     r1 = cast(Residence, ResidenceFactory(bag_id="0363200000000001"))
     r2 = cast(Residence, ResidenceFactory(bag_id="0363200000000002"))
-    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_coords_response(4.5, 52.3)))
+    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.5, 52.3)))
 
     out = StringIO()
     call_command("backfill_coordinates", "--batch-size=10", "--sleep=0", stdout=out)
@@ -224,7 +214,7 @@ def test_backfill_skips_residences_with_coordinates():
     from django.core.management import call_command
 
     cast(Residence, ResidenceFactory(bag_id="0363200000000001", latitude=52.0, longitude=4.0))
-    pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_coords_response()))
+    pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
 
     out = StringIO()
     call_command("backfill_coordinates", "--batch-size=10", "--sleep=0", stdout=out)
