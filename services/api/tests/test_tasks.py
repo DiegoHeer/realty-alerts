@@ -8,6 +8,14 @@ from scraping.resolvers.kadaster import BAG_BASE_URL
 from scraping.models import BagStatus, Listing, ListingStatus, Residence
 from tests.factories import ListingFactory, ResidenceFactory
 
+_PDOK_FREE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
+
+
+def _mock_pdok_coordinates(lat: float = 52.376, lon: float = 4.893) -> None:
+    respx.get(_PDOK_FREE_URL).mock(
+        return_value=httpx.Response(200, json={"response": {"docs": [{"centroide_ll": f"POINT({lon} {lat})"}]}})
+    )
+
 
 def test_ping_returns_pong_under_eager_mode():
     from scraping.tasks import ping
@@ -105,6 +113,7 @@ def test_resolve_bag_links_listing_to_residence_and_reconciles():
     respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
+    _mock_pdok_coordinates()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -128,6 +137,7 @@ def test_resolve_bag_attaches_to_existing_residence_for_cross_portal():
     respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
+    _mock_pdok_coordinates()
     existing = cast(Residence, ResidenceFactory(bag_id="0402200000084467", current_price_eur=520_000))
     listing = _pending_listing(price_eur=480_000)
 
@@ -248,6 +258,7 @@ def test_resolve_bag_uses_street_city_fallback_when_postcode_missing():
     route = respx.get(f"{BAG_BASE_URL}/adressen").mock(
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
+    _mock_pdok_coordinates()
     listing = _pending_listing(postcode=None, street="Klaterweg", city="Huizen")
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -279,6 +290,7 @@ def test_resolve_bag_falls_back_to_street_city_when_postcode_wrong():
         return httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
 
     respx.get(f"{BAG_BASE_URL}/adressen").mock(side_effect=handler)
+    _mock_pdok_coordinates()
     listing = _pending_listing(
         postcode="1271XX", street="Klaterweg", city="Huizen", house_letter=None, house_number_suffix=None
     )
@@ -300,6 +312,7 @@ def test_resolve_bag_falls_back_to_pdok_when_both_kadaster_paths_empty():
 
     _PDOK_BASE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1"
     respx.get(f"{BAG_BASE_URL}/adressen").mock(return_value=httpx.Response(200, json={"_embedded": {"adressen": []}}))
+    _mock_pdok_coordinates()
     respx.get(f"{_PDOK_BASE_URL}/suggest").mock(
         return_value=httpx.Response(200, json={"response": {"docs": [{"type": "adres", "id": "adr-x", "score": 12.5}]}})
     )
