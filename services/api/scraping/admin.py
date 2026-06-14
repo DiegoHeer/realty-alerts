@@ -6,7 +6,17 @@ from django.utils import timezone
 
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
 from scraping.resolvers.types import AddressQuery
-from scraping.models import BagStatus, City, DetailScrapeRun, DetailScrapeRunStatus, District, Listing, ListScrapeRun, Neighborhood, Residence
+from scraping.models import (
+    BagStatus,
+    City,
+    DetailScrapeRun,
+    DetailScrapeRunStatus,
+    District,
+    Listing,
+    ListScrapeRun,
+    Neighborhood,
+    Residence,
+)
 from scraping.tasks import dispatch_detail_scrape
 from scraping.reconciliation import reconcile_residence
 
