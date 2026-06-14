@@ -204,6 +204,28 @@ def _buurt_feature(code="BU05180100", name="Schildersbuurt-West", wijk="WK051801
 
 _CITY_GEOMETRY = [[[[4.2, 52.0], [4.4, 52.0], [4.4, 52.13], [4.2, 52.0]]]]
 
+_EMPTY_FC = {"type": "FeatureCollection", "features": []}
+
+
+def _fc(features):
+    return httpx.Response(200, json={"type": "FeatureCollection", "features": features})
+
+
+def _mock_wfs_by_type(year_url, *, gemeenten=None, wijken=None, buurten=None):
+    """Route WFS requests by typeNames query param."""
+
+    def _handler(request):
+        type_names = request.url.params.get("typeNames", "")
+        if type_names == "wijkenbuurten:gemeenten":
+            return _fc(gemeenten or [])
+        if type_names == "wijkenbuurten:wijken":
+            return _fc(wijken or [])
+        if type_names == "wijkenbuurten:buurten":
+            return _fc(buurten or [])
+        return _fc([])
+
+    respx.get(year_url).mock(side_effect=_handler)
+
 
 @pytest.mark.django_db
 class TestFetchAndStoreDistricts:
@@ -213,24 +235,13 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [_gemeente_feature(), _wijk_feature(), _buurt_feature()],
-                },
-            )
+        _mock_wfs_by_type(
+            primary_url,
+            gemeenten=[_gemeente_feature()],
+            wijken=[_wijk_feature()],
+            buurten=[_buurt_feature()],
         )
-        respx.get(secondary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [],
-                },
-            )
-        )
+        _mock_wfs_by_type(secondary_url)
 
         fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
 
@@ -254,24 +265,8 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [_gemeente_feature(woz=350)],
-                },
-            )
-        )
-        respx.get(secondary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [],
-                },
-            )
-        )
+        _mock_wfs_by_type(primary_url, gemeenten=[_gemeente_feature(woz=350)])
+        _mock_wfs_by_type(secondary_url)
 
         fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
 
@@ -287,44 +282,34 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "properties": {
-                                "wijkcode": "WK051801",
-                                "wijknaam": "Scheveningen",
-                                "gemiddeldInkomenPerInwoner": -99997,
-                            },
-                            "geometry": {
-                                "type": "Polygon",
-                                "coordinates": [[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]],
-                            },
-                        },
-                    ],
+        _mock_wfs_by_type(
+            primary_url,
+            wijken=[
+                {
+                    "properties": {
+                        "wijkcode": "WK051801",
+                        "wijknaam": "Scheveningen",
+                        "gemiddeldInkomenPerInwoner": -99997,
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]],
+                    },
                 },
-            )
+            ],
         )
-        respx.get(secondary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "properties": {
-                                "wijkcode": "WK051801",
-                                "wijknaam": "Scheveningen",
-                                "gemiddeldInkomenPerInwoner": 28,
-                            },
-                            "geometry": None,
-                        },
-                    ],
+        _mock_wfs_by_type(
+            secondary_url,
+            wijken=[
+                {
+                    "properties": {
+                        "wijkcode": "WK051801",
+                        "wijknaam": "Scheveningen",
+                        "gemiddeldInkomenPerInwoner": 28,
+                    },
+                    "geometry": None,
                 },
-            )
+            ],
         )
 
         fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
@@ -338,27 +323,14 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        _wijk_feature(code="WK051801", name="Scheveningen"),
-                        _wijk_feature(code="WK036301", name="Centrum (Amsterdam)"),
-                    ],
-                },
-            )
+        _mock_wfs_by_type(
+            primary_url,
+            wijken=[
+                _wijk_feature(code="WK051801", name="Scheveningen"),
+                _wijk_feature(code="WK036301", name="Centrum (Amsterdam)"),
+            ],
         )
-        respx.get(secondary_url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [],
-                },
-            )
-        )
+        _mock_wfs_by_type(secondary_url)
 
         fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
 

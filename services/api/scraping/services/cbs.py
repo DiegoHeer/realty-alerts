@@ -223,24 +223,41 @@ def _process_neighborhood(
 # ---------------------------------------------------------------------------
 
 
-def _classify_and_store_features(features: list[dict], city: City, sec_index: dict[str, dict]) -> None:
-    wk_prefix = f"WK{city.code}"
-    bu_prefix = f"BU{city.code}"
+def _store_gemeente_features(features: list[dict], city: City, sec_index: dict[str, dict], now: datetime) -> None:
     gm_code = f"GM{city.code}"
-    now = timezone.now()
-    districts_by_code: dict[str, District] = {}
-
     for feat in features:
         props = feat.get("properties", {})
-        geom = feat.get("geometry")
-
         if props.get("gemeentecode", "") == gm_code:
-            _process_gemeente(props, geom, city, sec_index, now)
-        elif props.get("buurtcode", "").startswith(bu_prefix):
-            _process_neighborhood(props, geom, city, districts_by_code, sec_index, now)
-        elif props.get("wijkcode", "").startswith(wk_prefix):
-            district = _process_district(props, geom, city, sec_index, now)
+            _process_gemeente(props, feat.get("geometry"), city, sec_index, now)
+            return
+
+
+def _store_district_features(
+    features: list[dict], city: City, sec_index: dict[str, dict], now: datetime
+) -> dict[str, District]:
+    wk_prefix = f"WK{city.code}"
+    districts_by_code: dict[str, District] = {}
+    for feat in features:
+        props = feat.get("properties", {})
+        wijk_code = props.get("wijkcode", "")
+        if wijk_code.startswith(wk_prefix):
+            district = _process_district(props, feat.get("geometry"), city, sec_index, now)
             districts_by_code[district.code] = district
+    return districts_by_code
+
+
+def _store_neighborhood_features(
+    features: list[dict],
+    city: City,
+    districts_by_code: dict[str, District],
+    sec_index: dict[str, dict],
+    now: datetime,
+) -> None:
+    bu_prefix = f"BU{city.code}"
+    for feat in features:
+        props = feat.get("properties", {})
+        if props.get("buurtcode", "").startswith(bu_prefix):
+            _process_neighborhood(props, feat.get("geometry"), city, districts_by_code, sec_index, now)
 
 
 # ---------------------------------------------------------------------------
@@ -289,20 +306,24 @@ def fetch_and_store_districts(city: City) -> None:
     logger.info("Fetching districts and neighborhoods for {} ({})", city.name, city.code)
     _ensure_city_geometry(city)
     bbox = _bbox_for_city(city)
+    now = timezone.now()
 
-    primary_features = _wfs_get(
-        "wijkenbuurten:gemeenten,wijkenbuurten:wijken,wijkenbuurten:buurten",
-        year=CBS_PRIMARY_YEAR,
-        bbox=bbox,
-    )
-    secondary_features = _wfs_get(
-        "wijkenbuurten:wijken,wijkenbuurten:buurten",
-        year=CBS_SECONDARY_YEAR,
-        bbox=bbox,
-    )
+    sec_wijken = _wfs_get("wijkenbuurten:wijken", year=CBS_SECONDARY_YEAR, bbox=bbox)
+    sec_buurten = _wfs_get("wijkenbuurten:buurten", year=CBS_SECONDARY_YEAR, bbox=bbox)
+    sec_index = _build_secondary_index(sec_wijken + sec_buurten)
+    del sec_wijken, sec_buurten
 
-    sec_index = _build_secondary_index(secondary_features)
-    _classify_and_store_features(primary_features, city, sec_index)
+    gemeente_feats = _wfs_get("wijkenbuurten:gemeenten", year=CBS_PRIMARY_YEAR, bbox=bbox)
+    _store_gemeente_features(gemeente_feats, city, sec_index, now)
+    del gemeente_feats
+
+    wijk_feats = _wfs_get("wijkenbuurten:wijken", year=CBS_PRIMARY_YEAR, bbox=bbox)
+    districts_by_code = _store_district_features(wijk_feats, city, sec_index, now)
+    del wijk_feats
+
+    buurt_feats = _wfs_get("wijkenbuurten:buurten", year=CBS_PRIMARY_YEAR, bbox=bbox)
+    _store_neighborhood_features(buurt_feats, city, districts_by_code, sec_index, now)
+    del buurt_feats
 
     logger.info(
         "Stored {} districts, {} neighborhoods for {}",
