@@ -11,24 +11,34 @@ from ninja.security import APIKeyHeader
 
 from scraping.models import (
     BagStatus,
+    City,
     DetailScrapeRun,
     DetailScrapeRunStatus,
+    District,
     ListScrapeRun,
     ListScrapeRunStatus,
     Listing,
+    Neighborhood,
     Residence,
     Website,
 )
 from scraping.schemas import (
+    CityOut,
+    CityStatsOut,
     DetailResultIn,
     DetailResultStatus,
     DetailScrapeRunOut,
+    DistrictStatsOut,
+    GeoDistrictOut,
+    GeoNeighborhoodOut,
     ListingIn,
     ListScrapeRunOut,
+    NeighborhoodStatsOut,
     ResidenceFilters,
     ResidenceOut,
     ScrapeResultsIn,
 )
+from scraping.services.cbs import fetch_and_store_cities, fetch_and_store_districts, is_stale
 from scraping.tasks import resolve_bag
 
 
@@ -260,8 +270,141 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
     return run
 
 
+cities_router = Router(tags=["cities"])
+
+
+@cities_router.get("", response=list[CityOut])
+def list_cities(request):
+    oldest = City.objects.order_by("updated_at").values_list("updated_at", flat=True).first()
+    if oldest is None or is_stale(oldest):
+        fetch_and_store_cities()
+    return list(City.objects.all().order_by("name"))
+
+
+stats_router = Router(tags=["stats"])
+
+
+@stats_router.get("/cities/{city_id}", response={200: CityStatsOut, 404: None})
+def get_city_stats(request, city_id: str):
+    city = City.objects.filter(code=city_id).first()
+    if city is None:
+        return Status(404, None)
+    if is_stale(city.fetched_at):
+        try:
+            fetch_and_store_districts(city)
+            city.refresh_from_db()
+        except RuntimeError:
+            if city.stats is None:
+                return Status(502, None)
+    return city
+
+
+class _CityRequired(Schema):
+    city: str
+
+
+@stats_router.get("/districts", response={200: list[DistrictStatsOut], 400: None, 404: None})
+def list_district_stats(request, filters: Query[_CityRequired], include: str | None = None):
+    city = City.objects.filter(code=filters.city).first()
+    if city is None:
+        return Status(404, None)
+    if is_stale(city.fetched_at) or not District.objects.filter(city=city).exists():
+        try:
+            fetch_and_store_districts(city)
+        except RuntimeError:
+            if not District.objects.filter(city=city).exists():
+                return Status(502, None)
+    qs = District.objects.filter(city=city).select_related("city").order_by("name")
+    districts = list(qs)
+    if include != "geometry":
+        for d in districts:
+            d.geometry = None
+    return districts
+
+
+@stats_router.get("/neighborhoods", response={200: list[NeighborhoodStatsOut], 400: None, 404: None})
+def list_neighborhood_stats(request, filters: Query[_CityRequired], include: str | None = None):
+    city = City.objects.filter(code=filters.city).first()
+    if city is None:
+        return Status(404, None)
+    if is_stale(city.fetched_at) or not Neighborhood.objects.filter(city=city).exists():
+        try:
+            fetch_and_store_districts(city)
+        except RuntimeError:
+            if not Neighborhood.objects.filter(city=city).exists():
+                return Status(502, None)
+    qs = Neighborhood.objects.filter(city=city).select_related("city", "district").order_by("name")
+    neighborhoods = list(qs)
+    if include != "geometry":
+        for n in neighborhoods:
+            n.geometry = None
+    return neighborhoods
+
+
+shapes_router = Router(tags=["shapes"])
+
+
+class _OptionalCity(Schema):
+    city: str | None = None
+
+
+@shapes_router.get("/districts", response={200: list[GeoDistrictOut], 404: None})
+def list_district_shapes(
+    request,
+    filters: Query[_OptionalCity],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
+):
+    if filters.city:
+        city = City.objects.filter(code=filters.city).first()
+        if city is None:
+            return Status(404, None)
+        if is_stale(city.fetched_at) or not District.objects.filter(city=city).exists():
+            try:
+                fetch_and_store_districts(city)
+            except RuntimeError:
+                if not District.objects.filter(city=city).exists():
+                    return Status(502, None)
+        return list(District.objects.filter(city=city, geometry__isnull=False).select_related("city").order_by("name"))
+    return list(
+        District.objects.filter(geometry__isnull=False).select_related("city").order_by("name")[offset : offset + limit]
+    )
+
+
+@shapes_router.get("/neighborhoods", response={200: list[GeoNeighborhoodOut], 404: None})
+def list_neighborhood_shapes(
+    request,
+    filters: Query[_OptionalCity],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
+):
+    if filters.city:
+        city = City.objects.filter(code=filters.city).first()
+        if city is None:
+            return Status(404, None)
+        if is_stale(city.fetched_at) or not Neighborhood.objects.filter(city=city).exists():
+            try:
+                fetch_and_store_districts(city)
+            except RuntimeError:
+                if not Neighborhood.objects.filter(city=city).exists():
+                    return Status(502, None)
+        return list(
+            Neighborhood.objects.filter(city=city, geometry__isnull=False)
+            .select_related("city", "district")
+            .order_by("name")
+        )
+    return list(
+        Neighborhood.objects.filter(geometry__isnull=False)
+        .select_related("city", "district")
+        .order_by("name")[offset : offset + limit]
+    )
+
+
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
 api.add_router("/v1", public_router)
+api.add_router("/v1/cities", cities_router, auth=None)
+api.add_router("/v1/stats", stats_router, auth=None)
+api.add_router("/v1/shapes", shapes_router, auth=None)
 
 
 def _parse_price_eur(price_str: str) -> int | None:

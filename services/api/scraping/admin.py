@@ -6,7 +6,17 @@ from django.utils import timezone
 
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
 from scraping.resolvers.types import AddressQuery
-from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, Listing, ListScrapeRun, Residence
+from scraping.models import (
+    BagStatus,
+    City,
+    DetailScrapeRun,
+    DetailScrapeRunStatus,
+    District,
+    Listing,
+    ListScrapeRun,
+    Neighborhood,
+    Residence,
+)
 from scraping.tasks import dispatch_detail_scrape
 from scraping.reconciliation import reconcile_residence
 
@@ -349,3 +359,29 @@ class DetailScrapeRunAdmin(admin.ModelAdmin):
         "error_message",
         "duration_seconds",
     )
+
+
+@admin.register(City)
+class CityAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "stats_year", "fetched_at", "updated_at")
+    search_fields = ("code", "name")
+    ordering = ("name",)
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(District)
+class DistrictAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "city", "stats_year", "fetched_at")
+    list_filter = ("city",)
+    search_fields = ("code", "name")
+    ordering = ("name",)
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(Neighborhood)
+class NeighborhoodAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "city", "district", "stats_year", "fetched_at")
+    list_filter = ("city",)
+    search_fields = ("code", "name")
+    ordering = ("name",)
+    readonly_fields = ("created_at", "updated_at")
