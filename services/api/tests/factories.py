@@ -3,7 +3,17 @@ from datetime import UTC, datetime, timedelta
 import factory
 from factory.django import DjangoModelFactory
 
-from scraping.models import ListScrapeRun, ListScrapeRunStatus, Listing, ListingStatus, Residence, Website
+from scraping.models import (
+    City,
+    District,
+    ListScrapeRun,
+    ListScrapeRunStatus,
+    Listing,
+    ListingStatus,
+    Neighborhood,
+    Residence,
+    Website,
+)
 
 
 class ResidenceFactory(DjangoModelFactory):
@@ -38,3 +48,30 @@ class ListScrapeRunFactory(DjangoModelFactory):
     listings_found = 0
     new_listings_count = 0
     duration_seconds = 300.0
+
+
+class CityFactory(DjangoModelFactory):
+    class Meta:
+        model = City
+
+    code = factory.Sequence(lambda n: f"{n:04d}")
+    name = factory.LazyAttribute(lambda o: f"City-{o.code}")
+
+
+class DistrictFactory(DjangoModelFactory):
+    class Meta:
+        model = District
+
+    code = factory.Sequence(lambda n: f"WK{n:08d}")
+    name = factory.LazyAttribute(lambda o: f"District-{o.code}")
+    city = factory.SubFactory(CityFactory)
+
+
+class NeighborhoodFactory(DjangoModelFactory):
+    class Meta:
+        model = Neighborhood
+
+    code = factory.Sequence(lambda n: f"BU{n:010d}")
+    name = factory.LazyAttribute(lambda o: f"Neighborhood-{o.code}")
+    city = factory.SubFactory(CityFactory)
+    district = factory.SubFactory(DistrictFactory, city=factory.SelfAttribute("..city"))
