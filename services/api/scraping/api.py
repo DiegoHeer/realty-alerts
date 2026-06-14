@@ -11,24 +11,34 @@ from ninja.security import APIKeyHeader
 
 from scraping.models import (
     BagStatus,
+    City,
     DetailScrapeRun,
     DetailScrapeRunStatus,
+    District,
     ListScrapeRun,
     ListScrapeRunStatus,
     Listing,
+    Neighborhood,
     Residence,
     Website,
 )
 from scraping.schemas import (
+    CityOut,
+    CityStatsOut,
     DetailResultIn,
     DetailResultStatus,
     DetailScrapeRunOut,
+    DistrictStatsOut,
+    GeoDistrictOut,
+    GeoNeighborhoodOut,
     ListingIn,
     ListScrapeRunOut,
+    NeighborhoodStatsOut,
     ResidenceFilters,
     ResidenceOut,
     ScrapeResultsIn,
 )
+from scraping.services.cbs import fetch_and_store_cities, fetch_and_store_districts, is_stale
 from scraping.tasks import resolve_bag
 
 
@@ -260,8 +270,20 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
     return run
 
 
+cities_router = Router(tags=["cities"])
+
+
+@cities_router.get("", response=list[CityOut])
+def list_cities(request):
+    oldest = City.objects.order_by("updated_at").values_list("updated_at", flat=True).first()
+    if oldest is None or is_stale(oldest):
+        fetch_and_store_cities()
+    return list(City.objects.all().order_by("name"))
+
+
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
 api.add_router("/v1", public_router)
+api.add_router("/v1/cities", cities_router, auth=None)
 
 
 def _parse_price_eur(price_str: str) -> int | None:
