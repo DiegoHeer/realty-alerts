@@ -341,10 +341,76 @@ def list_neighborhood_stats(request, filters: Query[_CityRequired], include: str
     return neighborhoods
 
 
+shapes_router = Router(tags=["shapes"])
+
+
+class _OptionalCity(Schema):
+    city: str | None = None
+
+
+@shapes_router.get("/districts", response={200: list[GeoDistrictOut], 404: None})
+def list_district_shapes(
+    request,
+    filters: Query[_OptionalCity],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    if filters.city:
+        city = City.objects.filter(code=filters.city).first()
+        if city is None:
+            return Status(404, None)
+        if is_stale(city.fetched_at) or not District.objects.filter(city=city).exists():
+            try:
+                fetch_and_store_districts(city)
+            except RuntimeError:
+                if not District.objects.filter(city=city).exists():
+                    return Status(502, None)
+        return list(
+            District.objects.filter(city=city, geometry__isnull=False)
+            .select_related("city")
+            .order_by("name")
+        )
+    return list(
+        District.objects.filter(geometry__isnull=False)
+        .select_related("city")
+        .order_by("name")[offset : offset + limit]
+    )
+
+
+@shapes_router.get("/neighborhoods", response={200: list[GeoNeighborhoodOut], 404: None})
+def list_neighborhood_shapes(
+    request,
+    filters: Query[_OptionalCity],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    if filters.city:
+        city = City.objects.filter(code=filters.city).first()
+        if city is None:
+            return Status(404, None)
+        if is_stale(city.fetched_at) or not Neighborhood.objects.filter(city=city).exists():
+            try:
+                fetch_and_store_districts(city)
+            except RuntimeError:
+                if not Neighborhood.objects.filter(city=city).exists():
+                    return Status(502, None)
+        return list(
+            Neighborhood.objects.filter(city=city, geometry__isnull=False)
+            .select_related("city", "district")
+            .order_by("name")
+        )
+    return list(
+        Neighborhood.objects.filter(geometry__isnull=False)
+        .select_related("city", "district")
+        .order_by("name")[offset : offset + limit]
+    )
+
+
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
 api.add_router("/v1", public_router)
 api.add_router("/v1/cities", cities_router, auth=None)
 api.add_router("/v1/stats", stats_router, auth=None)
+api.add_router("/v1/shapes", shapes_router, auth=None)
 
 
 def _parse_price_eur(price_str: str) -> int | None:
