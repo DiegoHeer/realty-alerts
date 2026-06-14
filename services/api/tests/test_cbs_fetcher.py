@@ -266,7 +266,7 @@ class TestFetchAndStoreDistricts:
             )
         )
 
-        fetch_and_store_districts(city)
+        fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
 
         assert District.objects.count() == 1
         district = District.objects.get(code="WK051801")
@@ -307,13 +307,13 @@ class TestFetchAndStoreDistricts:
             )
         )
 
-        fetch_and_store_districts(city)
+        fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
 
-        city.refresh_from_db()
-        assert city.stats is not None
-        assert city.stats["gemiddeldeWoningwaarde"] == 350
-        assert city.fetched_at is not None
-        assert city.stats_year == CBS_PRIMARY_YEAR
+        city.refresh_from_db()  # ty: ignore[unresolved-attribute]
+        assert city.stats is not None  # ty: ignore[unresolved-attribute]
+        assert city.stats["gemiddeldeWoningwaarde"] == 350  # ty: ignore[unresolved-attribute]
+        assert city.fetched_at is not None  # ty: ignore[unresolved-attribute]
+        assert city.stats_year == CBS_PRIMARY_YEAR  # ty: ignore[unresolved-attribute]
 
     @respx.mock
     def test_backfills_from_secondary_year(self):
@@ -361,7 +361,7 @@ class TestFetchAndStoreDistricts:
             )
         )
 
-        fetch_and_store_districts(city)
+        fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
 
         district = District.objects.get(code="WK051801")
         assert district.stats["gemiddeldInkomenPerInwoner"] == 28
@@ -394,7 +394,7 @@ class TestFetchAndStoreDistricts:
             )
         )
 
-        fetch_and_store_districts(city)
+        fetch_and_store_districts(city)  # ty: ignore[invalid-argument-type]
 
         assert District.objects.count() == 1
         assert District.objects.first().code == "WK051801"

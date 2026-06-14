@@ -352,8 +352,8 @@ class _OptionalCity(Schema):
 def list_district_shapes(
     request,
     filters: Query[_OptionalCity],
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
 ):
     if filters.city:
         city = City.objects.filter(code=filters.city).first()
@@ -375,8 +375,8 @@ def list_district_shapes(
 def list_neighborhood_shapes(
     request,
     filters: Query[_OptionalCity],
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
 ):
     if filters.city:
         city = City.objects.filter(code=filters.city).first()
