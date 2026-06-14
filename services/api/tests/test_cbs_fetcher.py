@@ -7,6 +7,7 @@ from scraping.services.cbs import (
     CBS_PRIMARY_YEAR,
     CBS_SECONDARY_YEAR,
     CBS_WFS_URL,
+    _GEMEENTE_LABELPOINT_URL,
     _clean_stats,
     _extract_geometry,
     _wfs_get,
@@ -126,34 +127,28 @@ class TestWfsGet:
             _wfs_get("wijkenbuurten:gemeenten", year=CBS_PRIMARY_YEAR, max_retries=2, initial_delay=0.01)
 
 
+def _labelpoint_response(*cities):
+    return httpx.Response(
+        200,
+        json={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "properties": {"statcode": f"GM{code}", "statnaam": name, "jaarcode": CBS_PRIMARY_YEAR},
+                    "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                }
+                for code, name, lon, lat in cities
+            ],
+        },
+    )
+
+
 @pytest.mark.django_db
 class TestFetchAndStoreCities:
     @respx.mock
     def test_creates_city_rows(self):
-        url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
-                            "geometry": {
-                                "type": "Polygon",
-                                "coordinates": [[[4.2, 52.0], [4.4, 52.0], [4.4, 52.1], [4.2, 52.0]]],
-                            },
-                        },
-                        {
-                            "properties": {"gemeentecode": "GM0363", "gemeentenaam": "Amsterdam"},
-                            "geometry": {
-                                "type": "Polygon",
-                                "coordinates": [[[4.7, 52.3], [5.0, 52.3], [5.0, 52.4], [4.7, 52.3]]],
-                            },
-                        },
-                    ],
-                },
-            )
+        respx.get(_GEMEENTE_LABELPOINT_URL).mock(
+            return_value=_labelpoint_response(("0518", "'s-Gravenhage", 4.3, 52.08), ("0363", "Amsterdam", 4.9, 52.37))
         )
 
         fetch_and_store_cities()
@@ -168,23 +163,8 @@ class TestFetchAndStoreCities:
     @respx.mock
     def test_updates_existing_city(self):
         City.objects.create(code="0518", name="Old Name")
-        url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
-                            "geometry": {
-                                "type": "Polygon",
-                                "coordinates": [[[4.2, 52.0], [4.4, 52.0], [4.4, 52.1], [4.2, 52.0]]],
-                            },
-                        }
-                    ],
-                },
-            )
+        respx.get(_GEMEENTE_LABELPOINT_URL).mock(
+            return_value=_labelpoint_response(("0518", "'s-Gravenhage", 4.3, 52.08))
         )
 
         fetch_and_store_cities()
@@ -194,21 +174,7 @@ class TestFetchAndStoreCities:
 
     @respx.mock
     def test_strips_gm_prefix_from_code(self):
-        url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "Den Haag"},
-                            "geometry": None,
-                        }
-                    ],
-                },
-            )
-        )
+        respx.get(_GEMEENTE_LABELPOINT_URL).mock(return_value=_labelpoint_response(("0518", "Den Haag", 4.3, 52.08)))
 
         fetch_and_store_cities()
 

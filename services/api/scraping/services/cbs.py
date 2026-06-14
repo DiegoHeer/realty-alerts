@@ -247,33 +247,28 @@ def _classify_and_store_features(features: list[dict], city: City, sec_index: di
 # Public API
 # ---------------------------------------------------------------------------
 
-
-_CITIES_PAGE_SIZE = 50
+_GEMEENTE_LABELPOINT_URL = "https://api.pdok.nl/cbs/gebiedsindelingen/ogc/v1/collections/gemeente_labelpoint/items"
 
 
 def fetch_and_store_cities() -> None:
-    logger.info("Fetching municipality list from CBS WFS")
-    start_index = 0
+    logger.info("Fetching municipality list from PDOK gebiedsindelingen")
+    response = httpx.get(
+        _GEMEENTE_LABELPOINT_URL,
+        params={"limit": 500, "f": "json", "jaarcode": CBS_PRIMARY_YEAR},
+        timeout=60,
+    )
+    response.raise_for_status()
+    features = response.json().get("features", [])
 
-    while True:
-        features = _wfs_get("wijkenbuurten:gemeenten", count=_CITIES_PAGE_SIZE, start_index=start_index)
-        if not features:
-            break
-
-        for feat in features:
-            props = feat.get("properties", {})
-            raw_code = props.get("gemeentecode", "")
-            code = raw_code.removeprefix("GM")
-            if not code:
-                continue
-            City.objects.update_or_create(
-                code=code,
-                defaults={"name": props.get("gemeentenaam", "")},
-            )
-
-        start_index += len(features)
-        if len(features) < _CITIES_PAGE_SIZE:
-            break
+    for feat in features:
+        props = feat.get("properties", {})
+        code = props.get("statcode", "").removeprefix("GM")
+        if not code:
+            continue
+        City.objects.update_or_create(
+            code=code,
+            defaults={"name": props.get("statnaam", "")},
+        )
 
     logger.info("Stored {} municipalities", City.objects.count())
 

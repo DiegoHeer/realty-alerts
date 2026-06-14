@@ -4,8 +4,24 @@ import respx
 from datetime import UTC, datetime, timedelta
 
 from scraping.models import City
-from scraping.services.cbs import CBS_PRIMARY_YEAR, CBS_WFS_URL
+from scraping.services.cbs import CBS_PRIMARY_YEAR, _GEMEENTE_LABELPOINT_URL
 from tests.factories import CityFactory
+
+
+def _labelpoint_response(*cities):
+    return httpx.Response(
+        200,
+        json={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "properties": {"statcode": f"GM{code}", "statnaam": name, "jaarcode": CBS_PRIMARY_YEAR},
+                    "geometry": {"type": "Point", "coordinates": [4.3, 52.08]},
+                }
+                for code, name in cities
+            ],
+        },
+    )
 
 
 @pytest.mark.django_db
@@ -26,21 +42,7 @@ class TestListCities:
 
     @respx.mock
     def test_fetches_from_cbs_when_db_empty(self, client):
-        url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
-                            "geometry": None,
-                        }
-                    ],
-                },
-            )
-        )
+        respx.get(_GEMEENTE_LABELPOINT_URL).mock(return_value=_labelpoint_response(("0518", "'s-Gravenhage")))
 
         response = client.get(self.endpoint)
 
@@ -53,21 +55,7 @@ class TestListCities:
         settings.CBS_CACHE_TTL_DAYS = 1
         City.objects.create(code="0518", name="Old Name")
         City.objects.filter(code="0518").update(updated_at=datetime.now(UTC) - timedelta(days=5))
-        url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "New Name"},
-                            "geometry": None,
-                        }
-                    ],
-                },
-            )
-        )
+        respx.get(_GEMEENTE_LABELPOINT_URL).mock(return_value=_labelpoint_response(("0518", "New Name")))
 
         response = client.get(self.endpoint)
 
