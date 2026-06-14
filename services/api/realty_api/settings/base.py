@@ -101,4 +101,3 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # task short-circuit (logged warning, no HTTP call) — useful in local
 # dev and preview namespaces that don't run Argo Events.
 ARGO_EVENTS_WEBHOOK_URL = SETTINGS.argo_events_webhook_url
-
