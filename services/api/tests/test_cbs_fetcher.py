@@ -336,3 +336,32 @@ class TestFetchAndStoreDistricts:
 
         assert District.objects.count() == 1
         assert District.objects.first().code == "WK051801"
+
+
+from unittest.mock import patch  # noqa: E402
+
+from scraping.tasks import sync_cbs_data  # noqa: E402
+
+
+@pytest.mark.django_db
+class TestSyncCbsData:
+    @patch("scraping.tasks.fetch_and_store_districts")
+    @patch("scraping.tasks.fetch_and_store_cities")
+    def test_calls_fetch_cities_then_fetch_districts_for_each(self, mock_cities, mock_districts):
+        CityFactory(code="0518")
+        CityFactory(code="0363")
+
+        sync_cbs_data()
+
+        mock_cities.assert_called_once()
+        assert mock_districts.call_count == 2
+
+    @patch("scraping.tasks.fetch_and_store_districts", side_effect=[RuntimeError("CBS down"), None])
+    @patch("scraping.tasks.fetch_and_store_cities")
+    def test_continues_on_single_city_failure(self, mock_cities, mock_districts):
+        CityFactory(code="0518")
+        CityFactory(code="0363")
+
+        sync_cbs_data()
+
+        assert mock_districts.call_count == 2

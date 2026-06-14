@@ -1,3 +1,4 @@
+import time
 import uuid
 
 import httpx
@@ -7,6 +8,7 @@ from django.utils import timezone
 from loguru import logger
 
 from scraping.cleanup import delete_expired_terminal_residences
+from scraping.services.cbs import fetch_and_store_cities, fetch_and_store_districts
 from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, Listing, Residence, Website
 from scraping.reconciliation import reconcile_residence
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
@@ -205,3 +207,27 @@ def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) 
         "status_changed_at": timezone.now(),
         "last_scraped_at": listing.list_scraped_at,
     }
+
+
+@shared_task(name="scraping.sync_cbs_data", time_limit=7200, soft_time_limit=6600)
+def sync_cbs_data() -> None:
+    """Sync CBS geo stats for all municipalities. Scheduled via django-celery-beat."""
+    from scraping.models import City
+
+    fetch_and_store_cities()
+
+    cities = list(City.objects.all().order_by("code"))
+    total = len(cities)
+    failed = 0
+    logger.info("Starting CBS sync for {} municipalities", total)
+
+    for i, city in enumerate(cities, 1):
+        try:
+            fetch_and_store_districts(city)
+            logger.info("[{}/{}] Synced {} ({})", i, total, city.name, city.code)
+        except Exception:
+            failed += 1
+            logger.exception("[{}/{}] Failed to sync {} ({})", i, total, city.name, city.code)
+        time.sleep(1)
+
+    logger.info("CBS sync complete: {}/{} succeeded, {} failed", total - failed, total, failed)
