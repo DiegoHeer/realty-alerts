@@ -189,25 +189,6 @@ def fetch_and_store_districts(city: City) -> None:
             city.save(update_fields=["stats", "stats_year", "fetched_at", "updated_at"])
             continue
 
-        wijk_code = props.get("wijkcode", "")
-        if wijk_code.startswith(wk_prefix):
-            stats = _clean_stats(props)
-            stats = _merge_backfill(stats, sec_by_code, wijk_code)
-            geometry = _extract_geometry(geom) if geom else None
-            district, _ = District.objects.update_or_create(
-                code=wijk_code,
-                defaults={
-                    "name": props.get("wijknaam", ""),
-                    "city": city,
-                    "geometry": geometry,
-                    "stats": stats,
-                    "stats_year": CBS_PRIMARY_YEAR,
-                    "fetched_at": now,
-                },
-            )
-            districts_by_code[wijk_code] = district
-            continue
-
         buurt_code = props.get("buurtcode", "")
         if buurt_code.startswith(bu_prefix):
             stats = _clean_stats(props)
@@ -227,6 +208,25 @@ def fetch_and_store_districts(city: City) -> None:
                     "fetched_at": now,
                 },
             )
+            continue
+
+        wijk_code = props.get("wijkcode", "")
+        if wijk_code.startswith(wk_prefix):
+            stats = _clean_stats(props)
+            stats = _merge_backfill(stats, sec_by_code, wijk_code)
+            geometry = _extract_geometry(geom) if geom else None
+            district, _ = District.objects.update_or_create(
+                code=wijk_code,
+                defaults={
+                    "name": props.get("wijknaam", ""),
+                    "city": city,
+                    "geometry": geometry,
+                    "stats": stats,
+                    "stats_year": CBS_PRIMARY_YEAR,
+                    "fetched_at": now,
+                },
+            )
+            districts_by_code[wijk_code] = district
 
     logger.info(
         "Stored {} districts, {} neighborhoods for {}",

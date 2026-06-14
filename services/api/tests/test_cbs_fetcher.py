@@ -3,7 +3,7 @@ import pytest
 import respx
 from datetime import UTC, datetime
 
-from scraping.models import City
+from scraping.models import City, District, Neighborhood
 from scraping.services.cbs import (
     CBS_PRIMARY_YEAR,
     CBS_SECONDARY_YEAR,
@@ -12,7 +12,9 @@ from scraping.services.cbs import (
     _extract_geometry,
     _wfs_get,
     fetch_and_store_cities,
+    fetch_and_store_districts,
 )
+from tests.factories import CityFactory
 
 
 class TestCleanStats:
@@ -177,3 +179,132 @@ class TestFetchAndStoreCities:
         fetch_and_store_cities()
 
         assert City.objects.filter(code="0518").exists()
+
+
+def _gemeente_feature(code="GM0518", name="'s-Gravenhage", woz=350):
+    return {
+        "properties": {"gemeentecode": code, "gemeentenaam": name, "gemiddeldeWoningwaarde": woz},
+        "geometry": None,
+    }
+
+
+def _wijk_feature(code="WK051801", name="Scheveningen", woz=400):
+    return {
+        "properties": {"wijkcode": code, "wijknaam": name, "gemiddeldeWoningwaarde": woz},
+        "geometry": {"type": "Polygon", "coordinates": [[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]]},
+    }
+
+
+def _buurt_feature(code="BU05180100", name="Schildersbuurt-West", wijk="WK051801", woz=380):
+    return {
+        "properties": {"buurtcode": code, "buurtnaam": name, "wijkcode": wijk, "gemiddeldeWoningwaarde": woz},
+        "geometry": {"type": "Polygon", "coordinates": [[[4.25, 52.05], [4.28, 52.05], [4.28, 52.08], [4.25, 52.05]]]},
+    }
+
+
+_CITY_GEOMETRY = [[[[4.2, 52.0], [4.4, 52.0], [4.4, 52.13], [4.2, 52.0]]]]
+
+
+@pytest.mark.django_db
+class TestFetchAndStoreDistricts:
+    @respx.mock
+    def test_creates_districts_and_neighborhoods(self):
+        city = CityFactory(code="0518", name="'s-Gravenhage", geometry=_CITY_GEOMETRY)
+        primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
+        secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
+
+        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection",
+            "features": [_gemeente_feature(), _wijk_feature(), _buurt_feature()],
+        }))
+        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection", "features": [],
+        }))
+
+        fetch_and_store_districts(city)
+
+        assert District.objects.count() == 1
+        district = District.objects.get(code="WK051801")
+        assert district.name == "Scheveningen"
+        assert district.city == city
+        assert district.stats is not None
+        assert district.geometry is not None
+        assert district.fetched_at is not None
+
+        assert Neighborhood.objects.count() == 1
+        nb = Neighborhood.objects.get(code="BU05180100")
+        assert nb.name == "Schildersbuurt-West"
+        assert nb.district == district
+        assert nb.city == city
+
+    @respx.mock
+    def test_updates_city_stats(self):
+        city = CityFactory(code="0518", geometry=_CITY_GEOMETRY)
+        primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
+        secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
+
+        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection",
+            "features": [_gemeente_feature(woz=350)],
+        }))
+        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection", "features": [],
+        }))
+
+        fetch_and_store_districts(city)
+
+        city.refresh_from_db()
+        assert city.stats is not None
+        assert city.stats["gemiddeldeWoningwaarde"] == 350
+        assert city.fetched_at is not None
+        assert city.stats_year == CBS_PRIMARY_YEAR
+
+    @respx.mock
+    def test_backfills_from_secondary_year(self):
+        city = CityFactory(code="0518", geometry=_CITY_GEOMETRY)
+        primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
+        secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
+
+        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection",
+            "features": [
+                {"properties": {"wijkcode": "WK051801", "wijknaam": "Scheveningen",
+                                "gemiddeldInkomenPerInwoner": -99997},
+                 "geometry": {"type": "Polygon", "coordinates": [[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]]}},
+            ],
+        }))
+        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection",
+            "features": [
+                {"properties": {"wijkcode": "WK051801", "wijknaam": "Scheveningen",
+                                "gemiddeldInkomenPerInwoner": 28},
+                 "geometry": None},
+            ],
+        }))
+
+        fetch_and_store_districts(city)
+
+        district = District.objects.get(code="WK051801")
+        assert district.stats["gemiddeldInkomenPerInwoner"] == 28
+
+    @respx.mock
+    def test_filters_by_city_code_prefix(self):
+        city = CityFactory(code="0518", geometry=_CITY_GEOMETRY)
+        primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
+        secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
+
+        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection",
+            "features": [
+                _wijk_feature(code="WK051801", name="Scheveningen"),
+                _wijk_feature(code="WK036301", name="Centrum (Amsterdam)"),
+            ],
+        }))
+        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
+            "type": "FeatureCollection", "features": [],
+        }))
+
+        fetch_and_store_districts(city)
+
+        assert District.objects.count() == 1
+        assert District.objects.first().code == "WK051801"
