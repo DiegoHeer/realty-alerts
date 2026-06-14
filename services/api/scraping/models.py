@@ -174,3 +174,58 @@ class DetailScrapeRun(models.Model):
 
     def __str__(self) -> str:
         return f"Detail {self.website} {self.status} listing={self.listing.pk} @ {self.dispatched_at:%Y-%m-%d %H:%M}"
+
+
+class City(models.Model):
+    code = models.CharField(max_length=6, unique=True)
+    name = models.CharField(max_length=255)
+    geometry = models.JSONField(null=True, blank=True)
+    stats = models.JSONField(null=True, blank=True)
+    stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "cities"
+        verbose_name_plural = "cities"
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+
+class District(models.Model):
+    code = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=255)
+    city = models.ForeignKey(City, on_delete=models.CASCADE, related_name="districts")
+    geometry = models.JSONField(null=True, blank=True)
+    stats = models.JSONField(null=True, blank=True)
+    stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "districts"
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+
+class Neighborhood(models.Model):
+    code = models.CharField(max_length=12, unique=True)
+    name = models.CharField(max_length=255)
+    city = models.ForeignKey(City, on_delete=models.CASCADE, related_name="neighborhoods")
+    district = models.ForeignKey(District, on_delete=models.CASCADE, related_name="neighborhoods", null=True, blank=True)
+    geometry = models.JSONField(null=True, blank=True)
+    stats = models.JSONField(null=True, blank=True)
+    stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "neighborhoods"
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
