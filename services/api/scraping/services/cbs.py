@@ -160,9 +160,7 @@ def _build_secondary_index(features: list[dict]) -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 
 
-def _process_gemeente(
-    props: dict, geom: dict | None, city: City, sec_index: dict[str, dict], now: datetime
-) -> None:
+def _process_gemeente(props: dict, geom: dict | None, city: City, sec_index: dict[str, dict], now: datetime) -> None:
     gm_code = f"GM{city.code}"
     stats = _merge_backfill(_clean_stats(props), sec_index, gm_code)
     update_fields = ["stats", "stats_year", "fetched_at", "updated_at"]
@@ -258,9 +256,7 @@ def fetch_and_store_cities() -> None:
     start_index = 0
 
     while True:
-        features = _wfs_get(
-            "wijkenbuurten:gemeenten", count=_CITIES_PAGE_SIZE, start_index=start_index
-        )
+        features = _wfs_get("wijkenbuurten:gemeenten", count=_CITIES_PAGE_SIZE, start_index=start_index)
         if not features:
             break
 
