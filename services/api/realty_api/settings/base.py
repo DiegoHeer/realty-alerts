@@ -102,5 +102,3 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # dev and preview namespaces that don't run Argo Events.
 ARGO_EVENTS_WEBHOOK_URL = SETTINGS.argo_events_webhook_url
 
-# --- CBS geo stats ---
-CBS_CACHE_TTL_DAYS = 90

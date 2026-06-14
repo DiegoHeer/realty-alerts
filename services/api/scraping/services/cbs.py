@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import httpx
-from django.conf import settings
 from django.utils import timezone
 from loguru import logger
 
@@ -26,18 +25,6 @@ BACKFILL_FIELDS = [
     "percentageBouwjaarklasseTot2000",
     "percentageBouwjaarklasseVanaf2000",
 ]
-
-
-# ---------------------------------------------------------------------------
-# Cache TTL
-# ---------------------------------------------------------------------------
-
-
-def is_stale(fetched_at) -> bool:
-    if fetched_at is None:
-        return True
-    ttl = timedelta(days=settings.CBS_CACHE_TTL_DAYS)
-    return timezone.now() - fetched_at > ttl
 
 
 # ---------------------------------------------------------------------------

@@ -38,7 +38,6 @@ from scraping.schemas import (
     ResidenceOut,
     ScrapeResultsIn,
 )
-from scraping.services.cbs import fetch_and_store_cities, fetch_and_store_districts, is_stale
 from scraping.tasks import resolve_bag
 
 
@@ -275,9 +274,6 @@ cities_router = Router(tags=["cities"])
 
 @cities_router.get("", response=list[CityOut])
 def list_cities(request):
-    oldest = City.objects.order_by("updated_at").values_list("updated_at", flat=True).first()
-    if oldest is None or is_stale(oldest):
-        fetch_and_store_cities()
     return list(City.objects.all().order_by("name"))
 
 
@@ -289,13 +285,6 @@ def get_city_stats(request, city_id: str):
     city = City.objects.filter(code=city_id).first()
     if city is None:
         return Status(404, None)
-    if is_stale(city.fetched_at):
-        try:
-            fetch_and_store_districts(city)
-            city.refresh_from_db()
-        except RuntimeError:
-            if city.stats is None:
-                return Status(502, None)
     return city
 
 
@@ -303,17 +292,11 @@ class _CityRequired(Schema):
     city: str
 
 
-@stats_router.get("/districts", response={200: list[DistrictStatsOut], 400: None, 404: None})
+@stats_router.get("/districts", response={200: list[DistrictStatsOut], 404: None})
 def list_district_stats(request, filters: Query[_CityRequired], include: str | None = None):
     city = City.objects.filter(code=filters.city).first()
     if city is None:
         return Status(404, None)
-    if is_stale(city.fetched_at) or not District.objects.filter(city=city).exists():
-        try:
-            fetch_and_store_districts(city)
-        except RuntimeError:
-            if not District.objects.filter(city=city).exists():
-                return Status(502, None)
     qs = District.objects.filter(city=city).select_related("city").order_by("name")
     districts = list(qs)
     if include != "geometry":
@@ -322,17 +305,11 @@ def list_district_stats(request, filters: Query[_CityRequired], include: str | N
     return districts
 
 
-@stats_router.get("/neighborhoods", response={200: list[NeighborhoodStatsOut], 400: None, 404: None})
+@stats_router.get("/neighborhoods", response={200: list[NeighborhoodStatsOut], 404: None})
 def list_neighborhood_stats(request, filters: Query[_CityRequired], include: str | None = None):
     city = City.objects.filter(code=filters.city).first()
     if city is None:
         return Status(404, None)
-    if is_stale(city.fetched_at) or not Neighborhood.objects.filter(city=city).exists():
-        try:
-            fetch_and_store_districts(city)
-        except RuntimeError:
-            if not Neighborhood.objects.filter(city=city).exists():
-                return Status(502, None)
     qs = Neighborhood.objects.filter(city=city).select_related("city", "district").order_by("name")
     neighborhoods = list(qs)
     if include != "geometry":
@@ -359,12 +336,6 @@ def list_district_shapes(
         city = City.objects.filter(code=filters.city).first()
         if city is None:
             return Status(404, None)
-        if is_stale(city.fetched_at) or not District.objects.filter(city=city).exists():
-            try:
-                fetch_and_store_districts(city)
-            except RuntimeError:
-                if not District.objects.filter(city=city).exists():
-                    return Status(502, None)
         return list(District.objects.filter(city=city, geometry__isnull=False).select_related("city").order_by("name"))
     return list(
         District.objects.filter(geometry__isnull=False).select_related("city").order_by("name")[offset : offset + limit]
@@ -382,12 +353,6 @@ def list_neighborhood_shapes(
         city = City.objects.filter(code=filters.city).first()
         if city is None:
             return Status(404, None)
-        if is_stale(city.fetched_at) or not Neighborhood.objects.filter(city=city).exists():
-            try:
-                fetch_and_store_districts(city)
-            except RuntimeError:
-                if not Neighborhood.objects.filter(city=city).exists():
-                    return Status(502, None)
         return list(
             Neighborhood.objects.filter(city=city, geometry__isnull=False)
             .select_related("city", "district")
