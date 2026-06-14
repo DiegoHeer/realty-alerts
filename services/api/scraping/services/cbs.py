@@ -50,6 +50,9 @@ def _wfs_get(
     *,
     year: int = CBS_PRIMARY_YEAR,
     bbox: str | None = None,
+    cql_filter: str | None = None,
+    count: int = 4000,
+    start_index: int = 0,
     max_retries: int = 6,
     initial_delay: float = 1.0,
 ) -> list[dict]:
@@ -61,10 +64,13 @@ def _wfs_get(
         "typeNames": type_name,
         "outputFormat": "application/json",
         "srsName": "urn:ogc:def:crs:EPSG::4326",
-        "count": 4000,
+        "count": count,
+        "startIndex": start_index,
     }
     if bbox:
         params["bbox"] = bbox
+    if cql_filter:
+        params["CQL_FILTER"] = cql_filter
 
     delay = initial_delay
     last_error = ""
@@ -154,13 +160,19 @@ def _build_secondary_index(features: list[dict]) -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 
 
-def _process_gemeente(props: dict, city: City, sec_index: dict[str, dict], now: datetime) -> None:
+def _process_gemeente(
+    props: dict, geom: dict | None, city: City, sec_index: dict[str, dict], now: datetime
+) -> None:
     gm_code = f"GM{city.code}"
     stats = _merge_backfill(_clean_stats(props), sec_index, gm_code)
+    update_fields = ["stats", "stats_year", "fetched_at", "updated_at"]
     city.stats = stats
     city.stats_year = CBS_PRIMARY_YEAR
     city.fetched_at = now
-    city.save(update_fields=["stats", "stats_year", "fetched_at", "updated_at"])
+    if geom:
+        city.geometry = _extract_geometry(geom)
+        update_fields.append("geometry")
+    city.save(update_fields=update_fields)
 
 
 def _process_district(
@@ -225,7 +237,7 @@ def _classify_and_store_features(features: list[dict], city: City, sec_index: di
         geom = feat.get("geometry")
 
         if props.get("gemeentecode", "") == gm_code:
-            _process_gemeente(props, city, sec_index, now)
+            _process_gemeente(props, geom, city, sec_index, now)
         elif props.get("buurtcode", "").startswith(bu_prefix):
             _process_neighborhood(props, geom, city, districts_by_code, sec_index, now)
         elif props.get("wijkcode", "").startswith(wk_prefix):
@@ -238,30 +250,53 @@ def _classify_and_store_features(features: list[dict], city: City, sec_index: di
 # ---------------------------------------------------------------------------
 
 
+_CITIES_PAGE_SIZE = 50
+
+
 def fetch_and_store_cities() -> None:
     logger.info("Fetching municipality list from CBS WFS")
-    features = _wfs_get("wijkenbuurten:gemeenten")
+    start_index = 0
 
-    for feat in features:
-        props = feat.get("properties", {})
-        raw_code = props.get("gemeentecode", "")
-        code = raw_code.removeprefix("GM")
-        if not code:
-            continue
-        name = props.get("gemeentenaam", "")
-        geom = feat.get("geometry")
-        geometry = _extract_geometry(geom) if geom else None
-
-        City.objects.update_or_create(
-            code=code,
-            defaults={"name": name, "geometry": geometry},
+    while True:
+        features = _wfs_get(
+            "wijkenbuurten:gemeenten", count=_CITIES_PAGE_SIZE, start_index=start_index
         )
+        if not features:
+            break
+
+        for feat in features:
+            props = feat.get("properties", {})
+            raw_code = props.get("gemeentecode", "")
+            code = raw_code.removeprefix("GM")
+            if not code:
+                continue
+            City.objects.update_or_create(
+                code=code,
+                defaults={"name": props.get("gemeentenaam", "")},
+            )
+
+        start_index += len(features)
+        if len(features) < _CITIES_PAGE_SIZE:
+            break
 
     logger.info("Stored {} municipalities", City.objects.count())
 
 
+def _ensure_city_geometry(city: City) -> None:
+    if city.geometry:
+        return
+    gm_code = f"GM{city.code}"
+    features = _wfs_get("wijkenbuurten:gemeenten", cql_filter=f"gemeentecode='{gm_code}'")
+    if features:
+        geom = features[0].get("geometry")
+        if geom:
+            city.geometry = _extract_geometry(geom)
+            city.save(update_fields=["geometry", "updated_at"])
+
+
 def fetch_and_store_districts(city: City) -> None:
     logger.info("Fetching districts and neighborhoods for {} ({})", city.name, city.code)
+    _ensure_city_geometry(city)
     bbox = _bbox_for_city(city)
 
     primary_features = _wfs_get(

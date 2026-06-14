@@ -161,7 +161,7 @@ class TestFetchAndStoreCities:
         assert City.objects.count() == 2
         den_haag = City.objects.get(code="0518")
         assert den_haag.name == "'s-Gravenhage"
-        assert den_haag.geometry is not None
+        assert den_haag.geometry is None
         assert den_haag.stats is None
         assert den_haag.fetched_at is None
 
