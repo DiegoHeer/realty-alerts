@@ -1,7 +1,6 @@
 import httpx
 import pytest
 import respx
-from datetime import UTC, datetime
 
 from scraping.models import City, District, Neighborhood
 from scraping.services.cbs import (
@@ -88,10 +87,15 @@ class TestWfsGet:
     @respx.mock
     def test_returns_features_on_success(self):
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [{"properties": {"gemeentecode": "GM0518"}, "geometry": None}],
-        }))
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [{"properties": {"gemeentecode": "GM0518"}, "geometry": None}],
+                },
+            )
+        )
 
         result = _wfs_get("wijkenbuurten:gemeenten", year=CBS_PRIMARY_YEAR)
 
@@ -101,10 +105,12 @@ class TestWfsGet:
     @respx.mock
     def test_retries_on_server_error(self):
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        route = respx.get(url).mock(side_effect=[
-            httpx.Response(500),
-            httpx.Response(200, json={"type": "FeatureCollection", "features": []}),
-        ])
+        route = respx.get(url).mock(
+            side_effect=[
+                httpx.Response(500),
+                httpx.Response(200, json={"type": "FeatureCollection", "features": []}),
+            ]
+        )
 
         result = _wfs_get("wijkenbuurten:gemeenten", year=CBS_PRIMARY_YEAR, initial_delay=0.01)
 
@@ -125,19 +131,30 @@ class TestFetchAndStoreCities:
     @respx.mock
     def test_creates_city_rows(self):
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
-                    "geometry": {"type": "Polygon", "coordinates": [[[4.2, 52.0], [4.4, 52.0], [4.4, 52.1], [4.2, 52.0]]]},
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
+                            "geometry": {
+                                "type": "Polygon",
+                                "coordinates": [[[4.2, 52.0], [4.4, 52.0], [4.4, 52.1], [4.2, 52.0]]],
+                            },
+                        },
+                        {
+                            "properties": {"gemeentecode": "GM0363", "gemeentenaam": "Amsterdam"},
+                            "geometry": {
+                                "type": "Polygon",
+                                "coordinates": [[[4.7, 52.3], [5.0, 52.3], [5.0, 52.4], [4.7, 52.3]]],
+                            },
+                        },
+                    ],
                 },
-                {
-                    "properties": {"gemeentecode": "GM0363", "gemeentenaam": "Amsterdam"},
-                    "geometry": {"type": "Polygon", "coordinates": [[[4.7, 52.3], [5.0, 52.3], [5.0, 52.4], [4.7, 52.3]]]},
-                },
-            ],
-        }))
+            )
+        )
 
         fetch_and_store_cities()
 
@@ -152,13 +169,23 @@ class TestFetchAndStoreCities:
     def test_updates_existing_city(self):
         City.objects.create(code="0518", name="Old Name")
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [{
-                "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
-                "geometry": {"type": "Polygon", "coordinates": [[[4.2, 52.0], [4.4, 52.0], [4.4, 52.1], [4.2, 52.0]]]},
-            }],
-        }))
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
+                            "geometry": {
+                                "type": "Polygon",
+                                "coordinates": [[[4.2, 52.0], [4.4, 52.0], [4.4, 52.1], [4.2, 52.0]]],
+                            },
+                        }
+                    ],
+                },
+            )
+        )
 
         fetch_and_store_cities()
 
@@ -168,13 +195,20 @@ class TestFetchAndStoreCities:
     @respx.mock
     def test_strips_gm_prefix_from_code(self):
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [{
-                "properties": {"gemeentecode": "GM0518", "gemeentenaam": "Den Haag"},
-                "geometry": None,
-            }],
-        }))
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "Den Haag"},
+                            "geometry": None,
+                        }
+                    ],
+                },
+            )
+        )
 
         fetch_and_store_cities()
 
@@ -213,13 +247,24 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [_gemeente_feature(), _wijk_feature(), _buurt_feature()],
-        }))
-        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection", "features": [],
-        }))
+        respx.get(primary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [_gemeente_feature(), _wijk_feature(), _buurt_feature()],
+                },
+            )
+        )
+        respx.get(secondary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [],
+                },
+            )
+        )
 
         fetch_and_store_districts(city)
 
@@ -243,13 +288,24 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [_gemeente_feature(woz=350)],
-        }))
-        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection", "features": [],
-        }))
+        respx.get(primary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [_gemeente_feature(woz=350)],
+                },
+            )
+        )
+        respx.get(secondary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [],
+                },
+            )
+        )
 
         fetch_and_store_districts(city)
 
@@ -265,22 +321,45 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [
-                {"properties": {"wijkcode": "WK051801", "wijknaam": "Scheveningen",
-                                "gemiddeldInkomenPerInwoner": -99997},
-                 "geometry": {"type": "Polygon", "coordinates": [[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]]}},
-            ],
-        }))
-        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [
-                {"properties": {"wijkcode": "WK051801", "wijknaam": "Scheveningen",
-                                "gemiddeldInkomenPerInwoner": 28},
-                 "geometry": None},
-            ],
-        }))
+        respx.get(primary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "properties": {
+                                "wijkcode": "WK051801",
+                                "wijknaam": "Scheveningen",
+                                "gemiddeldInkomenPerInwoner": -99997,
+                            },
+                            "geometry": {
+                                "type": "Polygon",
+                                "coordinates": [[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]],
+                            },
+                        },
+                    ],
+                },
+            )
+        )
+        respx.get(secondary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "properties": {
+                                "wijkcode": "WK051801",
+                                "wijknaam": "Scheveningen",
+                                "gemiddeldInkomenPerInwoner": 28,
+                            },
+                            "geometry": None,
+                        },
+                    ],
+                },
+            )
+        )
 
         fetch_and_store_districts(city)
 
@@ -293,16 +372,27 @@ class TestFetchAndStoreDistricts:
         primary_url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         secondary_url = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
 
-        respx.get(primary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [
-                _wijk_feature(code="WK051801", name="Scheveningen"),
-                _wijk_feature(code="WK036301", name="Centrum (Amsterdam)"),
-            ],
-        }))
-        respx.get(secondary_url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection", "features": [],
-        }))
+        respx.get(primary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        _wijk_feature(code="WK051801", name="Scheveningen"),
+                        _wijk_feature(code="WK036301", name="Centrum (Amsterdam)"),
+                    ],
+                },
+            )
+        )
+        respx.get(secondary_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [],
+                },
+            )
+        )
 
         fetch_and_store_districts(city)
 

@@ -27,13 +27,20 @@ class TestListCities:
     @respx.mock
     def test_fetches_from_cbs_when_db_empty(self, client):
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [{
-                "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
-                "geometry": None,
-            }],
-        }))
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "'s-Gravenhage"},
+                            "geometry": None,
+                        }
+                    ],
+                },
+            )
+        )
 
         response = client.get(self.endpoint)
 
@@ -47,13 +54,20 @@ class TestListCities:
         City.objects.create(code="0518", name="Old Name")
         City.objects.filter(code="0518").update(updated_at=datetime.now(UTC) - timedelta(days=5))
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=httpx.Response(200, json={
-            "type": "FeatureCollection",
-            "features": [{
-                "properties": {"gemeentecode": "GM0518", "gemeentenaam": "New Name"},
-                "geometry": None,
-            }],
-        }))
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "properties": {"gemeentecode": "GM0518", "gemeentenaam": "New Name"},
+                            "geometry": None,
+                        }
+                    ],
+                },
+            )
+        )
 
         response = client.get(self.endpoint)
 

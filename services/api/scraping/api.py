@@ -365,15 +365,9 @@ def list_district_shapes(
             except RuntimeError:
                 if not District.objects.filter(city=city).exists():
                     return Status(502, None)
-        return list(
-            District.objects.filter(city=city, geometry__isnull=False)
-            .select_related("city")
-            .order_by("name")
-        )
+        return list(District.objects.filter(city=city, geometry__isnull=False).select_related("city").order_by("name"))
     return list(
-        District.objects.filter(geometry__isnull=False)
-        .select_related("city")
-        .order_by("name")[offset : offset + limit]
+        District.objects.filter(geometry__isnull=False).select_related("city").order_by("name")[offset : offset + limit]
     )
 
 

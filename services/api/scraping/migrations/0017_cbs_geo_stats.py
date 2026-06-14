@@ -5,65 +5,83 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0016_residence_neighbourhood'),
+        ("scraping", "0016_residence_neighbourhood"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='City',
+            name="City",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=6, unique=True)),
-                ('name', models.CharField(max_length=255)),
-                ('geometry', models.JSONField(blank=True, null=True)),
-                ('stats', models.JSONField(blank=True, null=True)),
-                ('stats_year', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('fetched_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("code", models.CharField(max_length=6, unique=True)),
+                ("name", models.CharField(max_length=255)),
+                ("geometry", models.JSONField(blank=True, null=True)),
+                ("stats", models.JSONField(blank=True, null=True)),
+                ("stats_year", models.PositiveSmallIntegerField(blank=True, null=True)),
+                ("fetched_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name_plural': 'cities',
-                'db_table': 'cities',
+                "verbose_name_plural": "cities",
+                "db_table": "cities",
             },
         ),
         migrations.CreateModel(
-            name='District',
+            name="District",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=10, unique=True)),
-                ('name', models.CharField(max_length=255)),
-                ('geometry', models.JSONField(blank=True, null=True)),
-                ('stats', models.JSONField(blank=True, null=True)),
-                ('stats_year', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('fetched_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('city', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='districts', to='scraping.city')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("code", models.CharField(max_length=10, unique=True)),
+                ("name", models.CharField(max_length=255)),
+                ("geometry", models.JSONField(blank=True, null=True)),
+                ("stats", models.JSONField(blank=True, null=True)),
+                ("stats_year", models.PositiveSmallIntegerField(blank=True, null=True)),
+                ("fetched_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "city",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="districts", to="scraping.city"
+                    ),
+                ),
             ],
             options={
-                'db_table': 'districts',
+                "db_table": "districts",
             },
         ),
         migrations.CreateModel(
-            name='Neighborhood',
+            name="Neighborhood",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=12, unique=True)),
-                ('name', models.CharField(max_length=255)),
-                ('geometry', models.JSONField(blank=True, null=True)),
-                ('stats', models.JSONField(blank=True, null=True)),
-                ('stats_year', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('fetched_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('city', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='neighborhoods', to='scraping.city')),
-                ('district', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='neighborhoods', to='scraping.district')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("code", models.CharField(max_length=12, unique=True)),
+                ("name", models.CharField(max_length=255)),
+                ("geometry", models.JSONField(blank=True, null=True)),
+                ("stats", models.JSONField(blank=True, null=True)),
+                ("stats_year", models.PositiveSmallIntegerField(blank=True, null=True)),
+                ("fetched_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "city",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="neighborhoods", to="scraping.city"
+                    ),
+                ),
+                (
+                    "district",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="neighborhoods",
+                        to="scraping.district",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'neighborhoods',
+                "db_table": "neighborhoods",
             },
         ),
     ]

@@ -59,8 +59,7 @@ class TestNeighborhoodShapes:
     def test_returns_shapes_for_city(self, client):
         city = CityFactory(code="0518", fetched_at=datetime.now(UTC))
         district = DistrictFactory(city=city, fetched_at=datetime.now(UTC))
-        NeighborhoodFactory(city=city, district=district, geometry=SAMPLE_GEOMETRY,
-                            fetched_at=datetime.now(UTC))
+        NeighborhoodFactory(city=city, district=district, geometry=SAMPLE_GEOMETRY, fetched_at=datetime.now(UTC))
 
         response = client.get("/v1/shapes/neighborhoods", {"city": "0518"})
 
@@ -79,8 +78,7 @@ class TestNeighborhoodShapes:
         city = CityFactory(code="0518")
         district = DistrictFactory(city=city)
         for i in range(5):
-            NeighborhoodFactory(code=f"BU0518{i:04d}", city=city, district=district,
-                                geometry=SAMPLE_GEOMETRY)
+            NeighborhoodFactory(code=f"BU0518{i:04d}", city=city, district=district, geometry=SAMPLE_GEOMETRY)
 
         response = client.get("/v1/shapes/neighborhoods", {"limit": 2})
 

@@ -216,7 +216,9 @@ class Neighborhood(models.Model):
     code = models.CharField(max_length=12, unique=True)
     name = models.CharField(max_length=255)
     city = models.ForeignKey(City, on_delete=models.CASCADE, related_name="neighborhoods")
-    district = models.ForeignKey(District, on_delete=models.CASCADE, related_name="neighborhoods", null=True, blank=True)
+    district = models.ForeignKey(
+        District, on_delete=models.CASCADE, related_name="neighborhoods", null=True, blank=True
+    )
     geometry = models.JSONField(null=True, blank=True)
     stats = models.JSONField(null=True, blank=True)
     stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
