@@ -212,22 +212,29 @@ def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) 
 @shared_task(name="scraping.sync_cbs_data", time_limit=7200, soft_time_limit=6600)
 def sync_cbs_data() -> None:
     """Sync CBS geo stats for all municipalities. Scheduled via django-celery-beat."""
+    import gc
+
+    from django.db import reset_queries
+
     from scraping.models import City
 
     fetch_and_store_cities()
 
-    cities = list(City.objects.all().order_by("code"))
+    cities = list(City.objects.values_list("code", "name").order_by("code"))
     total = len(cities)
     failed = 0
     logger.info("Starting CBS sync for {} municipalities", total)
 
-    for i, city in enumerate(cities, 1):
+    for i, (code, name) in enumerate(cities, 1):
         try:
+            city = City.objects.get(code=code)
             fetch_and_store_districts(city)
-            logger.info("[{}/{}] Synced {} ({})", i, total, city.name, city.code)
+            logger.info("[{}/{}] Synced {} ({})", i, total, name, code)
         except Exception:
             failed += 1
-            logger.exception("[{}/{}] Failed to sync {} ({})", i, total, city.name, city.code)
+            logger.exception("[{}/{}] Failed to sync {} ({})", i, total, name, code)
+        reset_queries()
+        gc.collect()
         time.sleep(1)
 
     logger.info("CBS sync complete: {}/{} succeeded, {} failed", total - failed, total, failed)
