@@ -154,3 +154,77 @@ class ResidenceFilters(Schema):
     min_price: int | None = None
     max_price: int | None = None
     status: ListingStatus | None = None
+
+
+class CityOut(Schema):
+    code: str
+    name: str
+
+
+class CityStatsOut(Schema):
+    code: str
+    name: str
+    stats: dict | None
+    stats_year: int | None
+
+
+class DistrictStatsOut(Schema):
+    code: str
+    name: str
+    city_code: str
+    stats: dict | None
+    stats_year: int | None
+    geometry: list | None = None
+
+    @staticmethod
+    def resolve_city_code(obj):
+        return obj.city.code if hasattr(obj.city, "code") else obj.city_id
+
+
+class NeighborhoodStatsOut(Schema):
+    code: str
+    name: str
+    city_code: str
+    district_code: str | None
+    stats: dict | None
+    stats_year: int | None
+    geometry: list | None = None
+
+    @staticmethod
+    def resolve_city_code(obj):
+        return obj.city.code if hasattr(obj.city, "code") else obj.city_id
+
+    @staticmethod
+    def resolve_district_code(obj):
+        if obj.district:
+            return obj.district.code if hasattr(obj.district, "code") else obj.district_id
+        return None
+
+
+class GeoDistrictOut(Schema):
+    code: str
+    name: str
+    city_code: str
+    geometry: list
+
+    @staticmethod
+    def resolve_city_code(obj):
+        return obj.city.code if hasattr(obj.city, "code") else obj.city_id
+
+
+class GeoNeighborhoodOut(Schema):
+    code: str
+    name: str
+    city_code: str
+    district_code: str | None
+    geometry: list
+
+    @staticmethod
+    def resolve_city_code(obj):
+        return obj.city.code if hasattr(obj.city, "code") else obj.city_id
+
+    @staticmethod
+    def resolve_district_code(obj):
+        if obj.district:
+            return obj.district.code if hasattr(obj.district, "code") else obj.district_id
+        return None
