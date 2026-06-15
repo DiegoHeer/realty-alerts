@@ -363,7 +363,7 @@ class DetailScrapeRunAdmin(admin.ModelAdmin):
 
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "stats_year", "fetched_at", "updated_at")
+    list_display = ("code", "name", "stats_year", "geometry_fetched_at", "stats_fetched_at", "updated_at")
     search_fields = ("code", "name")
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
@@ -371,7 +371,7 @@ class CityAdmin(admin.ModelAdmin):
 
 @admin.register(District)
 class DistrictAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "city", "stats_year", "fetched_at")
+    list_display = ("code", "name", "city", "stats_year", "geometry_fetched_at", "stats_fetched_at")
     list_filter = ("city",)
     search_fields = ("code", "name")
     ordering = ("name",)
@@ -380,7 +380,7 @@ class DistrictAdmin(admin.ModelAdmin):
 
 @admin.register(Neighborhood)
 class NeighborhoodAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "city", "district", "stats_year", "fetched_at")
+    list_display = ("code", "name", "city", "district", "stats_year", "geometry_fetched_at", "stats_fetched_at")
     list_filter = ("city",)
     search_fields = ("code", "name")
     ordering = ("name",)
