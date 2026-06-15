@@ -6,7 +6,7 @@ import pytest
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
 from scraping.models import City, District, Neighborhood
-from tests.factories import CityFactory, DistrictFactory
+from tests.factories import CityFactory, DistrictFactory, NeighborhoodFactory
 
 
 @pytest.mark.django_db
@@ -149,9 +149,6 @@ class TestDistrictFetchNeighbourhoods:
         assert nbh.name == "Schilderswijk-West"
         assert nbh.district == district
         assert nbh.city == district.city
-
-
-from tests.factories import NeighborhoodFactory
 
 
 @pytest.mark.django_db

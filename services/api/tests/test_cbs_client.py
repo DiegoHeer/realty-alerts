@@ -126,14 +126,20 @@ class TestWfsGet:
 
 # --- Test helpers ---
 
+
 def _pdok_gemeente_response(*cities):
     features = []
     for code, name in cities:
-        features.append({
-            "type": "Feature",
-            "properties": {"statcode": f"GM{code}", "statnaam": name},
-            "geometry": {"type": "MultiPolygon", "coordinates": [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]},
-        })
+        features.append(
+            {
+                "type": "Feature",
+                "properties": {"statcode": f"GM{code}", "statnaam": name},
+                "geometry": {
+                    "type": "MultiPolygon",
+                    "coordinates": [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]],
+                },
+            }
+        )
     return {"type": "FeatureCollection", "features": features}
 
 
@@ -186,11 +192,14 @@ def _buurt_stats_feature(code, **stats):
 
 # --- Hierarchy tests ---
 
+
 class TestFetchAllCities:
     @respx.mock
     def test_returns_code_and_name(self):
         respx.get(_GEMEENTE_GEOMETRY_URL).mock(
-            return_value=httpx.Response(200, json=_pdok_gemeente_response(("0518", "'s-Gravenhage"), ("0363", "Amsterdam")))
+            return_value=httpx.Response(
+                200, json=_pdok_gemeente_response(("0518", "'s-Gravenhage"), ("0363", "Amsterdam"))
+            )
         )
         result = fetch_all_cities()
         assert len(result) == 2
@@ -210,10 +219,12 @@ class TestFetchDistrictsForCity:
     @respx.mock
     def test_returns_districts(self):
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=_wfs_fc(
-            _wijk_feature("WK051801", "Centrum", "GM0518"),
-            _wijk_feature("WK051802", "Escamp", "GM0518"),
-        ))
+        respx.get(url).mock(
+            return_value=_wfs_fc(
+                _wijk_feature("WK051801", "Centrum", "GM0518"),
+                _wijk_feature("WK051802", "Escamp", "GM0518"),
+            )
+        )
         result = fetch_districts_for_city("0518")
         assert len(result) == 2
         assert {"code": "WK051801", "name": "Centrum"} in result
@@ -230,16 +241,19 @@ class TestFetchNeighbourhoodsForDistrict:
     @respx.mock
     def test_returns_neighbourhoods(self):
         url = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
-        respx.get(url).mock(return_value=_wfs_fc(
-            _buurt_feature("BU05180100", "Schilderswijk-West", "WK051801"),
-            _buurt_feature("BU05180101", "Schilderswijk-Oost", "WK051801"),
-        ))
+        respx.get(url).mock(
+            return_value=_wfs_fc(
+                _buurt_feature("BU05180100", "Schilderswijk-West", "WK051801"),
+                _buurt_feature("BU05180101", "Schilderswijk-Oost", "WK051801"),
+            )
+        )
         result = fetch_neighbourhoods_for_district("WK051801")
         assert len(result) == 2
         assert {"code": "BU05180100", "name": "Schilderswijk-West"} in result
 
 
 # --- Geometry tests ---
+
 
 class TestFetchCityGeometry:
     @respx.mock
@@ -294,6 +308,7 @@ class TestFetchNeighbourhoodGeometry:
 
 # --- Stats tests ---
 
+
 class TestFetchCityStats:
     @respx.mock
     def test_returns_stats_and_year(self):
@@ -309,12 +324,16 @@ class TestFetchCityStats:
     def test_backfills_from_secondary_year(self):
         url_primary = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         url_secondary = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
-        respx.get(url_primary).mock(return_value=_wfs_fc(
-            _gemeente_feature("GM0518", gemiddeldInkomenPerInwoner=-99997, gemiddeldeWoningwaarde=350)
-        ))
-        respx.get(url_secondary).mock(return_value=_wfs_fc(
-            _gemeente_feature("GM0518", gemiddeldInkomenPerInwoner=28000, gemiddeldeWoningwaarde=340)
-        ))
+        respx.get(url_primary).mock(
+            return_value=_wfs_fc(
+                _gemeente_feature("GM0518", gemiddeldInkomenPerInwoner=-99997, gemiddeldeWoningwaarde=350)
+            )
+        )
+        respx.get(url_secondary).mock(
+            return_value=_wfs_fc(
+                _gemeente_feature("GM0518", gemiddeldInkomenPerInwoner=28000, gemiddeldeWoningwaarde=340)
+            )
+        )
         stats, _ = fetch_city_stats("0518")
         assert stats["gemiddeldInkomenPerInwoner"] == 28000
         assert stats["gemiddeldeWoningwaarde"] == 350
@@ -351,8 +370,12 @@ class TestFetchNeighbourhoodStats:
     def test_returns_stats_and_year(self):
         url_primary = CBS_WFS_URL.format(year=CBS_PRIMARY_YEAR)
         url_secondary = CBS_WFS_URL.format(year=CBS_SECONDARY_YEAR)
-        respx.get(url_primary).mock(return_value=_wfs_fc(_buurt_stats_feature("BU05180100", gemiddeldeWoningwaarde=200)))
-        respx.get(url_secondary).mock(return_value=_wfs_fc(_buurt_stats_feature("BU05180100", gemiddeldeWoningwaarde=190)))
+        respx.get(url_primary).mock(
+            return_value=_wfs_fc(_buurt_stats_feature("BU05180100", gemiddeldeWoningwaarde=200))
+        )
+        respx.get(url_secondary).mock(
+            return_value=_wfs_fc(_buurt_stats_feature("BU05180100", gemiddeldeWoningwaarde=190))
+        )
         stats, year = fetch_neighbourhood_stats("BU05180100")
         assert stats["gemiddeldeWoningwaarde"] == 200
         assert year == CBS_PRIMARY_YEAR

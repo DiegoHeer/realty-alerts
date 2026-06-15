@@ -4,52 +4,51 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0017_cbs_geo_stats'),
+        ("scraping", "0017_cbs_geo_stats"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='city',
-            name='fetched_at',
+            model_name="city",
+            name="fetched_at",
         ),
         migrations.RemoveField(
-            model_name='district',
-            name='fetched_at',
+            model_name="district",
+            name="fetched_at",
         ),
         migrations.RemoveField(
-            model_name='neighborhood',
-            name='fetched_at',
+            model_name="neighborhood",
+            name="fetched_at",
         ),
         migrations.AddField(
-            model_name='city',
-            name='geometry_fetched_at',
+            model_name="city",
+            name="geometry_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='city',
-            name='stats_fetched_at',
+            model_name="city",
+            name="stats_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='district',
-            name='geometry_fetched_at',
+            model_name="district",
+            name="geometry_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='district',
-            name='stats_fetched_at',
+            model_name="district",
+            name="stats_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='neighborhood',
-            name='geometry_fetched_at',
+            model_name="neighborhood",
+            name="geometry_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='neighborhood',
-            name='stats_fetched_at',
+            model_name="neighborhood",
+            name="stats_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

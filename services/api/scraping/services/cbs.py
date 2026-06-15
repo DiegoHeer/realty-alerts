@@ -18,10 +18,7 @@ BACKFILL_FIELDS = [
     "percentageBouwjaarklasseTot2000",
     "percentageBouwjaarklasseVanaf2000",
 ]
-_GEMEENTE_GEOMETRY_URL = (
-    "https://api.pdok.nl/cbs/gebiedsindelingen/ogc/v1"
-    "/collections/gemeente_gegeneraliseerd/items"
-)
+_GEMEENTE_GEOMETRY_URL = "https://api.pdok.nl/cbs/gebiedsindelingen/ogc/v1/collections/gemeente_gegeneraliseerd/items"
 
 
 def _wfs_get(
@@ -116,10 +113,7 @@ def fetch_districts_for_city(city_code: str) -> list[dict]:
         "wijkenbuurten:wijken",
         cql_filter=f"gemeentecode='GM{city_code}'",
     )
-    return [
-        {"code": f["properties"]["wijkcode"], "name": f["properties"]["wijknaam"]}
-        for f in features
-    ]
+    return [{"code": f["properties"]["wijkcode"], "name": f["properties"]["wijknaam"]} for f in features]
 
 
 def fetch_neighbourhoods_for_district(district_code: str) -> list[dict]:
@@ -127,10 +121,7 @@ def fetch_neighbourhoods_for_district(district_code: str) -> list[dict]:
         "wijkenbuurten:buurten",
         cql_filter=f"wijkcode='{district_code}'",
     )
-    return [
-        {"code": f["properties"]["buurtcode"], "name": f["properties"]["buurtnaam"]}
-        for f in features
-    ]
+    return [{"code": f["properties"]["buurtcode"], "name": f["properties"]["buurtnaam"]} for f in features]
 
 
 # --- Geometry functions ---
@@ -176,9 +167,7 @@ def fetch_neighbourhood_geometry(neighbourhood_code: str) -> list:
 # --- Stats functions (with backfill) ---
 
 
-def _fetch_stats(
-    type_name: str, filter_key: str, filter_value: str, entity_label: str
-) -> tuple[dict, int]:
+def _fetch_stats(type_name: str, filter_key: str, filter_value: str, entity_label: str) -> tuple[dict, int]:
     features = _wfs_get(type_name, cql_filter=f"{filter_key}='{filter_value}'")
     if not features:
         msg = f"No stats found for {entity_label}"
@@ -195,18 +184,12 @@ def _fetch_stats(
 
 
 def fetch_city_stats(city_code: str) -> tuple[dict, int]:
-    return _fetch_stats(
-        "wijkenbuurten:gemeenten", "gemeentecode", f"GM{city_code}", f"city {city_code}"
-    )
+    return _fetch_stats("wijkenbuurten:gemeenten", "gemeentecode", f"GM{city_code}", f"city {city_code}")
 
 
 def fetch_district_stats(district_code: str) -> tuple[dict, int]:
-    return _fetch_stats(
-        "wijkenbuurten:wijken", "wijkcode", district_code, f"district {district_code}"
-    )
+    return _fetch_stats("wijkenbuurten:wijken", "wijkcode", district_code, f"district {district_code}")
 
 
 def fetch_neighbourhood_stats(neighbourhood_code: str) -> tuple[dict, int]:
-    return _fetch_stats(
-        "wijkenbuurten:buurten", "buurtcode", neighbourhood_code, f"neighbourhood {neighbourhood_code}"
-    )
+    return _fetch_stats("wijkenbuurten:buurten", "buurtcode", neighbourhood_code, f"neighbourhood {neighbourhood_code}")

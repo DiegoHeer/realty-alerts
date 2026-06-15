@@ -432,9 +432,7 @@ class CityAdmin(admin.ModelAdmin):
         for city in queryset:
             try:
                 for d in cbs.fetch_districts_for_city(city.code):
-                    District.objects.update_or_create(
-                        code=d["code"], defaults={"name": d["name"], "city": city}
-                    )
+                    District.objects.update_or_create(code=d["code"], defaults={"name": d["name"], "city": city})
                 success += 1
             except Exception as exc:
                 failures.append(f"{city.code} ({exc})")
@@ -532,7 +530,16 @@ class DistrictAdmin(admin.ModelAdmin):
 
 @admin.register(Neighborhood)
 class NeighborhoodAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "city", "district", "has_geometry", "has_stats", "geometry_fetched_at", "stats_fetched_at")
+    list_display = (
+        "code",
+        "name",
+        "city",
+        "district",
+        "has_geometry",
+        "has_stats",
+        "geometry_fetched_at",
+        "stats_fetched_at",
+    )
     list_filter = ("city",)
     search_fields = ("code", "name")
     ordering = ("name",)
