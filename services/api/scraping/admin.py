@@ -460,11 +460,74 @@ class CityAdmin(admin.ModelAdmin):
 
 @admin.register(District)
 class DistrictAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "city", "stats_year", "geometry_fetched_at", "stats_fetched_at")
+    list_display = ("code", "name", "city", "has_geometry", "has_stats", "geometry_fetched_at", "stats_fetched_at")
     list_filter = ("city",)
     search_fields = ("code", "name")
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
+    actions = ["fetch_geo_shapes", "fetch_stats", "fetch_neighbourhoods"]
+
+    @admin.action(description="Fetch geo shapes")
+    def fetch_geo_shapes(self, request, queryset):
+        success, failures = 0, []
+        now = timezone.now()
+        for district in queryset:
+            try:
+                district.geometry = cbs.fetch_district_geometry(district.code)
+                district.geometry_fetched_at = now
+                district.save(update_fields=["geometry", "geometry_fetched_at"])
+                success += 1
+            except Exception as exc:
+                failures.append(f"{district.code} ({exc})")
+        self._report(request, "geo shapes", success, failures, "districts")
+
+    @admin.action(description="Fetch stats")
+    def fetch_stats(self, request, queryset):
+        success, failures = 0, []
+        now = timezone.now()
+        for district in queryset:
+            try:
+                stats, year = cbs.fetch_district_stats(district.code)
+                district.stats = stats
+                district.stats_year = year
+                district.stats_fetched_at = now
+                district.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+                success += 1
+            except Exception as exc:
+                failures.append(f"{district.code} ({exc})")
+        self._report(request, "stats", success, failures, "districts")
+
+    @admin.action(description="Fetch neighbourhoods")
+    def fetch_neighbourhoods(self, request, queryset):
+        success, failures = 0, []
+        for district in queryset:
+            try:
+                for n in cbs.fetch_neighbourhoods_for_district(district.code):
+                    Neighborhood.objects.update_or_create(
+                        code=n["code"],
+                        defaults={"name": n["name"], "district": district, "city": district.city},
+                    )
+                success += 1
+            except Exception as exc:
+                failures.append(f"{district.code} ({exc})")
+        self._report(request, "neighbourhoods", success, failures, "districts")
+
+    @staticmethod
+    def _report(request, entity, success, failures, level_name):
+        msg = f"Fetched {entity} for {success} {level_name}."
+        if failures:
+            msg += f" Failed: {', '.join(failures)}."
+            messages.warning(request, msg)
+        else:
+            messages.success(request, msg)
+
+    @admin.display(boolean=True, description="Geo")
+    def has_geometry(self, obj):
+        return obj.geometry is not None
+
+    @admin.display(boolean=True, description="Stats")
+    def has_stats(self, obj):
+        return obj.stats is not None
 
 
 @admin.register(Neighborhood)

@@ -5,8 +5,8 @@ from unittest.mock import patch
 import pytest
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
-from scraping.models import City, District
-from tests.factories import CityFactory
+from scraping.models import City, District, Neighborhood
+from tests.factories import CityFactory, DistrictFactory
 
 
 @pytest.mark.django_db
@@ -94,3 +94,58 @@ class TestCityFetchDistricts:
         assert District.objects.filter(city=city).count() == 2
         assert District.objects.get(code="WK051801").name == "Centrum"
         assert District.objects.get(code="WK051801").city == city
+
+
+@pytest.mark.django_db
+class TestDistrictFetchGeoShapes:
+    def test_saves_geometry(self, admin_client):
+        district = DistrictFactory(code="WK051801")
+        geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
+        with patch("scraping.admin.cbs.fetch_district_geometry", return_value=geometry):
+            admin_client.post(
+                "/admin/scraping/district/",
+                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [district.pk]},
+            )
+        district.refresh_from_db()
+        assert district.geometry == geometry
+        assert district.geometry_fetched_at is not None
+
+
+@pytest.mark.django_db
+class TestDistrictFetchStats:
+    def test_saves_stats(self, admin_client):
+        district = DistrictFactory(code="WK051801")
+        with patch(
+            "scraping.admin.cbs.fetch_district_stats",
+            return_value=({"woz": 280}, 2024),
+        ):
+            admin_client.post(
+                "/admin/scraping/district/",
+                {"action": "fetch_stats", ACTION_CHECKBOX_NAME: [district.pk]},
+            )
+        district.refresh_from_db()
+        assert district.stats == {"woz": 280}
+        assert district.stats_year == 2024
+        assert district.stats_fetched_at is not None
+
+
+@pytest.mark.django_db
+class TestDistrictFetchNeighbourhoods:
+    def test_creates_neighbourhoods(self, admin_client):
+        district = DistrictFactory(code="WK051801")
+        with patch(
+            "scraping.admin.cbs.fetch_neighbourhoods_for_district",
+            return_value=[
+                {"code": "BU05180100", "name": "Schilderswijk-West"},
+                {"code": "BU05180101", "name": "Schilderswijk-Oost"},
+            ],
+        ):
+            admin_client.post(
+                "/admin/scraping/district/",
+                {"action": "fetch_neighbourhoods", ACTION_CHECKBOX_NAME: [district.pk]},
+            )
+        assert Neighborhood.objects.filter(district=district).count() == 2
+        nbh = Neighborhood.objects.get(code="BU05180100")
+        assert nbh.name == "Schilderswijk-West"
+        assert nbh.district == district
+        assert nbh.city == district.city
