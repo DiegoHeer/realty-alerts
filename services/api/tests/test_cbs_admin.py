@@ -46,7 +46,7 @@ class TestSyncAllCities:
 @pytest.mark.django_db
 class TestCityFetchGeoShapes:
     def test_saves_geometry(self, admin_client):
-        city = CityFactory(code="0518")
+        city: City = CityFactory(code="0518")
         geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
         with patch("scraping.admin.cbs.fetch_city_geometry", return_value=geometry):
             admin_client.post(
@@ -61,7 +61,7 @@ class TestCityFetchGeoShapes:
 @pytest.mark.django_db
 class TestCityFetchStats:
     def test_saves_stats(self, admin_client):
-        city = CityFactory(code="0518")
+        city: City = CityFactory(code="0518")
         with patch(
             "scraping.admin.cbs.fetch_city_stats",
             return_value=({"woz": 350}, 2024),
@@ -79,7 +79,7 @@ class TestCityFetchStats:
 @pytest.mark.django_db
 class TestCityFetchDistricts:
     def test_creates_districts(self, admin_client):
-        city = CityFactory(code="0518")
+        city: City = CityFactory(code="0518")
         with patch(
             "scraping.admin.cbs.fetch_districts_for_city",
             return_value=[
@@ -99,7 +99,7 @@ class TestCityFetchDistricts:
 @pytest.mark.django_db
 class TestDistrictFetchGeoShapes:
     def test_saves_geometry(self, admin_client):
-        district = DistrictFactory(code="WK051801")
+        district: District = DistrictFactory(code="WK051801")
         geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
         with patch("scraping.admin.cbs.fetch_district_geometry", return_value=geometry):
             admin_client.post(
@@ -114,7 +114,7 @@ class TestDistrictFetchGeoShapes:
 @pytest.mark.django_db
 class TestDistrictFetchStats:
     def test_saves_stats(self, admin_client):
-        district = DistrictFactory(code="WK051801")
+        district: District = DistrictFactory(code="WK051801")
         with patch(
             "scraping.admin.cbs.fetch_district_stats",
             return_value=({"woz": 280}, 2024),
@@ -132,7 +132,7 @@ class TestDistrictFetchStats:
 @pytest.mark.django_db
 class TestDistrictFetchNeighbourhoods:
     def test_creates_neighbourhoods(self, admin_client):
-        district = DistrictFactory(code="WK051801")
+        district: District = DistrictFactory(code="WK051801")
         with patch(
             "scraping.admin.cbs.fetch_neighbourhoods_for_district",
             return_value=[
@@ -154,7 +154,7 @@ class TestDistrictFetchNeighbourhoods:
 @pytest.mark.django_db
 class TestNeighbourhoodFetchGeoShapes:
     def test_saves_geometry(self, admin_client):
-        nbh = NeighborhoodFactory(code="BU05180100")
+        nbh: Neighborhood = NeighborhoodFactory(code="BU05180100")
         geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
         with patch("scraping.admin.cbs.fetch_neighbourhood_geometry", return_value=geometry):
             admin_client.post(
@@ -169,7 +169,7 @@ class TestNeighbourhoodFetchGeoShapes:
 @pytest.mark.django_db
 class TestNeighbourhoodFetchStats:
     def test_saves_stats(self, admin_client):
-        nbh = NeighborhoodFactory(code="BU05180100")
+        nbh: Neighborhood = NeighborhoodFactory(code="BU05180100")
         with patch(
             "scraping.admin.cbs.fetch_neighbourhood_stats",
             return_value=({"woz": 200}, 2024),
