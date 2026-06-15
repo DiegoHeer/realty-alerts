@@ -7,7 +7,7 @@ from scraping.services.cbs import (
     CBS_PRIMARY_YEAR,
     CBS_SECONDARY_YEAR,
     CBS_WFS_URL,
-    _GEMEENTE_LABELPOINT_URL,
+    _GEMEENTE_GEOMETRY_URL,
     _clean_stats,
     _extract_geometry,
     _wfs_get,
@@ -127,7 +127,7 @@ class TestWfsGet:
             _wfs_get("wijkenbuurten:gemeenten", year=CBS_PRIMARY_YEAR, max_retries=2, initial_delay=0.01)
 
 
-def _labelpoint_response(*cities):
+def _gemeente_geometry_response(*cities):
     return httpx.Response(
         200,
         json={
@@ -135,7 +135,10 @@ def _labelpoint_response(*cities):
             "features": [
                 {
                     "properties": {"statcode": f"GM{code}", "statnaam": name, "jaarcode": CBS_PRIMARY_YEAR},
-                    "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[lon, lat], [lon + 0.1, lat], [lon, lat + 0.1], [lon, lat]]],
+                    },
                 }
                 for code, name, lon, lat in cities
             ],
@@ -147,8 +150,10 @@ def _labelpoint_response(*cities):
 class TestFetchAndStoreCities:
     @respx.mock
     def test_creates_city_rows(self):
-        respx.get(_GEMEENTE_LABELPOINT_URL).mock(
-            return_value=_labelpoint_response(("0518", "'s-Gravenhage", 4.3, 52.08), ("0363", "Amsterdam", 4.9, 52.37))
+        respx.get(_GEMEENTE_GEOMETRY_URL).mock(
+            return_value=_gemeente_geometry_response(
+                ("0518", "'s-Gravenhage", 4.3, 52.08), ("0363", "Amsterdam", 4.9, 52.37)
+            )
         )
 
         fetch_and_store_cities()
@@ -156,15 +161,15 @@ class TestFetchAndStoreCities:
         assert City.objects.count() == 2
         den_haag = City.objects.get(code="0518")
         assert den_haag.name == "'s-Gravenhage"
-        assert den_haag.geometry is None
+        assert den_haag.geometry is not None
         assert den_haag.stats is None
         assert den_haag.fetched_at is None
 
     @respx.mock
     def test_updates_existing_city(self):
         City.objects.create(code="0518", name="Old Name")
-        respx.get(_GEMEENTE_LABELPOINT_URL).mock(
-            return_value=_labelpoint_response(("0518", "'s-Gravenhage", 4.3, 52.08))
+        respx.get(_GEMEENTE_GEOMETRY_URL).mock(
+            return_value=_gemeente_geometry_response(("0518", "'s-Gravenhage", 4.3, 52.08))
         )
 
         fetch_and_store_cities()
@@ -174,7 +179,9 @@ class TestFetchAndStoreCities:
 
     @respx.mock
     def test_strips_gm_prefix_from_code(self):
-        respx.get(_GEMEENTE_LABELPOINT_URL).mock(return_value=_labelpoint_response(("0518", "Den Haag", 4.3, 52.08)))
+        respx.get(_GEMEENTE_GEOMETRY_URL).mock(
+            return_value=_gemeente_geometry_response(("0518", "Den Haag", 4.3, 52.08))
+        )
 
         fetch_and_store_cities()
 

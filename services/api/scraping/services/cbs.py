@@ -251,15 +251,15 @@ def _store_neighborhood_features(
 # Public API
 # ---------------------------------------------------------------------------
 
-_GEMEENTE_LABELPOINT_URL = "https://api.pdok.nl/cbs/gebiedsindelingen/ogc/v1/collections/gemeente_labelpoint/items"
+_GEMEENTE_GEOMETRY_URL = "https://api.pdok.nl/cbs/gebiedsindelingen/ogc/v1/collections/gemeente_gegeneraliseerd/items"
 
 
 def fetch_and_store_cities() -> None:
-    logger.info("Fetching municipality list from PDOK gebiedsindelingen")
+    logger.info("Fetching municipality list with geometry from PDOK gebiedsindelingen")
     response = httpx.get(
-        _GEMEENTE_LABELPOINT_URL,
+        _GEMEENTE_GEOMETRY_URL,
         params={"limit": 500, "f": "json", "jaarcode": CBS_PRIMARY_YEAR},
-        timeout=60,
+        timeout=120,
     )
     response.raise_for_status()
     features = response.json().get("features", [])
@@ -269,30 +269,22 @@ def fetch_and_store_cities() -> None:
         code = props.get("statcode", "").removeprefix("GM")
         if not code:
             continue
+        geom = feat.get("geometry")
+        geometry = _extract_geometry(geom) if geom else None
         City.objects.update_or_create(
             code=code,
-            defaults={"name": props.get("statnaam", "")},
+            defaults={"name": props.get("statnaam", ""), "geometry": geometry},
         )
 
     logger.info("Stored {} municipalities", City.objects.count())
 
 
-def _ensure_city_geometry(city: City) -> None:
-    if city.geometry:
-        return
-    gm_code = f"GM{city.code}"
-    features = _wfs_get("wijkenbuurten:gemeenten", cql_filter=f"gemeentecode='{gm_code}'")
-    if features:
-        geom = features[0].get("geometry")
-        if geom:
-            city.geometry = _extract_geometry(geom)
-            city.save(update_fields=["geometry", "updated_at"])
-
-
 def fetch_and_store_districts(city: City) -> None:
     logger.info("Fetching districts and neighborhoods for {} ({})", city.name, city.code)
-    _ensure_city_geometry(city)
     bbox = _bbox_for_city(city)
+    if not bbox:
+        logger.warning("No geometry for {} ({}) — skipping", city.name, city.code)
+        return
     now = timezone.now()
 
     sec_wijken = _wfs_get("wijkenbuurten:wijken", year=CBS_SECONDARY_YEAR, bbox=bbox)
