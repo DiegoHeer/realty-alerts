@@ -149,3 +149,39 @@ class TestDistrictFetchNeighbourhoods:
         assert nbh.name == "Schilderswijk-West"
         assert nbh.district == district
         assert nbh.city == district.city
+
+
+from tests.factories import NeighborhoodFactory
+
+
+@pytest.mark.django_db
+class TestNeighbourhoodFetchGeoShapes:
+    def test_saves_geometry(self, admin_client):
+        nbh = NeighborhoodFactory(code="BU05180100")
+        geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
+        with patch("scraping.admin.cbs.fetch_neighbourhood_geometry", return_value=geometry):
+            admin_client.post(
+                "/admin/scraping/neighborhood/",
+                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [nbh.pk]},
+            )
+        nbh.refresh_from_db()
+        assert nbh.geometry == geometry
+        assert nbh.geometry_fetched_at is not None
+
+
+@pytest.mark.django_db
+class TestNeighbourhoodFetchStats:
+    def test_saves_stats(self, admin_client):
+        nbh = NeighborhoodFactory(code="BU05180100")
+        with patch(
+            "scraping.admin.cbs.fetch_neighbourhood_stats",
+            return_value=({"woz": 200}, 2024),
+        ):
+            admin_client.post(
+                "/admin/scraping/neighborhood/",
+                {"action": "fetch_stats", ACTION_CHECKBOX_NAME: [nbh.pk]},
+            )
+        nbh.refresh_from_db()
+        assert nbh.stats == {"woz": 200}
+        assert nbh.stats_year == 2024
+        assert nbh.stats_fetched_at is not None
