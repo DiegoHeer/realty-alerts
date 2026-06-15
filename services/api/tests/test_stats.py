@@ -1,5 +1,5 @@
 import pytest
-from datetime import UTC, datetime
+
 
 from tests.factories import CityFactory, DistrictFactory, NeighborhoodFactory
 
@@ -12,7 +12,6 @@ class TestCityStats:
             name="'s-Gravenhage",
             stats={"gemiddeldeWoningwaarde": 350},
             stats_year=2024,
-            fetched_at=datetime.now(UTC),
         )
 
         response = client.get("/v1/stats/cities/0518")

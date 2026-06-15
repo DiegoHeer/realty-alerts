@@ -182,7 +182,8 @@ class City(models.Model):
     geometry = models.JSONField(null=True, blank=True)
     stats = models.JSONField(null=True, blank=True)
     stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
-    fetched_at = models.DateTimeField(null=True, blank=True)
+    geometry_fetched_at = models.DateTimeField(null=True, blank=True)
+    stats_fetched_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -201,7 +202,8 @@ class District(models.Model):
     geometry = models.JSONField(null=True, blank=True)
     stats = models.JSONField(null=True, blank=True)
     stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
-    fetched_at = models.DateTimeField(null=True, blank=True)
+    geometry_fetched_at = models.DateTimeField(null=True, blank=True)
+    stats_fetched_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -222,7 +224,8 @@ class Neighborhood(models.Model):
     geometry = models.JSONField(null=True, blank=True)
     stats = models.JSONField(null=True, blank=True)
     stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
-    fetched_at = models.DateTimeField(null=True, blank=True)
+    geometry_fetched_at = models.DateTimeField(null=True, blank=True)
+    stats_fetched_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
