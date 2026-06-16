@@ -110,6 +110,17 @@ class TestDistrictFetchGeoShapes:
         assert district.geometry == geometry
         assert district.geometry_fetched_at is not None
 
+    def test_passes_bbox_from_city_geometry(self, admin_client):
+        city_geom = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
+        city = cast(City, CityFactory(code="0518", geometry=city_geom))
+        district = cast(District, DistrictFactory(code="WK051801", city=city))
+        with patch("scraping.admin.cbs.fetch_district_geometry", return_value={"WK051801": city_geom}) as mock_fetch:
+            admin_client.post(
+                "/admin/scraping/district/",
+                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [district.pk]},
+            )
+        mock_fetch.assert_called_once_with(["WK051801"], bbox=(4.0, 52.0, 4.5, 52.5))
+
 
 @pytest.mark.django_db
 class TestDistrictFetchStats:
@@ -163,6 +174,20 @@ class TestNeighbourhoodFetchGeoShapes:
         nbh.refresh_from_db()
         assert nbh.geometry == geometry
         assert nbh.geometry_fetched_at is not None
+
+    def test_passes_bbox_from_city_geometry(self, admin_client):
+        city_geom = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
+        city = cast(City, CityFactory(code="0518", geometry=city_geom))
+        district = cast(District, DistrictFactory(code="WK051801", city=city))
+        nbh = cast(Neighborhood, NeighborhoodFactory(code="BU05180100", city=city, district=district))
+        with patch(
+            "scraping.admin.cbs.fetch_neighbourhood_geometry", return_value={"BU05180100": city_geom}
+        ) as mock_fetch:
+            admin_client.post(
+                "/admin/scraping/neighborhood/",
+                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [nbh.pk]},
+            )
+        mock_fetch.assert_called_once_with(["BU05180100"], bbox=(4.0, 52.0, 4.5, 52.5))
 
 
 @pytest.mark.django_db
