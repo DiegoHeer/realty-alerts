@@ -1,5 +1,4 @@
 import pytest
-from datetime import UTC, datetime
 
 from tests.factories import CityFactory, DistrictFactory, NeighborhoodFactory
 
@@ -10,8 +9,8 @@ SAMPLE_GEOMETRY = [[[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]]]
 @pytest.mark.django_db
 class TestDistrictShapes:
     def test_returns_shapes_for_city(self, client):
-        city = CityFactory(code="0518", fetched_at=datetime.now(UTC))
-        DistrictFactory(city=city, geometry=SAMPLE_GEOMETRY, fetched_at=datetime.now(UTC))
+        city = CityFactory(code="0518")
+        DistrictFactory(city=city, geometry=SAMPLE_GEOMETRY)
 
         response = client.get("/v1/shapes/districts", {"city": "0518"})
 
@@ -45,9 +44,9 @@ class TestDistrictShapes:
         assert len(response.json()) == 50
 
     def test_excludes_districts_without_geometry(self, client):
-        city = CityFactory(code="0518", fetched_at=datetime.now(UTC))
-        DistrictFactory(city=city, geometry=SAMPLE_GEOMETRY, fetched_at=datetime.now(UTC))
-        DistrictFactory(city=city, geometry=None, fetched_at=datetime.now(UTC))
+        city = CityFactory(code="0518")
+        DistrictFactory(city=city, geometry=SAMPLE_GEOMETRY)
+        DistrictFactory(city=city, geometry=None)
 
         response = client.get("/v1/shapes/districts", {"city": "0518"})
 
@@ -57,9 +56,9 @@ class TestDistrictShapes:
 @pytest.mark.django_db
 class TestNeighborhoodShapes:
     def test_returns_shapes_for_city(self, client):
-        city = CityFactory(code="0518", fetched_at=datetime.now(UTC))
-        district = DistrictFactory(city=city, fetched_at=datetime.now(UTC))
-        NeighborhoodFactory(city=city, district=district, geometry=SAMPLE_GEOMETRY, fetched_at=datetime.now(UTC))
+        city = CityFactory(code="0518")
+        district = DistrictFactory(city=city)
+        NeighborhoodFactory(city=city, district=district, geometry=SAMPLE_GEOMETRY)
 
         response = client.get("/v1/shapes/neighborhoods", {"city": "0518"})
 

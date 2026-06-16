@@ -1,0 +1,8 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    <li>
+        <a href="{% url 'admin:scraping_city_sync' %}" class="button">Sync All Cities</a>
+    </li>
+    {{ block.super }}
+{% endblock %}

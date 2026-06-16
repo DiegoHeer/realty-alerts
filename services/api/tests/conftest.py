@@ -77,3 +77,14 @@ def _eager_celery(settings):
     """Run Celery tasks synchronously in-process during tests — no broker needed."""
     settings.CELERY_TASK_ALWAYS_EAGER = True
     settings.CELERY_TASK_EAGER_PROPAGATES = True
+
+
+@pytest.fixture
+def admin_client(db):
+    from django.contrib.auth.models import User
+    from django.test import Client as DjangoTestClient
+
+    user = User.objects.create_superuser("admin", "admin@test.com", "testpass")
+    tc = DjangoTestClient()
+    tc.force_login(user)
+    return tc

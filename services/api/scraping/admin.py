@@ -4,7 +4,11 @@ from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
 
+from django.http import HttpResponseRedirect
+from django.urls import path, reverse
+
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
+from scraping.services import cbs
 from scraping.resolvers.types import AddressQuery
 from scraping.models import (
     BagStatus,
@@ -363,25 +367,231 @@ class DetailScrapeRunAdmin(admin.ModelAdmin):
 
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "stats_year", "fetched_at", "updated_at")
+    list_display = ("code", "name", "has_geometry", "has_stats", "geometry_fetched_at", "stats_fetched_at")
     search_fields = ("code", "name")
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
+    actions = ["fetch_geo_shapes", "fetch_stats", "fetch_districts"]
+    change_list_template = "admin/scraping/city/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path("sync-cities/", self.admin_site.admin_view(self.sync_cities_view), name="scraping_city_sync"),
+        ]
+        return custom_urls + urls
+
+    def sync_cities_view(self, request):
+        try:
+            cities_data = cbs.fetch_all_cities()
+            count = 0
+            for city_data in cities_data:
+                City.objects.update_or_create(
+                    code=city_data["code"],
+                    defaults={"name": city_data["name"]},
+                )
+                count += 1
+            messages.success(request, f"Synced {count} cities.")
+        except Exception as exc:
+            messages.error(request, f"Failed to sync cities: {exc}")
+        return HttpResponseRedirect(reverse("admin:scraping_city_changelist"))
+
+    @admin.action(description="Fetch geo shapes")
+    def fetch_geo_shapes(self, request, queryset):
+        cities = list(queryset)
+        geometries = cbs.fetch_city_geometry([c.code for c in cities])
+        now = timezone.now()
+        success = 0
+        for city in cities:
+            geom = geometries.get(city.code)
+            if geom:
+                city.geometry = geom
+                city.geometry_fetched_at = now
+                city.save(update_fields=["geometry", "geometry_fetched_at"])
+                success += 1
+        self._report(request, "geo shapes", success, [], "cities")
+
+    @admin.action(description="Fetch stats")
+    def fetch_stats(self, request, queryset):
+        cities = list(queryset)
+        stats_map = cbs.fetch_city_stats([c.code for c in cities])
+        now = timezone.now()
+        success = 0
+        for city in cities:
+            stats = stats_map.get(f"GM{city.code}")
+            if stats:
+                city.stats = stats
+                city.stats_year = cbs.CBS_ODATA_YEAR
+                city.stats_fetched_at = now
+                city.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+                success += 1
+        self._report(request, "stats", success, [], "cities")
+
+    @admin.action(description="Fetch districts")
+    def fetch_districts(self, request, queryset):
+        success, failures = 0, []
+        for city in queryset:
+            try:
+                for d in cbs.fetch_districts_for_city(city.code):
+                    District.objects.update_or_create(code=d["code"], defaults={"name": d["name"], "city": city})
+                success += 1
+            except Exception as exc:
+                failures.append(f"{city.code} ({exc})")
+        self._report(request, "districts", success, failures, "cities")
+
+    @staticmethod
+    def _report(request, entity, success, failures, level_name):
+        msg = f"Fetched {entity} for {success} {level_name}."
+        if failures:
+            msg += f" Failed: {', '.join(failures)}."
+            messages.warning(request, msg)
+        else:
+            messages.success(request, msg)
+
+    @admin.display(boolean=True, description="Geo")
+    def has_geometry(self, obj):
+        return obj.geometry is not None
+
+    @admin.display(boolean=True, description="Stats")
+    def has_stats(self, obj):
+        return obj.stats is not None
 
 
 @admin.register(District)
 class DistrictAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "city", "stats_year", "fetched_at")
+    list_display = ("code", "name", "city", "has_geometry", "has_stats", "geometry_fetched_at", "stats_fetched_at")
     list_filter = ("city",)
     search_fields = ("code", "name")
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
+    actions = ["fetch_geo_shapes", "fetch_stats", "fetch_neighbourhoods"]
+
+    @admin.action(description="Fetch geo shapes")
+    def fetch_geo_shapes(self, request, queryset):
+        districts = list(queryset)
+        geometries = cbs.fetch_district_geometry([d.code for d in districts])
+        now = timezone.now()
+        success = 0
+        for district in districts:
+            geom = geometries.get(district.code)
+            if geom:
+                district.geometry = geom
+                district.geometry_fetched_at = now
+                district.save(update_fields=["geometry", "geometry_fetched_at"])
+                success += 1
+        self._report(request, "geo shapes", success, [], "districts")
+
+    @admin.action(description="Fetch stats")
+    def fetch_stats(self, request, queryset):
+        districts = list(queryset)
+        stats_map = cbs.fetch_district_stats([d.code for d in districts])
+        now = timezone.now()
+        success = 0
+        for district in districts:
+            stats = stats_map.get(district.code)
+            if stats:
+                district.stats = stats
+                district.stats_year = cbs.CBS_ODATA_YEAR
+                district.stats_fetched_at = now
+                district.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+                success += 1
+        self._report(request, "stats", success, [], "districts")
+
+    @admin.action(description="Fetch neighbourhoods")
+    def fetch_neighbourhoods(self, request, queryset):
+        success, failures = 0, []
+        for district in queryset:
+            try:
+                for n in cbs.fetch_neighbourhoods_for_district(district.code):
+                    Neighborhood.objects.update_or_create(
+                        code=n["code"],
+                        defaults={"name": n["name"], "district": district, "city": district.city},
+                    )
+                success += 1
+            except Exception as exc:
+                failures.append(f"{district.code} ({exc})")
+        self._report(request, "neighbourhoods", success, failures, "districts")
+
+    @staticmethod
+    def _report(request, entity, success, failures, level_name):
+        msg = f"Fetched {entity} for {success} {level_name}."
+        if failures:
+            msg += f" Failed: {', '.join(failures)}."
+            messages.warning(request, msg)
+        else:
+            messages.success(request, msg)
+
+    @admin.display(boolean=True, description="Geo")
+    def has_geometry(self, obj):
+        return obj.geometry is not None
+
+    @admin.display(boolean=True, description="Stats")
+    def has_stats(self, obj):
+        return obj.stats is not None
 
 
 @admin.register(Neighborhood)
 class NeighborhoodAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "city", "district", "stats_year", "fetched_at")
+    list_display = (
+        "code",
+        "name",
+        "city",
+        "district",
+        "has_geometry",
+        "has_stats",
+        "geometry_fetched_at",
+        "stats_fetched_at",
+    )
     list_filter = ("city",)
     search_fields = ("code", "name")
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
+    actions = ["fetch_geo_shapes", "fetch_stats"]
+
+    @admin.action(description="Fetch geo shapes")
+    def fetch_geo_shapes(self, request, queryset):
+        neighbourhoods = list(queryset)
+        geometries = cbs.fetch_neighbourhood_geometry([n.code for n in neighbourhoods])
+        now = timezone.now()
+        success = 0
+        for nbh in neighbourhoods:
+            geom = geometries.get(nbh.code)
+            if geom:
+                nbh.geometry = geom
+                nbh.geometry_fetched_at = now
+                nbh.save(update_fields=["geometry", "geometry_fetched_at"])
+                success += 1
+        self._report(request, "geo shapes", success, [], "neighbourhoods")
+
+    @admin.action(description="Fetch stats")
+    def fetch_stats(self, request, queryset):
+        neighbourhoods = list(queryset)
+        stats_map = cbs.fetch_neighbourhood_stats([n.code for n in neighbourhoods])
+        now = timezone.now()
+        success = 0
+        for nbh in neighbourhoods:
+            stats = stats_map.get(nbh.code)
+            if stats:
+                nbh.stats = stats
+                nbh.stats_year = cbs.CBS_ODATA_YEAR
+                nbh.stats_fetched_at = now
+                nbh.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+                success += 1
+        self._report(request, "stats", success, [], "neighbourhoods")
+
+    @staticmethod
+    def _report(request, entity, success, failures, level_name):
+        msg = f"Fetched {entity} for {success} {level_name}."
+        if failures:
+            msg += f" Failed: {', '.join(failures)}."
+            messages.warning(request, msg)
+        else:
+            messages.success(request, msg)
+
+    @admin.display(boolean=True, description="Geo")
+    def has_geometry(self, obj):
+        return obj.geometry is not None
+
+    @admin.display(boolean=True, description="Stats")
+    def has_stats(self, obj):
+        return obj.stats is not None

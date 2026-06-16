@@ -1,312 +1,180 @@
 from __future__ import annotations
 
-import time
-from datetime import datetime
-
 import httpx
-from django.utils import timezone
-from loguru import logger
 
-from scraping.models import City, District, Neighborhood
-
-CBS_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/{year}/wfs/v1_0"
-
-CBS_PRIMARY_YEAR = 2024
-CBS_SECONDARY_YEAR = 2023
-
-CBS_SENTINEL_VALUES = {-99997, -99998, -99999998, -99999997}
-
-BACKFILL_FIELDS = [
-    "gemiddeldInkomenPerInwoner",
-    "gemiddeldInkomenPerInkomensontvanger",
-    "mediaanVermogenVanParticuliereHuish",
-    "percentagePersonenMetLaagInkomen",
-    "percentagePersonenMetHoogInkomen",
-    "percentageBouwjaarklasseTot2000",
-    "percentageBouwjaarklasseVanaf2000",
-]
-
-
-# ---------------------------------------------------------------------------
-# WFS client
-# ---------------------------------------------------------------------------
-
-
-def _wfs_get(
-    type_name: str,
-    *,
-    year: int = CBS_PRIMARY_YEAR,
-    bbox: str | None = None,
-    cql_filter: str | None = None,
-    count: int = 4000,
-    start_index: int = 0,
-    max_retries: int = 6,
-    initial_delay: float = 1.0,
-) -> list[dict]:
-    url = CBS_WFS_URL.format(year=year)
-    params = {
-        "service": "WFS",
-        "version": "2.0.0",
-        "request": "GetFeature",
-        "typeNames": type_name,
-        "outputFormat": "application/json",
-        "srsName": "urn:ogc:def:crs:EPSG::4326",
-        "count": count,
-        "startIndex": start_index,
+CBS_ODATA_BASE = "https://opendata.cbs.nl/ODataApi/odata/85618NED"
+CBS_ODATA_YEAR = 2023
+_PDOK_COLLECTIONS_URL = "https://api.pdok.nl/cbs/gebiedsindelingen/ogc/v1/collections"
+_ODATA_METADATA_KEYS = frozenset(
+    {
+        "ID",
+        "WijkenEnBuurten",
+        "Gemeentenaam_1",
+        "SoortRegio_2",
+        "Codering_3",
+        "IndelingswijzigingGemeenteWijkBuurt_4",
     }
-    if bbox:
-        params["bbox"] = bbox
-    if cql_filter:
-        params["CQL_FILTER"] = cql_filter
-
-    delay = initial_delay
-    last_error = ""
-    for attempt in range(max_retries):
-        try:
-            response = httpx.get(url, params=params, timeout=180)
-            if response.status_code == 200:
-                return response.json().get("features", [])
-            last_error = f"status={response.status_code}"
-        except httpx.HTTPError as exc:
-            last_error = str(exc)
-        if attempt < max_retries - 1:
-            time.sleep(delay)
-            delay = min(delay * 2, 20)
-    raise RuntimeError(f"CBS WFS request failed after {max_retries} attempts: {last_error}")
-
-
-# ---------------------------------------------------------------------------
-# Data transformation helpers
-# ---------------------------------------------------------------------------
-
-
-def _clean_stats(properties: dict) -> dict:
-    cleaned = {}
-    for key, value in properties.items():
-        if isinstance(value, int | float) and (value in CBS_SENTINEL_VALUES or value <= -99990):
-            cleaned[key] = None
-        else:
-            cleaned[key] = value
-    return cleaned
-
-
-def _extract_geometry(geom: dict) -> list:
-    gtype = geom.get("type", "")
-    coords = geom.get("coordinates", [])
-    if gtype == "Polygon":
-        polygons = [coords]
-    elif gtype == "MultiPolygon":
-        polygons = coords
-    else:
-        return []
-    return [[_round_ring(ring) for ring in poly] for poly in polygons]
+)
 
 
 def _round_ring(ring: list) -> list:
-    return [[round(x, 5), round(y, 5)] for x, y in ring]
+    return [[round(coord, 5) for coord in point] for point in ring]
 
 
-def _bbox_for_city(city: City) -> str | None:
-    if not city.geometry:
-        return None
-    min_lat, min_lon = float("inf"), float("inf")
-    max_lat, max_lon = float("-inf"), float("-inf")
-    for poly in city.geometry:
-        for ring in poly:
-            for lon, lat in ring:
-                min_lat, min_lon = min(min_lat, lat), min(min_lon, lon)
-                max_lat, max_lon = max(max_lat, lat), max(max_lon, lon)
-    return f"{min_lat},{min_lon},{max_lat},{max_lon},urn:ogc:def:crs:EPSG::4326"
+def _extract_geometry(geom: dict) -> list:
+    geo_type = geom.get("type")
+    coords = geom.get("coordinates", [])
+    if geo_type == "Polygon":
+        return [[_round_ring(ring) for ring in coords]]
+    if geo_type == "MultiPolygon":
+        return [[_round_ring(ring) for ring in polygon] for polygon in coords]
+    return []
 
 
-def _merge_backfill(primary_stats: dict, sec_index: dict[str, dict], code: str) -> dict:
-    sec_props = sec_index.get(code, {})
-    for field in BACKFILL_FIELDS:
-        if primary_stats.get(field) is None and field in sec_props:
-            backfill_val = sec_props[field]
-            if isinstance(backfill_val, int | float) and (
-                backfill_val in CBS_SENTINEL_VALUES or backfill_val <= -99990
-            ):
-                backfill_val = None
-            primary_stats[field] = backfill_val
-    return primary_stats
+def _odata_get(table: str, *, filter: str, select: str | None = None, top: int = 500) -> list[dict]:
+    url = f"{CBS_ODATA_BASE}/{table}"
+    params: dict[str, str | int] = {"$filter": filter, "$top": top}
+    if select:
+        params["$select"] = select
+    resp = httpx.get(url, params=params, timeout=30.0)
+    resp.raise_for_status()
+    return resp.json().get("value", [])
 
 
-def _build_secondary_index(features: list[dict]) -> dict[str, dict]:
-    index: dict[str, dict] = {}
-    for feat in features:
-        props = feat.get("properties", {})
-        code = props.get("wijkcode") or props.get("buurtcode") or ""
-        if code:
-            index[code] = _clean_stats(props)
-    return index
+def _pdok_collection_url(collection: str) -> str:
+    return f"{_PDOK_COLLECTIONS_URL}/{collection}/items"
 
 
-# ---------------------------------------------------------------------------
-# Per-entity processors
-# ---------------------------------------------------------------------------
+def _pdok_ogc_all_features(collection: str, *, jaarcode: int = CBS_ODATA_YEAR) -> list[dict]:
+    url = _pdok_collection_url(collection)
+    all_features: list[dict] = []
+    params: dict[str, str | int] = {"f": "json", "jaarcode": jaarcode, "limit": 1000}
+    while True:
+        resp = httpx.get(url, params=params, timeout=30.0)
+        resp.raise_for_status()
+        data = resp.json()
+        all_features.extend(data.get("features", []))
+        next_url = None
+        for link in data.get("links", []):
+            if link.get("rel") == "next":
+                next_url = link["href"]
+                break
+        if not next_url:
+            break
+        url = next_url
+        params = {}
+    return all_features
 
 
-def _process_gemeente(props: dict, geom: dict | None, city: City, sec_index: dict[str, dict], now: datetime) -> None:
-    gm_code = f"GM{city.code}"
-    stats = _merge_backfill(_clean_stats(props), sec_index, gm_code)
-    update_fields = ["stats", "stats_year", "fetched_at", "updated_at"]
-    city.stats = stats
-    city.stats_year = CBS_PRIMARY_YEAR
-    city.fetched_at = now
-    if geom:
-        city.geometry = _extract_geometry(geom)
-        update_fields.append("geometry")
-    city.save(update_fields=update_fields)
+def _strip_stats(row: dict) -> dict:
+    return {k: v for k, v in row.items() if k not in _ODATA_METADATA_KEYS}
 
 
-def _process_district(
-    props: dict, geom: dict | None, city: City, sec_index: dict[str, dict], now: datetime
-) -> District:
-    wijk_code = props["wijkcode"]
-    stats = _merge_backfill(_clean_stats(props), sec_index, wijk_code)
-    geometry = _extract_geometry(geom) if geom else None
-    district, _ = District.objects.update_or_create(
-        code=wijk_code,
-        defaults={
-            "name": props.get("wijknaam", ""),
-            "city": city,
-            "geometry": geometry,
-            "stats": stats,
-            "stats_year": CBS_PRIMARY_YEAR,
-            "fetched_at": now,
-        },
+# --- Hierarchy functions ---
+
+
+def fetch_all_cities() -> list[dict]:
+    url = _pdok_collection_url("gemeente_gegeneraliseerd")
+    resp = httpx.get(
+        url,
+        params={"limit": 500, "f": "json", "jaarcode": CBS_ODATA_YEAR},
+        timeout=30.0,
     )
-    return district
+    resp.raise_for_status()
+    return [
+        {
+            "code": f["properties"]["statcode"].removeprefix("GM"),
+            "name": f["properties"]["statnaam"],
+        }
+        for f in resp.json()["features"]
+    ]
 
 
-def _process_neighborhood(
-    props: dict,
-    geom: dict | None,
-    city: City,
-    districts_by_code: dict[str, District],
-    sec_index: dict[str, dict],
-    now: datetime,
-) -> None:
-    buurt_code = props["buurtcode"]
-    stats = _merge_backfill(_clean_stats(props), sec_index, buurt_code)
-    geometry = _extract_geometry(geom) if geom else None
-    Neighborhood.objects.update_or_create(
-        code=buurt_code,
-        defaults={
-            "name": props.get("buurtnaam", ""),
-            "city": city,
-            "district": districts_by_code.get(props.get("wijkcode", "")),
-            "geometry": geometry,
-            "stats": stats,
-            "stats_year": CBS_PRIMARY_YEAR,
-            "fetched_at": now,
-        },
+def fetch_districts_for_city(city_code: str) -> list[dict]:
+    rows = _odata_get(
+        "WijkenEnBuurten",
+        filter=f"substringof('WK{city_code}',Key)",
+        select="Key,Title",
     )
+    return [
+        {"code": r["Key"].strip(), "name": r["Title"].strip()}
+        for r in rows
+        if r["Key"].strip().startswith(f"WK{city_code}")
+    ]
 
 
-# ---------------------------------------------------------------------------
-# Feature classification and dispatch
-# ---------------------------------------------------------------------------
-
-
-def _store_gemeente_features(features: list[dict], city: City, sec_index: dict[str, dict], now: datetime) -> None:
-    gm_code = f"GM{city.code}"
-    for feat in features:
-        props = feat.get("properties", {})
-        if props.get("gemeentecode", "") == gm_code:
-            _process_gemeente(props, feat.get("geometry"), city, sec_index, now)
-            return
-
-
-def _store_district_features(
-    features: list[dict], city: City, sec_index: dict[str, dict], now: datetime
-) -> dict[str, District]:
-    wk_prefix = f"WK{city.code}"
-    districts_by_code: dict[str, District] = {}
-    for feat in features:
-        props = feat.get("properties", {})
-        wijk_code = props.get("wijkcode", "")
-        if wijk_code.startswith(wk_prefix):
-            district = _process_district(props, feat.get("geometry"), city, sec_index, now)
-            districts_by_code[district.code] = district
-    return districts_by_code
-
-
-def _store_neighborhood_features(
-    features: list[dict],
-    city: City,
-    districts_by_code: dict[str, District],
-    sec_index: dict[str, dict],
-    now: datetime,
-) -> None:
-    bu_prefix = f"BU{city.code}"
-    for feat in features:
-        props = feat.get("properties", {})
-        if props.get("buurtcode", "").startswith(bu_prefix):
-            _process_neighborhood(props, feat.get("geometry"), city, districts_by_code, sec_index, now)
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-_GEMEENTE_GEOMETRY_URL = "https://api.pdok.nl/cbs/gebiedsindelingen/ogc/v1/collections/gemeente_gegeneraliseerd/items"
-
-
-def fetch_and_store_cities() -> None:
-    logger.info("Fetching municipality list with geometry from PDOK gebiedsindelingen")
-    response = httpx.get(
-        _GEMEENTE_GEOMETRY_URL,
-        params={"limit": 500, "f": "json", "jaarcode": CBS_PRIMARY_YEAR},
-        timeout=120,
+def fetch_neighbourhoods_for_district(district_code: str) -> list[dict]:
+    buurt_prefix = f"BU{district_code[2:]}"
+    rows = _odata_get(
+        "WijkenEnBuurten",
+        filter=f"substringof('{buurt_prefix}',Key)",
+        select="Key,Title",
     )
-    response.raise_for_status()
-    features = response.json().get("features", [])
-
-    for feat in features:
-        props = feat.get("properties", {})
-        code = props.get("statcode", "").removeprefix("GM")
-        if not code:
-            continue
-        geom = feat.get("geometry")
-        geometry = _extract_geometry(geom) if geom else None
-        City.objects.update_or_create(
-            code=code,
-            defaults={"name": props.get("statnaam", ""), "geometry": geometry},
-        )
-
-    logger.info("Stored {} municipalities", City.objects.count())
+    return [
+        {"code": r["Key"].strip(), "name": r["Title"].strip()}
+        for r in rows
+        if r["Key"].strip().startswith(buurt_prefix)
+    ]
 
 
-def fetch_and_store_districts(city: City) -> None:
-    logger.info("Fetching districts and neighborhoods for {} ({})", city.name, city.code)
-    bbox = _bbox_for_city(city)
-    if not bbox:
-        logger.warning("No geometry for {} ({}) — skipping", city.name, city.code)
-        return
-    now = timezone.now()
+# --- Geometry functions ---
 
-    sec_wijken = _wfs_get("wijkenbuurten:wijken", year=CBS_SECONDARY_YEAR, bbox=bbox)
-    sec_buurten = _wfs_get("wijkenbuurten:buurten", year=CBS_SECONDARY_YEAR, bbox=bbox)
-    sec_index = _build_secondary_index(sec_wijken + sec_buurten)
-    del sec_wijken, sec_buurten
 
-    gemeente_feats = _wfs_get("wijkenbuurten:gemeenten", year=CBS_PRIMARY_YEAR, bbox=bbox)
-    _store_gemeente_features(gemeente_feats, city, sec_index, now)
-    del gemeente_feats
-
-    wijk_feats = _wfs_get("wijkenbuurten:wijken", year=CBS_PRIMARY_YEAR, bbox=bbox)
-    districts_by_code = _store_district_features(wijk_feats, city, sec_index, now)
-    del wijk_feats
-
-    buurt_feats = _wfs_get("wijkenbuurten:buurten", year=CBS_PRIMARY_YEAR, bbox=bbox)
-    _store_neighborhood_features(buurt_feats, city, districts_by_code, sec_index, now)
-    del buurt_feats
-
-    logger.info(
-        "Stored {} districts, {} neighborhoods for {}",
-        District.objects.filter(city=city).count(),
-        Neighborhood.objects.filter(city=city).count(),
-        city.name,
+def fetch_city_geometry(codes: list[str]) -> dict[str, list]:
+    url = _pdok_collection_url("gemeente_gegeneraliseerd")
+    resp = httpx.get(
+        url,
+        params={"limit": 500, "f": "json", "jaarcode": CBS_ODATA_YEAR},
+        timeout=30.0,
     )
+    resp.raise_for_status()
+    wanted = set(codes)
+    result: dict[str, list] = {}
+    for feature in resp.json()["features"]:
+        code = feature["properties"]["statcode"].removeprefix("GM")
+        if code in wanted:
+            result[code] = _extract_geometry(feature["geometry"])
+    return result
+
+
+def fetch_district_geometry(codes: list[str]) -> dict[str, list]:
+    features = _pdok_ogc_all_features("wijk_gegeneraliseerd")
+    wanted = set(codes)
+    result: dict[str, list] = {}
+    for f in features:
+        code = f["properties"]["statcode"].strip()
+        if code in wanted:
+            result[code] = _extract_geometry(f["geometry"])
+    return result
+
+
+def fetch_neighbourhood_geometry(codes: list[str]) -> dict[str, list]:
+    features = _pdok_ogc_all_features("buurt_gegeneraliseerd")
+    wanted = set(codes)
+    result: dict[str, list] = {}
+    for f in features:
+        code = f["properties"]["statcode"].strip()
+        if code in wanted:
+            result[code] = _extract_geometry(f["geometry"])
+    return result
+
+
+# --- Stats functions ---
+
+
+def fetch_city_stats(codes: list[str]) -> dict[str, dict]:
+    odata_filter = " or ".join(f"WijkenEnBuurten eq '{f'GM{c}'.ljust(10)}'" for c in codes)
+    rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
+    return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
+
+
+def fetch_district_stats(codes: list[str]) -> dict[str, dict]:
+    odata_filter = " or ".join(f"WijkenEnBuurten eq '{c.ljust(10)}'" for c in codes)
+    rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
+    return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
+
+
+def fetch_neighbourhood_stats(codes: list[str]) -> dict[str, dict]:
+    odata_filter = " or ".join(f"WijkenEnBuurten eq '{c.ljust(10)}'" for c in codes)
+    rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
+    return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
