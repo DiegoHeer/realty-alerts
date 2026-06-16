@@ -6,7 +6,6 @@ import respx
 
 from scraping.services.cbs import (
     CBS_ODATA_BASE,
-    CBS_ODATA_YEAR,
     _extract_geometry,
     _odata_get,
     _pdok_collection_url,
@@ -218,69 +217,81 @@ class TestFetchNeighbourhoodsForDistrict:
 
 class TestFetchCityGeometry:
     @respx.mock
-    def test_returns_geometry(self):
+    def test_returns_geometry_for_requested_codes(self):
         respx.get(_GEMEENTE_URL).mock(
-            return_value=httpx.Response(200, json=_pdok_gemeente_response(("0518", "Den Haag")))
+            return_value=httpx.Response(200, json=_pdok_gemeente_response(("0518", "Den Haag"), ("0363", "Amsterdam")))
         )
-        result = fetch_city_geometry("0518")
-        assert len(result) == 1
-        assert len(result[0]) == 1
+        result = fetch_city_geometry(["0518"])
+        assert "0518" in result
+        assert "0363" not in result
+        assert len(result["0518"]) == 1
 
     @respx.mock
-    def test_raises_for_unknown_city(self):
+    def test_returns_empty_dict_for_unknown_code(self):
         respx.get(_GEMEENTE_URL).mock(
             return_value=httpx.Response(200, json=_pdok_gemeente_response(("0518", "Den Haag")))
         )
-        with pytest.raises(ValueError, match="City 9999 not found"):
-            fetch_city_geometry("9999")
+        result = fetch_city_geometry(["9999"])
+        assert result == {}
+
+    @respx.mock
+    def test_batch_multiple_codes(self):
+        respx.get(_GEMEENTE_URL).mock(
+            return_value=httpx.Response(200, json=_pdok_gemeente_response(("0518", "Den Haag"), ("0363", "Amsterdam")))
+        )
+        result = fetch_city_geometry(["0518", "0363"])
+        assert len(result) == 2
 
 
 class TestFetchDistrictGeometry:
     @respx.mock
-    def test_returns_geometry(self):
+    def test_returns_geometry_for_requested_codes(self):
         respx.get(_WIJK_URL).mock(
             return_value=httpx.Response(
                 200,
-                json={"type": "FeatureCollection", "features": [_pdok_feature("WK051801")], "links": []},
+                json={
+                    "type": "FeatureCollection",
+                    "features": [_pdok_feature("WK051801"), _pdok_feature("WK051802")],
+                    "links": [],
+                },
             )
         )
-        result = fetch_district_geometry("WK051801")
-        assert len(result) == 1
+        result = fetch_district_geometry(["WK051801"])
+        assert "WK051801" in result
+        assert "WK051802" not in result
 
     @respx.mock
-    def test_raises_for_unknown_district(self):
+    def test_returns_empty_dict_for_unknown_code(self):
         respx.get(_WIJK_URL).mock(
-            return_value=httpx.Response(
-                200,
-                json={"type": "FeatureCollection", "features": [], "links": []},
-            )
+            return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": [], "links": []})
         )
-        with pytest.raises(ValueError, match="District WK999999 not found"):
-            fetch_district_geometry("WK999999")
+        result = fetch_district_geometry(["WK999999"])
+        assert result == {}
 
 
 class TestFetchNeighbourhoodGeometry:
     @respx.mock
-    def test_returns_geometry(self):
+    def test_returns_geometry_for_requested_codes(self):
         respx.get(_BUURT_URL).mock(
             return_value=httpx.Response(
                 200,
-                json={"type": "FeatureCollection", "features": [_pdok_feature("BU05180100")], "links": []},
+                json={
+                    "type": "FeatureCollection",
+                    "features": [_pdok_feature("BU05180100")],
+                    "links": [],
+                },
             )
         )
-        result = fetch_neighbourhood_geometry("BU05180100")
-        assert len(result) == 1
+        result = fetch_neighbourhood_geometry(["BU05180100"])
+        assert "BU05180100" in result
 
     @respx.mock
-    def test_raises_for_unknown_neighbourhood(self):
+    def test_returns_empty_dict_for_unknown_code(self):
         respx.get(_BUURT_URL).mock(
-            return_value=httpx.Response(
-                200,
-                json={"type": "FeatureCollection", "features": [], "links": []},
-            )
+            return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": [], "links": []})
         )
-        with pytest.raises(ValueError, match="Neighbourhood BU99999999 not found"):
-            fetch_neighbourhood_geometry("BU99999999")
+        result = fetch_neighbourhood_geometry(["BU99999999"])
+        assert result == {}
 
 
 # --- Stats tests ---
@@ -288,16 +299,16 @@ class TestFetchNeighbourhoodGeometry:
 
 class TestFetchCityStats:
     @respx.mock
-    def test_returns_stats_and_year(self):
+    def test_returns_stats_dict_keyed_by_code(self):
         respx.get(_ODATA_DS_URL).mock(
             return_value=httpx.Response(
                 200,
                 json={"value": [_odata_stats_row("GM0518", GemiddeldeWOZWaardeVanWoningen_36=355)]},
             )
         )
-        stats, year = fetch_city_stats("0518")
-        assert stats["GemiddeldeWOZWaardeVanWoningen_36"] == 355
-        assert year == CBS_ODATA_YEAR
+        result = fetch_city_stats(["0518"])
+        assert "GM0518" in result
+        assert result["GM0518"]["GemiddeldeWOZWaardeVanWoningen_36"] == 355
 
     @respx.mock
     def test_excludes_metadata_keys(self):
@@ -307,54 +318,72 @@ class TestFetchCityStats:
                 json={"value": [_odata_stats_row("GM0518", GemiddeldeWOZWaardeVanWoningen_36=355)]},
             )
         )
-        stats, _ = fetch_city_stats("0518")
+        stats = fetch_city_stats(["0518"])["GM0518"]
         assert "ID" not in stats
         assert "WijkenEnBuurten" not in stats
         assert "Gemeentenaam_1" not in stats
         assert "GemiddeldeWOZWaardeVanWoningen_36" in stats
 
     @respx.mock
-    def test_raises_for_unknown_city(self):
+    def test_returns_empty_dict_for_unknown_code(self):
         respx.get(_ODATA_DS_URL).mock(return_value=httpx.Response(200, json={"value": []}))
-        with pytest.raises(ValueError, match="No stats found for city 9999"):
-            fetch_city_stats("9999")
+        result = fetch_city_stats(["9999"])
+        assert result == {}
+
+    @respx.mock
+    def test_batch_multiple_codes(self):
+        respx.get(_ODATA_DS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "value": [
+                        _odata_stats_row("GM0518", GemiddeldeWOZWaardeVanWoningen_36=355),
+                        _odata_stats_row("GM0363", GemiddeldeWOZWaardeVanWoningen_36=500),
+                    ]
+                },
+            )
+        )
+        result = fetch_city_stats(["0518", "0363"])
+        assert len(result) == 2
+        assert result["GM0518"]["GemiddeldeWOZWaardeVanWoningen_36"] == 355
+        assert result["GM0363"]["GemiddeldeWOZWaardeVanWoningen_36"] == 500
 
 
 class TestFetchDistrictStats:
     @respx.mock
-    def test_returns_stats_and_year(self):
+    def test_returns_stats_dict_keyed_by_code(self):
         respx.get(_ODATA_DS_URL).mock(
             return_value=httpx.Response(
                 200,
                 json={"value": [_odata_stats_row("WK051801", GemiddeldeWOZWaardeVanWoningen_36=280)]},
             )
         )
-        stats, year = fetch_district_stats("WK051801")
-        assert stats["GemiddeldeWOZWaardeVanWoningen_36"] == 280
-        assert year == CBS_ODATA_YEAR
+        result = fetch_district_stats(["WK051801"])
+        assert "WK051801" in result
+        assert result["WK051801"]["GemiddeldeWOZWaardeVanWoningen_36"] == 280
 
     @respx.mock
-    def test_raises_for_unknown_district(self):
+    def test_returns_empty_dict_for_unknown_code(self):
         respx.get(_ODATA_DS_URL).mock(return_value=httpx.Response(200, json={"value": []}))
-        with pytest.raises(ValueError, match="No stats found for district"):
-            fetch_district_stats("WK999999")
+        result = fetch_district_stats(["WK999999"])
+        assert result == {}
 
 
 class TestFetchNeighbourhoodStats:
     @respx.mock
-    def test_returns_stats_and_year(self):
+    def test_returns_stats_dict_keyed_by_code(self):
         respx.get(_ODATA_DS_URL).mock(
             return_value=httpx.Response(
                 200,
                 json={"value": [_odata_stats_row("BU05180100", GemiddeldeWOZWaardeVanWoningen_36=200)]},
             )
         )
-        stats, year = fetch_neighbourhood_stats("BU05180100")
-        assert stats["GemiddeldeWOZWaardeVanWoningen_36"] == 200
-        assert year == CBS_ODATA_YEAR
+        result = fetch_neighbourhood_stats(["BU05180100"])
+        assert "BU05180100" in result
+        assert result["BU05180100"]["GemiddeldeWOZWaardeVanWoningen_36"] == 200
 
     @respx.mock
-    def test_raises_for_unknown_neighbourhood(self):
+    def test_returns_empty_dict_for_unknown_code(self):
         respx.get(_ODATA_DS_URL).mock(return_value=httpx.Response(200, json={"value": []}))
-        with pytest.raises(ValueError, match="No stats found for neighbourhood"):
-            fetch_neighbourhood_stats("BU99999999")
+        result = fetch_neighbourhood_stats(["BU99999999"])
+        assert result == {}

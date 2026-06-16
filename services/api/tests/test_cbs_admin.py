@@ -49,7 +49,7 @@ class TestCityFetchGeoShapes:
     def test_saves_geometry(self, admin_client):
         city = cast(City, CityFactory(code="0518"))
         geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
-        with patch("scraping.admin.cbs.fetch_city_geometry", return_value=geometry):
+        with patch("scraping.admin.cbs.fetch_city_geometry", return_value={"0518": geometry}):
             admin_client.post(
                 "/admin/scraping/city/",
                 {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [city.pk]},
@@ -65,7 +65,7 @@ class TestCityFetchStats:
         city = cast(City, CityFactory(code="0518"))
         with patch(
             "scraping.admin.cbs.fetch_city_stats",
-            return_value=({"woz": 350}, 2024),
+            return_value={"GM0518": {"woz": 350}},
         ):
             admin_client.post(
                 "/admin/scraping/city/",
@@ -73,7 +73,6 @@ class TestCityFetchStats:
             )
         city.refresh_from_db()
         assert city.stats == {"woz": 350}
-        assert city.stats_year == 2024
         assert city.stats_fetched_at is not None
 
 
@@ -102,7 +101,7 @@ class TestDistrictFetchGeoShapes:
     def test_saves_geometry(self, admin_client):
         district = cast(District, DistrictFactory(code="WK051801"))
         geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
-        with patch("scraping.admin.cbs.fetch_district_geometry", return_value=geometry):
+        with patch("scraping.admin.cbs.fetch_district_geometry", return_value={"WK051801": geometry}):
             admin_client.post(
                 "/admin/scraping/district/",
                 {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [district.pk]},
@@ -118,7 +117,7 @@ class TestDistrictFetchStats:
         district = cast(District, DistrictFactory(code="WK051801"))
         with patch(
             "scraping.admin.cbs.fetch_district_stats",
-            return_value=({"woz": 280}, 2024),
+            return_value={"WK051801": {"woz": 280}},
         ):
             admin_client.post(
                 "/admin/scraping/district/",
@@ -126,7 +125,6 @@ class TestDistrictFetchStats:
             )
         district.refresh_from_db()
         assert district.stats == {"woz": 280}
-        assert district.stats_year == 2024
         assert district.stats_fetched_at is not None
 
 
@@ -157,7 +155,7 @@ class TestNeighbourhoodFetchGeoShapes:
     def test_saves_geometry(self, admin_client):
         nbh = cast(Neighborhood, NeighborhoodFactory(code="BU05180100"))
         geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
-        with patch("scraping.admin.cbs.fetch_neighbourhood_geometry", return_value=geometry):
+        with patch("scraping.admin.cbs.fetch_neighbourhood_geometry", return_value={"BU05180100": geometry}):
             admin_client.post(
                 "/admin/scraping/neighborhood/",
                 {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [nbh.pk]},
@@ -173,7 +171,7 @@ class TestNeighbourhoodFetchStats:
         nbh = cast(Neighborhood, NeighborhoodFactory(code="BU05180100"))
         with patch(
             "scraping.admin.cbs.fetch_neighbourhood_stats",
-            return_value=({"woz": 200}, 2024),
+            return_value={"BU05180100": {"woz": 200}},
         ):
             admin_client.post(
                 "/admin/scraping/neighborhood/",
@@ -181,5 +179,4 @@ class TestNeighbourhoodFetchStats:
             )
         nbh.refresh_from_db()
         assert nbh.stats == {"woz": 200}
-        assert nbh.stats_year == 2024
         assert nbh.stats_fetched_at is not None

@@ -66,6 +66,10 @@ def _pdok_ogc_all_features(collection: str, *, jaarcode: int = CBS_ODATA_YEAR) -
     return all_features
 
 
+def _strip_stats(row: dict) -> dict:
+    return {k: v for k, v in row.items() if k not in _ODATA_METADATA_KEYS}
+
+
 # --- Hierarchy functions ---
 
 
@@ -116,7 +120,7 @@ def fetch_neighbourhoods_for_district(district_code: str) -> list[dict]:
 # --- Geometry functions ---
 
 
-def fetch_city_geometry(city_code: str) -> list:
+def fetch_city_geometry(codes: list[str]) -> dict[str, list]:
     url = _pdok_collection_url("gemeente_gegeneraliseerd")
     resp = httpx.get(
         url,
@@ -124,51 +128,53 @@ def fetch_city_geometry(city_code: str) -> list:
         timeout=30.0,
     )
     resp.raise_for_status()
+    wanted = set(codes)
+    result: dict[str, list] = {}
     for feature in resp.json()["features"]:
         code = feature["properties"]["statcode"].removeprefix("GM")
-        if code == city_code:
-            return _extract_geometry(feature["geometry"])
-    msg = f"City {city_code} not found in PDOK response"
-    raise ValueError(msg)
+        if code in wanted:
+            result[code] = _extract_geometry(feature["geometry"])
+    return result
 
 
-def fetch_district_geometry(district_code: str) -> list:
+def fetch_district_geometry(codes: list[str]) -> dict[str, list]:
     features = _pdok_ogc_all_features("wijk_gegeneraliseerd")
+    wanted = set(codes)
+    result: dict[str, list] = {}
     for f in features:
-        if f["properties"]["statcode"].strip() == district_code:
-            return _extract_geometry(f["geometry"])
-    msg = f"District {district_code} not found"
-    raise ValueError(msg)
+        code = f["properties"]["statcode"].strip()
+        if code in wanted:
+            result[code] = _extract_geometry(f["geometry"])
+    return result
 
 
-def fetch_neighbourhood_geometry(neighbourhood_code: str) -> list:
+def fetch_neighbourhood_geometry(codes: list[str]) -> dict[str, list]:
     features = _pdok_ogc_all_features("buurt_gegeneraliseerd")
+    wanted = set(codes)
+    result: dict[str, list] = {}
     for f in features:
-        if f["properties"]["statcode"].strip() == neighbourhood_code:
-            return _extract_geometry(f["geometry"])
-    msg = f"Neighbourhood {neighbourhood_code} not found"
-    raise ValueError(msg)
+        code = f["properties"]["statcode"].strip()
+        if code in wanted:
+            result[code] = _extract_geometry(f["geometry"])
+    return result
 
 
 # --- Stats functions ---
 
 
-def _odata_stats(code: str, entity_label: str) -> tuple[dict, int]:
-    padded = code.ljust(10)
-    rows = _odata_get("TypedDataSet", filter=f"WijkenEnBuurten eq '{padded}'")
-    if not rows:
-        msg = f"No stats found for {entity_label}"
-        raise ValueError(msg)
-    return {k: v for k, v in rows[0].items() if k not in _ODATA_METADATA_KEYS}, CBS_ODATA_YEAR
+def fetch_city_stats(codes: list[str]) -> dict[str, dict]:
+    odata_filter = " or ".join(f"WijkenEnBuurten eq '{f'GM{c}'.ljust(10)}'" for c in codes)
+    rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
+    return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
 
 
-def fetch_city_stats(city_code: str) -> tuple[dict, int]:
-    return _odata_stats(f"GM{city_code}", f"city {city_code}")
+def fetch_district_stats(codes: list[str]) -> dict[str, dict]:
+    odata_filter = " or ".join(f"WijkenEnBuurten eq '{c.ljust(10)}'" for c in codes)
+    rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
+    return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
 
 
-def fetch_district_stats(district_code: str) -> tuple[dict, int]:
-    return _odata_stats(district_code, f"district {district_code}")
-
-
-def fetch_neighbourhood_stats(neighbourhood_code: str) -> tuple[dict, int]:
-    return _odata_stats(neighbourhood_code, f"neighbourhood {neighbourhood_code}")
+def fetch_neighbourhood_stats(codes: list[str]) -> dict[str, dict]:
+    odata_filter = " or ".join(f"WijkenEnBuurten eq '{c.ljust(10)}'" for c in codes)
+    rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
+    return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
