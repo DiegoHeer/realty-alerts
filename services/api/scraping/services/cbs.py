@@ -45,10 +45,17 @@ def _pdok_collection_url(collection: str) -> str:
     return f"{_PDOK_COLLECTIONS_URL}/{collection}/items"
 
 
-def _pdok_ogc_all_features(collection: str, *, jaarcode: int = CBS_ODATA_YEAR) -> list[dict]:
+def _pdok_ogc_all_features(
+    collection: str,
+    *,
+    jaarcode: int = CBS_ODATA_YEAR,
+    bbox: tuple[float, float, float, float] | None = None,
+) -> list[dict]:
     url = _pdok_collection_url(collection)
     all_features: list[dict] = []
     params: dict[str, str | int] = {"f": "json", "jaarcode": jaarcode, "limit": 1000}
+    if bbox:
+        params["bbox"] = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
     while True:
         resp = httpx.get(url, params=params, timeout=30.0)
         resp.raise_for_status()
@@ -64,6 +71,22 @@ def _pdok_ogc_all_features(collection: str, *, jaarcode: int = CBS_ODATA_YEAR) -
         url = next_url
         params = {}
     return all_features
+
+
+def _bbox_from_geometries(geometries: list[list]) -> tuple[float, float, float, float] | None:
+    min_lon, min_lat = float("inf"), float("inf")
+    max_lon, max_lat = float("-inf"), float("-inf")
+    found = False
+    for multi_polygon in geometries:
+        for polygon in multi_polygon:
+            for ring in polygon:
+                for lon, lat in ring:
+                    min_lon, min_lat = min(min_lon, lon), min(min_lat, lat)
+                    max_lon, max_lat = max(max_lon, lon), max(max_lat, lat)
+                    found = True
+    if not found:
+        return None
+    return (min_lon, min_lat, max_lon, max_lat)
 
 
 def _strip_stats(row: dict) -> dict:
@@ -137,8 +160,12 @@ def fetch_city_geometry(codes: list[str]) -> dict[str, list]:
     return result
 
 
-def fetch_district_geometry(codes: list[str]) -> dict[str, list]:
-    features = _pdok_ogc_all_features("wijk_gegeneraliseerd")
+def fetch_district_geometry(
+    codes: list[str],
+    *,
+    bbox: tuple[float, float, float, float] | None = None,
+) -> dict[str, list]:
+    features = _pdok_ogc_all_features("wijk_gegeneraliseerd", bbox=bbox)
     wanted = set(codes)
     result: dict[str, list] = {}
     for f in features:
@@ -148,8 +175,12 @@ def fetch_district_geometry(codes: list[str]) -> dict[str, list]:
     return result
 
 
-def fetch_neighbourhood_geometry(codes: list[str]) -> dict[str, list]:
-    features = _pdok_ogc_all_features("buurt_gegeneraliseerd")
+def fetch_neighbourhood_geometry(
+    codes: list[str],
+    *,
+    bbox: tuple[float, float, float, float] | None = None,
+) -> dict[str, list]:
+    features = _pdok_ogc_all_features("buurt_gegeneraliseerd", bbox=bbox)
     wanted = set(codes)
     result: dict[str, list] = {}
     for f in features:

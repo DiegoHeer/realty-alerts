@@ -6,6 +6,7 @@ import respx
 
 from scraping.services.cbs import (
     CBS_ODATA_BASE,
+    _bbox_from_geometries,
     _extract_geometry,
     _odata_get,
     _pdok_collection_url,
@@ -44,6 +45,25 @@ class TestExtractGeometry:
 
     def test_unsupported_type_returns_empty(self):
         assert _extract_geometry({"type": "Point", "coordinates": [4.0, 52.0]}) == []
+
+
+class TestBboxFromGeometries:
+    def test_computes_bbox_from_single_geometry(self):
+        geometry = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
+        result = _bbox_from_geometries([geometry])
+        assert result == (4.0, 52.0, 4.5, 52.5)
+
+    def test_computes_bbox_spanning_multiple_geometries(self):
+        geo1 = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
+        geo2 = [[[[5.0, 53.0], [5.5, 53.0], [5.5, 53.5], [5.0, 53.5], [5.0, 53.0]]]]
+        result = _bbox_from_geometries([geo1, geo2])
+        assert result == (4.0, 52.0, 5.5, 53.5)
+
+    def test_returns_none_for_empty_list(self):
+        assert _bbox_from_geometries([]) is None
+
+    def test_returns_none_for_empty_geometry(self):
+        assert _bbox_from_geometries([[]]) is None
 
 
 class TestOdataGet:
@@ -268,6 +288,22 @@ class TestFetchDistrictGeometry:
         result = fetch_district_geometry(["WK999999"])
         assert result == {}
 
+    @respx.mock
+    def test_passes_bbox_to_pdok(self):
+        route = respx.get(_WIJK_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [_pdok_feature("WK051801")],
+                    "links": [],
+                },
+            )
+        )
+        fetch_district_geometry(["WK051801"], bbox=(4.0, 52.0, 4.5, 52.5))
+        assert "bbox" in str(route.calls[0].request.url)
+        assert "4.0%2C52.0%2C4.5%2C52.5" in str(route.calls[0].request.url)
+
 
 class TestFetchNeighbourhoodGeometry:
     @respx.mock
@@ -292,6 +328,22 @@ class TestFetchNeighbourhoodGeometry:
         )
         result = fetch_neighbourhood_geometry(["BU99999999"])
         assert result == {}
+
+    @respx.mock
+    def test_passes_bbox_to_pdok(self):
+        route = respx.get(_BUURT_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "type": "FeatureCollection",
+                    "features": [_pdok_feature("BU05180100")],
+                    "links": [],
+                },
+            )
+        )
+        fetch_neighbourhood_geometry(["BU05180100"], bbox=(4.0, 52.0, 4.5, 52.5))
+        assert "bbox" in str(route.calls[0].request.url)
+        assert "4.0%2C52.0%2C4.5%2C52.5" in str(route.calls[0].request.url)
 
 
 # --- Stats tests ---

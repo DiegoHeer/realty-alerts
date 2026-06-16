@@ -468,8 +468,10 @@ class DistrictAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        districts = list(queryset)
-        geometries = cbs.fetch_district_geometry([d.code for d in districts])
+        districts = list(queryset.select_related("city"))
+        city_geoms = [d.city.geometry for d in districts if d.city and d.city.geometry]
+        bbox = cbs._bbox_from_geometries(city_geoms) if city_geoms else None
+        geometries = cbs.fetch_district_geometry([d.code for d in districts], bbox=bbox)
         now = timezone.now()
         success = 0
         for district in districts:
@@ -550,8 +552,10 @@ class NeighborhoodAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        neighbourhoods = list(queryset)
-        geometries = cbs.fetch_neighbourhood_geometry([n.code for n in neighbourhoods])
+        neighbourhoods = list(queryset.select_related("city"))
+        city_geoms = [n.city.geometry for n in neighbourhoods if n.city and n.city.geometry]
+        bbox = cbs._bbox_from_geometries(city_geoms) if city_geoms else None
+        geometries = cbs.fetch_neighbourhood_geometry([n.code for n in neighbourhoods], bbox=bbox)
         now = timezone.now()
         success = 0
         for nbh in neighbourhoods:
