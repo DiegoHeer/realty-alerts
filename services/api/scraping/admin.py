@@ -398,33 +398,34 @@ class CityAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        success, failures = 0, []
+        cities = list(queryset)
+        geometries = cbs.fetch_city_geometry([c.code for c in cities])
         now = timezone.now()
-        for city in queryset:
-            try:
-                city.geometry = cbs.fetch_city_geometry(city.code)
+        success = 0
+        for city in cities:
+            geom = geometries.get(city.code)
+            if geom:
+                city.geometry = geom
                 city.geometry_fetched_at = now
                 city.save(update_fields=["geometry", "geometry_fetched_at"])
                 success += 1
-            except Exception as exc:
-                failures.append(f"{city.code} ({exc})")
-        self._report(request, "geo shapes", success, failures, "cities")
+        self._report(request, "geo shapes", success, [], "cities")
 
     @admin.action(description="Fetch stats")
     def fetch_stats(self, request, queryset):
-        success, failures = 0, []
+        cities = list(queryset)
+        stats_map = cbs.fetch_city_stats([c.code for c in cities])
         now = timezone.now()
-        for city in queryset:
-            try:
-                stats, year = cbs.fetch_city_stats(city.code)
+        success = 0
+        for city in cities:
+            stats = stats_map.get(f"GM{city.code}")
+            if stats:
                 city.stats = stats
-                city.stats_year = year
+                city.stats_year = cbs.CBS_ODATA_YEAR
                 city.stats_fetched_at = now
                 city.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
                 success += 1
-            except Exception as exc:
-                failures.append(f"{city.code} ({exc})")
-        self._report(request, "stats", success, failures, "cities")
+        self._report(request, "stats", success, [], "cities")
 
     @admin.action(description="Fetch districts")
     def fetch_districts(self, request, queryset):
@@ -467,33 +468,34 @@ class DistrictAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        success, failures = 0, []
+        districts = list(queryset)
+        geometries = cbs.fetch_district_geometry([d.code for d in districts])
         now = timezone.now()
-        for district in queryset:
-            try:
-                district.geometry = cbs.fetch_district_geometry(district.code)
+        success = 0
+        for district in districts:
+            geom = geometries.get(district.code)
+            if geom:
+                district.geometry = geom
                 district.geometry_fetched_at = now
                 district.save(update_fields=["geometry", "geometry_fetched_at"])
                 success += 1
-            except Exception as exc:
-                failures.append(f"{district.code} ({exc})")
-        self._report(request, "geo shapes", success, failures, "districts")
+        self._report(request, "geo shapes", success, [], "districts")
 
     @admin.action(description="Fetch stats")
     def fetch_stats(self, request, queryset):
-        success, failures = 0, []
+        districts = list(queryset)
+        stats_map = cbs.fetch_district_stats([d.code for d in districts])
         now = timezone.now()
-        for district in queryset:
-            try:
-                stats, year = cbs.fetch_district_stats(district.code)
+        success = 0
+        for district in districts:
+            stats = stats_map.get(district.code)
+            if stats:
                 district.stats = stats
-                district.stats_year = year
+                district.stats_year = cbs.CBS_ODATA_YEAR
                 district.stats_fetched_at = now
                 district.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
                 success += 1
-            except Exception as exc:
-                failures.append(f"{district.code} ({exc})")
-        self._report(request, "stats", success, failures, "districts")
+        self._report(request, "stats", success, [], "districts")
 
     @admin.action(description="Fetch neighbourhoods")
     def fetch_neighbourhoods(self, request, queryset):
@@ -548,33 +550,34 @@ class NeighborhoodAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        success, failures = 0, []
+        neighbourhoods = list(queryset)
+        geometries = cbs.fetch_neighbourhood_geometry([n.code for n in neighbourhoods])
         now = timezone.now()
-        for nbh in queryset:
-            try:
-                nbh.geometry = cbs.fetch_neighbourhood_geometry(nbh.code)
+        success = 0
+        for nbh in neighbourhoods:
+            geom = geometries.get(nbh.code)
+            if geom:
+                nbh.geometry = geom
                 nbh.geometry_fetched_at = now
                 nbh.save(update_fields=["geometry", "geometry_fetched_at"])
                 success += 1
-            except Exception as exc:
-                failures.append(f"{nbh.code} ({exc})")
-        self._report(request, "geo shapes", success, failures, "neighbourhoods")
+        self._report(request, "geo shapes", success, [], "neighbourhoods")
 
     @admin.action(description="Fetch stats")
     def fetch_stats(self, request, queryset):
-        success, failures = 0, []
+        neighbourhoods = list(queryset)
+        stats_map = cbs.fetch_neighbourhood_stats([n.code for n in neighbourhoods])
         now = timezone.now()
-        for nbh in queryset:
-            try:
-                stats, year = cbs.fetch_neighbourhood_stats(nbh.code)
+        success = 0
+        for nbh in neighbourhoods:
+            stats = stats_map.get(nbh.code)
+            if stats:
                 nbh.stats = stats
-                nbh.stats_year = year
+                nbh.stats_year = cbs.CBS_ODATA_YEAR
                 nbh.stats_fetched_at = now
                 nbh.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
                 success += 1
-            except Exception as exc:
-                failures.append(f"{nbh.code} ({exc})")
-        self._report(request, "stats", success, failures, "neighbourhoods")
+        self._report(request, "stats", success, [], "neighbourhoods")
 
     @staticmethod
     def _report(request, entity, success, failures, level_name):
