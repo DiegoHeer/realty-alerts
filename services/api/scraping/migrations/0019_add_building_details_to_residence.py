@@ -4,25 +4,53 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0018_split_fetched_at'),
+        ("scraping", "0018_split_fetched_at"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='residence',
-            name='building_type',
-            field=models.CharField(blank=True, choices=[('apartment', 'Appartement'), ('terraced', 'Tussenwoning'), ('corner', 'Hoekwoning'), ('semi_detached', 'Twee-onder-één-kap'), ('detached', 'Vrijstaand')], max_length=20, null=True),
+            model_name="residence",
+            name="building_type",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("apartment", "Appartement"),
+                    ("terraced", "Tussenwoning"),
+                    ("corner", "Hoekwoning"),
+                    ("semi_detached", "Twee-onder-één-kap"),
+                    ("detached", "Vrijstaand"),
+                ],
+                max_length=20,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='residence',
-            name='energy_label',
-            field=models.CharField(blank=True, choices=[('A+++++', 'A+++++'), ('A++++', 'A++++'), ('A+++', 'A+++'), ('A++', 'A++'), ('A+', 'A+'), ('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('E', 'E'), ('F', 'F'), ('G', 'G')], max_length=10, null=True),
+            model_name="residence",
+            name="energy_label",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("A+++++", "A+++++"),
+                    ("A++++", "A++++"),
+                    ("A+++", "A+++"),
+                    ("A++", "A++"),
+                    ("A+", "A+"),
+                    ("A", "A"),
+                    ("B", "B"),
+                    ("C", "C"),
+                    ("D", "D"),
+                    ("E", "E"),
+                    ("F", "F"),
+                    ("G", "G"),
+                ],
+                max_length=10,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='residence',
-            name='energy_label_valid_until',
+            model_name="residence",
+            name="energy_label_valid_until",
             field=models.DateField(blank=True, null=True),
         ),
     ]
