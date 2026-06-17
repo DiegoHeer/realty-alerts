@@ -9,6 +9,11 @@ from scraping.models import BagStatus, Listing, ListingStatus, Residence
 from tests.factories import ListingFactory, ResidenceFactory
 
 _PDOK_FREE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
+_EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
+
+
+def _mock_ep_online() -> None:
+    respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=[]))
 
 
 def _mock_pdok_location(lat: float = 52.376, lon: float = 4.893) -> None:
@@ -121,6 +126,7 @@ def test_resolve_bag_links_listing_to_residence_and_reconciles():
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     _mock_pdok_location()
+    _mock_ep_online()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -266,6 +272,7 @@ def test_resolve_bag_uses_street_city_fallback_when_postcode_missing():
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     _mock_pdok_location()
+    _mock_ep_online()
     listing = _pending_listing(postcode=None, street="Klaterweg", city="Huizen")
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -298,6 +305,7 @@ def test_resolve_bag_falls_back_to_street_city_when_postcode_wrong():
 
     respx.get(f"{BAG_BASE_URL}/adressen").mock(side_effect=handler)
     _mock_pdok_location()
+    _mock_ep_online()
     listing = _pending_listing(
         postcode="1271XX", street="Klaterweg", city="Huizen", house_letter=None, house_number_suffix=None
     )
@@ -343,6 +351,7 @@ def test_resolve_bag_falls_back_to_pdok_when_both_kadaster_paths_empty():
             },
         )
     )
+    _mock_ep_online()
     listing = _pending_listing(
         postcode="9999ZZ", street="Klaterwg", city="Huizen", house_letter=None, house_number_suffix=None
     )

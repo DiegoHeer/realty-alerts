@@ -15,14 +15,14 @@ _EP_ADRES_URL = f"{_EP_BASE_URL}/PandEnergielabel/Adres"
 def _ep_response(
     building_type: str = "rijwoning tussen",
     energy_label: str = "A+",
-    valid_until: str = "2035-01-15",
+    valid_until: str = "2035-01-15T00:00:00",
 ) -> list[dict]:
     return [
         {
-            "gebouwtype": building_type,
-            "labelLetter": energy_label,
-            "registratiedatum": "2025-03-10",
-            "geldigTot": valid_until,
+            "Gebouwtype": building_type,
+            "Energieklasse": energy_label,
+            "Registratiedatum": "2025-03-10T00:00:00",
+            "Geldig_tot": valid_until,
         }
     ]
 
@@ -32,7 +32,8 @@ def _ep_response(
 
 @respx.mock
 def test_lookup_returns_building_details_on_success():
-    respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=_ep_response("Appartement", "B", "2034-06-01")))
+    ep_response = _ep_response("Appartement", "B", "2034-06-01T00:00:00")
+    respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=ep_response))
     with EpOnlineLookup(api_key="test-key") as lookup:
         result = lookup.lookup(postcode="1015AA", house_number=1)
     assert result is not None
@@ -166,7 +167,8 @@ def test_resolve_bag_enriches_building_details_on_new_residence(settings):
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
-    respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=_ep_response("Appartement", "B", "2034-06-01")))
+    ep_response = _ep_response("Appartement", "B", "2034-06-01T00:00:00")
+    respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=ep_response))
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -229,25 +231,3 @@ def test_resolve_bag_continues_when_ep_online_fails(settings):
     assert listing.bag_status == BagStatus.RESOLVED
     assert listing.residence is not None
     assert listing.residence.building_type is None
-
-
-@pytest.mark.django_db
-@respx.mock
-def test_resolve_bag_skips_ep_online_when_api_key_not_configured(settings):
-    from scraping.tasks import resolve_bag
-
-    settings.EP_ONLINE_API_KEY = None
-    respx.get(f"{_BAG_BASE_URL}/adressen").mock(
-        return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
-    )
-    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
-    ep_route = respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=_ep_response()))
-    listing = _pending_listing()
-
-    resolve_bag.delay(listing.pk).get(timeout=1)
-
-    listing.refresh_from_db()
-    assert listing.bag_status == BagStatus.RESOLVED
-    assert listing.residence is not None
-    assert listing.residence.building_type is None
-    assert not ep_route.called
