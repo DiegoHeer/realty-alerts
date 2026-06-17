@@ -196,13 +196,11 @@ def _enrich_location(residence: Residence) -> None:
 
 
 def _enrich_building_details(residence: Residence) -> None:
-    api_key = settings.EP_ONLINE_API_KEY
-    if not api_key:
-        return
     if not residence.postcode or not residence.house_number:
+        logger.debug("EP-Online enrichment skipped for residence {}: missing postcode or house_number", residence.pk)
         return
 
-    with EpOnlineLookup(api_key=api_key) as lookup:
+    with EpOnlineLookup(api_key=settings.EP_ONLINE_API_KEY) as lookup:
         result = lookup.lookup(
             postcode=residence.postcode,
             house_number=residence.house_number,
@@ -224,6 +222,12 @@ def _enrich_building_details(residence: Residence) -> None:
         update_fields.append("energy_label_valid_until")
     if update_fields:
         residence.save(update_fields=update_fields)
+        logger.info(
+            "EP-Online enrichment for residence {}: building_type={}, energy_label={}",
+            residence.pk,
+            result.building_type,
+            result.energy_label,
+        )
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
