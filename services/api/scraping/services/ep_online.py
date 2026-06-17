@@ -54,7 +54,7 @@ def _parse_date(raw: str | None) -> date | None:
     if not raw:
         return None
     try:
-        return date.fromisoformat(raw)
+        return date.fromisoformat(raw.split("T")[0])
     except ValueError:
         logger.warning("Unparseable EP-Online date: {!r}", raw)
         return None
@@ -111,7 +111,7 @@ class EpOnlineLookup:
 
         record = records[0]
         return EpOnlineBuildingDetails(
-            building_type=_parse_building_type(record.get("gebouwtype")),
-            energy_label=_parse_energy_label(record.get("labelLetter")),
-            energy_label_valid_until=_parse_date(record.get("geldigTot")),
+            building_type=_parse_building_type(record.get("Gebouwtype")),
+            energy_label=_parse_energy_label(record.get("Energieklasse")),
+            energy_label_valid_until=_parse_date(record.get("Geldig_tot")),
         )
