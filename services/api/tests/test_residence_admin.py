@@ -74,7 +74,6 @@ class TestDetailFields:
             construction_period="1990-2000",
         )
 
-        assert admin.display_energy_label(residence) == "B"
         assert admin.display_room_count(residence) == 5
         assert admin.display_bedroom_count(residence) == 3
         assert admin.display_bathroom_count(residence) == 2
@@ -86,7 +85,6 @@ class TestDetailFields:
         residence = cast(Residence, ResidenceFactory())
         ListingFactory(residence=residence, detail_scraped_at=None)
 
-        assert admin.display_energy_label(residence) == "—"
         assert admin.display_room_count(residence) == "—"
         assert admin.display_bedroom_count(residence) == "—"
         assert admin.display_bathroom_count(residence) == "—"
@@ -97,7 +95,6 @@ class TestDetailFields:
     def test_fields_empty_when_no_listings(self, admin):
         residence = cast(Residence, ResidenceFactory())
 
-        assert admin.display_energy_label(residence) == "—"
         assert admin.display_room_count(residence) == "—"
 
     def test_individual_null_fields_show_dash(self, admin):
@@ -109,7 +106,6 @@ class TestDetailFields:
             room_count=3,
         )
 
-        assert admin.display_energy_label(residence) == "—"
         assert admin.display_room_count(residence) == 3
 
     def test_freshest_listing_cached_across_fields(self, admin, django_assert_num_queries):
@@ -122,11 +118,36 @@ class TestDetailFields:
         )
 
         with django_assert_num_queries(1):
-            admin.display_energy_label(residence)
             admin.display_room_count(residence)
+            admin.display_detail_scraped_at(residence)
 
 
 class TestFieldsets:
+    def test_ep_online_fieldset_present(self, admin):
+        fieldset_names = [name for name, _ in admin.fieldsets]
+        assert "Building Details (EP-Online)" in fieldset_names
+
+    def test_ep_online_fieldset_contains_fields(self, admin):
+        ep_fieldset = None
+        for name, options in admin.fieldsets:
+            if name == "Building Details (EP-Online)":
+                ep_fieldset = options
+                break
+        expected_fields = {"building_type", "energy_label", "energy_label_valid_until"}
+        assert ep_fieldset is not None, "EP-Online fieldset not found"
+        assert expected_fields == set(ep_fieldset["fields"])
+
+    def test_ep_online_fields_in_readonly_fields(self, admin):
+        assert "building_type" in admin.readonly_fields
+        assert "energy_label" in admin.readonly_fields
+        assert "energy_label_valid_until" in admin.readonly_fields
+
+    def test_building_type_in_list_display(self, admin):
+        assert "building_type" in admin.list_display
+
+    def test_building_type_in_list_filter(self, admin):
+        assert "building_type" in admin.list_filter
+
     def test_detail_fieldset_present(self, admin):
         fieldset_names = [name for name, _ in admin.fieldsets]
         assert "Listing Details (latest scrape)" in fieldset_names
@@ -138,7 +159,6 @@ class TestFieldsets:
                 detail_fieldset = options
                 break
         expected_fields = {
-            "display_energy_label",
             "display_room_count",
             "display_bedroom_count",
             "display_bathroom_count",
@@ -150,7 +170,6 @@ class TestFieldsets:
         assert expected_fields == set(detail_fieldset["fields"])
 
     def test_detail_display_methods_in_readonly_fields(self, admin):
-        assert "display_energy_label" in admin.readonly_fields
         assert "display_room_count" in admin.readonly_fields
         assert "display_bedroom_count" in admin.readonly_fields
         assert "display_bathroom_count" in admin.readonly_fields
