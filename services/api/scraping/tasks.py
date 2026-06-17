@@ -230,6 +230,21 @@ def _enrich_building_details(residence: Residence) -> None:
         )
 
 
+@shared_task(name="scraping.enrich_location", rate_limit="20/s")
+def enrich_location(residence_id: int) -> None:
+    residence = Residence.objects.get(pk=residence_id)
+    with PdokLocationLookup() as lookup:
+        result = lookup.lookup(bag_id=residence.bag_id)
+    if result is None:
+        return
+
+    residence.latitude = result.latitude
+    residence.longitude = result.longitude
+    residence.neighbourhood = result.neighbourhood
+    residence.district = result.district
+    residence.save(update_fields=["latitude", "longitude", "neighbourhood", "district"])
+
+
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
     return {
         "city": result.city,
