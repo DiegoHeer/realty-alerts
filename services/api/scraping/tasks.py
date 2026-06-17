@@ -236,7 +236,10 @@ def enrich_building_details(residence_id: int) -> None:
     if not api_key:
         return
 
-    residence = Residence.objects.get(pk=residence_id)
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
     if not residence.postcode or not residence.house_number:
         return
 
@@ -266,7 +269,10 @@ def enrich_building_details(residence_id: int) -> None:
 
 @shared_task(name="scraping.enrich_location", rate_limit="20/s")
 def enrich_location(residence_id: int) -> None:
-    residence = Residence.objects.get(pk=residence_id)
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
     with PdokLocationLookup() as lookup:
         result = lookup.lookup(bag_id=residence.bag_id)
     if result is None:
