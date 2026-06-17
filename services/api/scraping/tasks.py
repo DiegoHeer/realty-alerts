@@ -11,6 +11,7 @@ from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, L
 from scraping.reconciliation import reconcile_residence
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
 from scraping.resolvers.location import PdokLocationLookup
+from scraping.services.ep_online import EpOnlineLookup
 from scraping.resolvers.types import AddressQuery
 from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
 
@@ -169,9 +170,10 @@ def resolve_bag(listing_id: int) -> None:
 def _enrich_residence(residence: Residence) -> None:
     needs_coordinates = residence.latitude is None or residence.longitude is None
     needs_neighbourhood = residence.neighbourhood is None
-    if not needs_coordinates and not needs_neighbourhood:
-        return
-    _enrich_location(residence)
+    if needs_coordinates or needs_neighbourhood:
+        _enrich_location(residence)
+    if residence.building_type is None:
+        _enrich_building_details(residence)
 
 
 def _enrich_location(residence: Residence) -> None:
@@ -189,6 +191,37 @@ def _enrich_location(residence: Residence) -> None:
         residence.neighbourhood = result.neighbourhood
         residence.district = result.district
         update_fields += ["neighbourhood", "district"]
+    if update_fields:
+        residence.save(update_fields=update_fields)
+
+
+def _enrich_building_details(residence: Residence) -> None:
+    api_key = settings.EP_ONLINE_API_KEY
+    if not api_key:
+        return
+    if not residence.postcode or not residence.house_number:
+        return
+
+    with EpOnlineLookup(api_key=api_key) as lookup:
+        result = lookup.lookup(
+            postcode=residence.postcode,
+            house_number=residence.house_number,
+            house_letter=residence.house_letter,
+            house_number_suffix=residence.house_number_suffix,
+        )
+    if result is None:
+        return
+
+    update_fields: list[str] = []
+    if result.building_type is not None:
+        residence.building_type = result.building_type
+        update_fields.append("building_type")
+    if result.energy_label is not None:
+        residence.energy_label = result.energy_label
+        update_fields.append("energy_label")
+    if result.energy_label_valid_until is not None:
+        residence.energy_label_valid_until = result.energy_label_valid_until
+        update_fields.append("energy_label_valid_until")
     if update_fields:
         residence.save(update_fields=update_fields)
 

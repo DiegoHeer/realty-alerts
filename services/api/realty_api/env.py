@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_task_always_eager: bool = False
     argo_events_webhook_url: str | None = None
+    ep_online_api_key: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
