@@ -34,6 +34,29 @@ class BagStatus(models.TextChoices):
     BAG_AMBIGUOUS = "bag_ambiguous", "BAG ambiguous"
 
 
+class BuildingType(models.TextChoices):
+    APARTMENT = "apartment", "Appartement"
+    TERRACED = "terraced", "Tussenwoning"
+    CORNER = "corner", "Hoekwoning"
+    SEMI_DETACHED = "semi_detached", "Twee-onder-één-kap"
+    DETACHED = "detached", "Vrijstaand"
+
+
+class EnergyLabel(models.TextChoices):
+    A5PLUS = "A+++++", "A+++++"
+    A4PLUS = "A++++", "A++++"
+    A3PLUS = "A+++", "A+++"
+    A2PLUS = "A++", "A++"
+    A1PLUS = "A+", "A+"
+    A = "A", "A"
+    B = "B", "B"
+    C = "C", "C"
+    D = "D", "D"
+    E = "E", "E"
+    F = "F", "F"
+    G = "G", "G"
+
+
 class Residence(models.Model):
     """One physical property, keyed on its BAG ID. Per-portal scraped data
     (price, title, image, status) lives on the child `Listing` rows; this
@@ -52,6 +75,9 @@ class Residence(models.Model):
     longitude = models.FloatField(null=True, blank=True)
     neighbourhood = models.CharField(max_length=100, null=True, blank=True)
     district = models.CharField(max_length=100, null=True, blank=True)
+    building_type = models.CharField(max_length=20, choices=BuildingType.choices, null=True, blank=True)
+    energy_label = models.CharField(max_length=10, choices=EnergyLabel.choices, null=True, blank=True)
+    energy_label_valid_until = models.DateField(null=True, blank=True)
     # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence
     # whenever a child Listing is created or updated. The matcher reads these.
     current_price_eur = models.BigIntegerField(null=True, blank=True)
