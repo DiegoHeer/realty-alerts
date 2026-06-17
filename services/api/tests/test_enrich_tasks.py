@@ -142,19 +142,6 @@ def test_enrich_building_details_no_op_when_api_returns_none(settings):
 
 
 @pytest.mark.django_db
-def test_enrich_building_details_skips_when_no_api_key(settings):
-    from scraping.tasks import enrich_building_details
-
-    settings.EP_ONLINE_API_KEY = None
-    residence = cast(Residence, ResidenceFactory(postcode="1015AA", house_number=1))
-
-    enrich_building_details(residence.pk)
-
-    residence.refresh_from_db()
-    assert residence.building_type is None
-
-
-@pytest.mark.django_db
 def test_enrich_building_details_skips_when_no_postcode(settings):
     from scraping.tasks import enrich_building_details
 

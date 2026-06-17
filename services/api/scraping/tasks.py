@@ -232,10 +232,6 @@ def _enrich_building_details(residence: Residence) -> None:
 
 @shared_task(name="scraping.enrich_building_details", rate_limit="10/s")
 def enrich_building_details(residence_id: int) -> None:
-    api_key = settings.EP_ONLINE_API_KEY
-    if not api_key:
-        return
-
     try:
         residence = Residence.objects.get(pk=residence_id)
     except Residence.DoesNotExist:
@@ -243,7 +239,7 @@ def enrich_building_details(residence_id: int) -> None:
     if not residence.postcode or not residence.house_number:
         return
 
-    with EpOnlineLookup(api_key=api_key) as lookup:
+    with EpOnlineLookup(api_key=settings.EP_ONLINE_API_KEY) as lookup:
         result = lookup.lookup(
             postcode=residence.postcode,
             house_number=residence.house_number,
