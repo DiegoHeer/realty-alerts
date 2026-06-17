@@ -230,6 +230,40 @@ def _enrich_building_details(residence: Residence) -> None:
         )
 
 
+@shared_task(name="scraping.enrich_building_details", rate_limit="10/s")
+def enrich_building_details(residence_id: int) -> None:
+    api_key = settings.EP_ONLINE_API_KEY
+    if not api_key:
+        return
+
+    residence = Residence.objects.get(pk=residence_id)
+    if not residence.postcode or not residence.house_number:
+        return
+
+    with EpOnlineLookup(api_key=api_key) as lookup:
+        result = lookup.lookup(
+            postcode=residence.postcode,
+            house_number=residence.house_number,
+            house_letter=residence.house_letter,
+            house_number_suffix=residence.house_number_suffix,
+        )
+    if result is None:
+        return
+
+    update_fields: list[str] = []
+    if result.building_type is not None:
+        residence.building_type = result.building_type
+        update_fields.append("building_type")
+    if result.energy_label is not None:
+        residence.energy_label = result.energy_label
+        update_fields.append("energy_label")
+    if result.energy_label_valid_until is not None:
+        residence.energy_label_valid_until = result.energy_label_valid_until
+        update_fields.append("energy_label_valid_until")
+    if update_fields:
+        residence.save(update_fields=update_fields)
+
+
 @shared_task(name="scraping.enrich_location", rate_limit="20/s")
 def enrich_location(residence_id: int) -> None:
     residence = Residence.objects.get(pk=residence_id)

@@ -1,13 +1,23 @@
+from datetime import date
 from typing import cast
 
 import httpx
 import pytest
 import respx
 
-from scraping.models import Residence
+from scraping.models import BuildingType, EnergyLabel, Residence
 from tests.factories import ResidenceFactory
 
 _PDOK_FREE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
+_EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
+
+
+def _ep_response(
+    building_type: str = "Appartement",
+    energy_label: str = "B",
+    valid_until: str = "2035-01-15",
+) -> list[dict]:
+    return [{"Gebouwtype": building_type, "Energieklasse": energy_label, "Geldig_tot": valid_until}]
 
 
 def _pdok_response(lat: float = 52.376, lon: float = 4.893, buurt: str = "Jordaan", wijk: str = "Centrum") -> dict:
@@ -77,3 +87,79 @@ def test_enrich_location_no_op_on_http_error():
     residence.refresh_from_db()
     assert residence.latitude == 1.0
     assert residence.longitude == 2.0
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_building_details_overwrites_existing_fields(settings):
+    from scraping.tasks import enrich_building_details
+
+    settings.EP_ONLINE_API_KEY = "test-key"
+    residence = cast(
+        Residence,
+        ResidenceFactory(
+            postcode="1015AA",
+            house_number=1,
+            building_type=BuildingType.DETACHED,
+            energy_label=EnergyLabel.G,
+            energy_label_valid_until=date(2020, 1, 1),
+        ),
+    )
+    respx.get(_EP_ADRES_URL).mock(
+        return_value=httpx.Response(200, json=_ep_response("Appartement", "B", "2034-06-01")),
+    )
+
+    enrich_building_details(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.building_type == BuildingType.APARTMENT
+    assert residence.energy_label == EnergyLabel.B
+    assert residence.energy_label_valid_until == date(2034, 6, 1)
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_building_details_no_op_when_api_returns_none(settings):
+    from scraping.tasks import enrich_building_details
+
+    settings.EP_ONLINE_API_KEY = "test-key"
+    residence = cast(
+        Residence,
+        ResidenceFactory(
+            postcode="1015AA",
+            house_number=1,
+            building_type=BuildingType.DETACHED,
+        ),
+    )
+    respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=[]))
+
+    enrich_building_details(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.building_type == BuildingType.DETACHED
+
+
+@pytest.mark.django_db
+def test_enrich_building_details_skips_when_no_api_key(settings):
+    from scraping.tasks import enrich_building_details
+
+    settings.EP_ONLINE_API_KEY = None
+    residence = cast(Residence, ResidenceFactory(postcode="1015AA", house_number=1))
+
+    enrich_building_details(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.building_type is None
+
+
+@pytest.mark.django_db
+def test_enrich_building_details_skips_when_no_postcode(settings):
+    from scraping.tasks import enrich_building_details
+
+    settings.EP_ONLINE_API_KEY = "test-key"
+    residence = cast(Residence, ResidenceFactory(postcode=None, house_number=None))
+
+    enrich_building_details(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.building_type is None
