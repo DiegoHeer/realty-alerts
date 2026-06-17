@@ -261,6 +261,12 @@ def enrich_building_details(residence_id: int) -> None:
         update_fields.append("energy_label_valid_until")
     if update_fields:
         residence.save(update_fields=update_fields)
+        logger.info(
+            "EP-Online enrichment for residence {}: building_type={}, energy_label={}",
+            residence.pk,
+            result.building_type,
+            result.energy_label,
+        )
 
 
 @shared_task(name="scraping.enrich_location", rate_limit="20/s")
@@ -279,6 +285,13 @@ def enrich_location(residence_id: int) -> None:
     residence.neighbourhood = result.neighbourhood
     residence.district = result.district
     residence.save(update_fields=["latitude", "longitude", "neighbourhood", "district"])
+    logger.info(
+        "PDOK enrichment for residence {}: lat={}, lon={}, neighbourhood={}",
+        residence.pk,
+        result.latitude,
+        result.longitude,
+        result.neighbourhood,
+    )
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
