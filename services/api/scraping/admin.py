@@ -21,7 +21,7 @@ from scraping.models import (
     Neighborhood,
     Residence,
 )
-from scraping.tasks import dispatch_detail_scrape
+from scraping.tasks import dispatch_detail_scrape, enrich_building_details, enrich_location
 from scraping.reconciliation import reconcile_residence
 
 _FAILED_BAG_STATUSES = frozenset(
@@ -150,6 +150,28 @@ def scrape_residence_details(modeladmin, request, queryset):
     )
 
 
+@admin.action(description="Enrich location (PDOK)")
+def enrich_location_action(modeladmin, request, queryset):
+    for residence in queryset:
+        enrich_location.delay(residence.pk)
+    modeladmin.message_user(
+        request,
+        f"Dispatched location enrichment for {queryset.count()} residence(s).",
+        messages.SUCCESS,
+    )
+
+
+@admin.action(description="Enrich building details (EP-Online)")
+def enrich_building_details_action(modeladmin, request, queryset):
+    for residence in queryset:
+        enrich_building_details.delay(residence.pk)
+    modeladmin.message_user(
+        request,
+        f"Dispatched building details enrichment for {queryset.count()} residence(s).",
+        messages.SUCCESS,
+    )
+
+
 class ListingInline(admin.TabularInline):
     model = Listing
     extra = 0
@@ -245,7 +267,7 @@ class ResidenceAdmin(admin.ModelAdmin):
         ),
     )
     inlines = (ListingInline,)
-    actions = [scrape_residence_details]
+    actions = [scrape_residence_details, enrich_location_action, enrich_building_details_action]
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(listing_count=Count("listings"))

@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from typing import cast
+from unittest.mock import patch
 
 import pytest
 from django.contrib.admin.sites import AdminSite
@@ -176,3 +177,30 @@ class TestFieldsets:
         assert "display_surface_area_m2" in admin.readonly_fields
         assert "display_construction_period" in admin.readonly_fields
         assert "display_detail_scraped_at" in admin.readonly_fields
+
+
+@pytest.mark.django_db
+class TestEnrichActions:
+    def test_enrich_location_dispatches_tasks(self, admin_client):
+        r1 = cast(Residence, ResidenceFactory())
+        r2 = cast(Residence, ResidenceFactory())
+        with patch("scraping.admin.enrich_location.delay") as mock_delay:
+            admin_client.post(
+                "/admin/scraping/residence/",
+                {"action": "enrich_location_action", "_selected_action": [r1.pk, r2.pk]},
+            )
+        assert mock_delay.call_count == 2
+        mock_delay.assert_any_call(r1.pk)
+        mock_delay.assert_any_call(r2.pk)
+
+    def test_enrich_building_details_dispatches_tasks(self, admin_client):
+        r1 = cast(Residence, ResidenceFactory())
+        r2 = cast(Residence, ResidenceFactory())
+        with patch("scraping.admin.enrich_building_details.delay") as mock_delay:
+            admin_client.post(
+                "/admin/scraping/residence/",
+                {"action": "enrich_building_details_action", "_selected_action": [r1.pk, r2.pk]},
+            )
+        assert mock_delay.call_count == 2
+        mock_delay.assert_any_call(r1.pk)
+        mock_delay.assert_any_call(r2.pk)
