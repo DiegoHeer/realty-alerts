@@ -5,7 +5,14 @@ from typing import Annotated, Self
 from ninja import Schema
 from pydantic import StringConstraints, model_validator
 
-from scraping.models import DetailScrapeRunStatus, ListScrapeRunStatus, ListingStatus, Website
+from scraping.models import (
+    BuildingType,
+    DetailScrapeRunStatus,
+    EnergyLabel,
+    ListScrapeRunStatus,
+    ListingStatus,
+    Website,
+)
 
 
 class ScrapeMode(StrEnum):
@@ -54,7 +61,6 @@ class ListingOut(Schema):
     bathroom_count: int | None = None
     room_count: int | None = None
     construction_period: str | None = None
-    energy_label: str | None = None
 
 
 class ResidenceOut(Schema):
@@ -70,6 +76,8 @@ class ResidenceOut(Schema):
     longitude: float | None = None
     neighbourhood: str | None = None
     district: str | None = None
+    building_type: BuildingType | None = None
+    energy_label: EnergyLabel | None = None
     current_price_eur: int | None = None
     current_status: ListingStatus
     last_scraped_at: datetime | None = None

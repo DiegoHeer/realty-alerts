@@ -171,12 +171,13 @@ class ResidenceAdmin(admin.ModelAdmin):
         "postcode",
         "neighbourhood",
         "district",
+        "building_type",
         "current_price_eur",
         "current_status",
         "listing_count",
         "last_scraped_at",
     )
-    list_filter = ("current_status", "city", "neighbourhood")
+    list_filter = ("current_status", "building_type", "city", "neighbourhood")
     # `title` lives on per-portal Listing now, so search joins through the
     # reverse FK rather than a Residence column.
     search_fields = ("listings__title", "street", "postcode", "bag_id")
@@ -184,7 +185,9 @@ class ResidenceAdmin(admin.ModelAdmin):
     readonly_fields = (
         "created_at",
         "updated_at",
-        "display_energy_label",
+        "building_type",
+        "energy_label",
+        "energy_label_valid_until",
         "display_room_count",
         "display_bedroom_count",
         "display_bathroom_count",
@@ -218,10 +221,19 @@ class ResidenceAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Building Details (EP-Online)",
+            {
+                "fields": (
+                    "building_type",
+                    "energy_label",
+                    "energy_label_valid_until",
+                ),
+            },
+        ),
+        (
             "Listing Details (latest scrape)",
             {
                 "fields": (
-                    "display_energy_label",
                     "display_room_count",
                     "display_bedroom_count",
                     "display_bathroom_count",
@@ -256,10 +268,6 @@ class ResidenceAdmin(admin.ModelAdmin):
             return "—"
         value = getattr(listing, field_name, None)
         return value if value not in (None, "") else "—"
-
-    @admin.display(description="Energy label")
-    def display_energy_label(self, obj):
-        return self._detail_field(obj, "energy_label")
 
     @admin.display(description="Rooms")
     def display_room_count(self, obj):
