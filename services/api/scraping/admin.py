@@ -14,14 +14,13 @@ from scraping.models import (
     BagStatus,
     City,
     DetailScrapeRun,
-    DetailScrapeRunStatus,
     District,
     Listing,
     ListScrapeRun,
     Neighborhood,
     Residence,
 )
-from scraping.tasks import dispatch_detail_scrape, enrich_building_details, enrich_location
+from scraping.tasks import _dispatch_detail_scrapes, enrich_building_details, enrich_location
 from scraping.reconciliation import reconcile_residence
 
 _FAILED_BAG_STATUSES = frozenset(
@@ -114,19 +113,6 @@ def promote_listings(modeladmin, request, queryset):
             f"Successfully promoted {succeeded} listing(s).",
             messages.SUCCESS,
         )
-
-
-def _dispatch_detail_scrapes(listings) -> int:
-    dispatched = 0
-    for listing in listings:
-        run = DetailScrapeRun.objects.create(
-            listing=listing,
-            website=listing.website,
-            status=DetailScrapeRunStatus.DISPATCHED,
-        )
-        dispatch_detail_scrape.delay(listing_id=listing.pk, detail_scrape_run_id=run.pk)
-        dispatched += 1
-    return dispatched
 
 
 @admin.action(description="Scrape details for selected listings")

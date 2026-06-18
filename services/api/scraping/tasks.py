@@ -110,6 +110,19 @@ def dispatch_detail_scrape(listing_id: int, detail_scrape_run_id: int) -> str:
     return payload.run_id
 
 
+def _dispatch_detail_scrapes(listings) -> int:
+    dispatched = 0
+    for listing in listings:
+        run = DetailScrapeRun.objects.create(
+            listing=listing,
+            website=listing.website,
+            status=DetailScrapeRunStatus.DISPATCHED,
+        )
+        dispatch_detail_scrape.delay(listing_id=listing.pk, detail_scrape_run_id=run.pk)
+        dispatched += 1
+    return dispatched
+
+
 @shared_task(name="scraping.cleanup_expired_residences")
 def cleanup_expired_residences() -> int:
     """Hard-delete residences that have been in a terminal status (sold or
