@@ -190,6 +190,19 @@ def fetch_neighbourhood_geometry(
     return result
 
 
+def fetch_entity_geometry(
+    collection: str,
+    code: str,
+    *,
+    bbox: tuple[float, float, float, float] | None = None,
+) -> list | None:
+    features = _pdok_ogc_all_features(collection, bbox=bbox)
+    for f in features:
+        if f["properties"]["statcode"].strip() == code:
+            return _extract_geometry(f["geometry"])
+    return None
+
+
 # --- Stats functions ---
 
 
@@ -209,3 +222,14 @@ def fetch_neighbourhood_stats(codes: list[str]) -> dict[str, dict]:
     odata_filter = " or ".join(f"WijkenEnBuurten eq '{c.ljust(10)}'" for c in codes)
     rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
     return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
+
+
+def fetch_entity_stats(odata_key: str) -> dict | None:
+    rows = _odata_get(
+        "TypedDataSet",
+        filter=f"WijkenEnBuurten eq '{odata_key.ljust(10)}'",
+        top=1,
+    )
+    if not rows:
+        return None
+    return _strip_stats(rows[0])
