@@ -112,7 +112,7 @@ def test_scrape_details_action_dispatches_tasks(admin_mocks):
 
     modeladmin, request = admin_mocks
 
-    with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
+    with patch("scraping.tasks.dispatch_detail_scrape.delay") as mock_delay:
         scrape_details(modeladmin, request, queryset)
 
     assert mock_delay.call_count == 2
@@ -134,7 +134,7 @@ def test_scrape_residence_details_dispatches_for_all_linked_listings(admin_mocks
 
     modeladmin, request = admin_mocks
 
-    with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
+    with patch("scraping.tasks.dispatch_detail_scrape.delay") as mock_delay:
         scrape_residence_details(modeladmin, request, queryset)
 
     assert mock_delay.call_count == 2
@@ -158,7 +158,7 @@ def test_scrape_residence_details_handles_multiple_residences(admin_mocks):
 
     modeladmin, request = admin_mocks
 
-    with patch("scraping.admin.dispatch_detail_scrape.delay") as mock_delay:
+    with patch("scraping.tasks.dispatch_detail_scrape.delay") as mock_delay:
         scrape_residence_details(modeladmin, request, queryset)
 
     assert mock_delay.call_count == 3

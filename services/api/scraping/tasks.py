@@ -3,11 +3,20 @@ import uuid
 import httpx
 from celery import shared_task
 from django.conf import settings
+from django.db.models import F
 from django.utils import timezone
 from loguru import logger
 
 from scraping.cleanup import delete_expired_terminal_residences
-from scraping.models import BagStatus, DetailScrapeRun, DetailScrapeRunStatus, Listing, Residence, Website
+from scraping.models import (
+    BagStatus,
+    DetailScrapeRun,
+    DetailScrapeRunStatus,
+    Listing,
+    ListingStatus,
+    Residence,
+    Website,
+)
 from scraping.reconciliation import reconcile_residence
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
 from scraping.resolvers.location import PdokLocationLookup
@@ -108,6 +117,32 @@ def dispatch_detail_scrape(listing_id: int, detail_scrape_run_id: int) -> str:
         payload.run_id,
     )
     return payload.run_id
+
+
+def _dispatch_detail_scrapes(listings) -> int:
+    dispatched = 0
+    for listing in listings:
+        run = DetailScrapeRun.objects.create(
+            listing=listing,
+            website=listing.website,
+            status=DetailScrapeRunStatus.DISPATCHED,
+        )
+        dispatch_detail_scrape.delay(listing_id=listing.pk, detail_scrape_run_id=run.pk)
+        dispatched += 1
+    return dispatched
+
+
+@shared_task(name="scraping.dispatch_stale_detail_scrapes")
+def dispatch_stale_detail_scrapes() -> int:
+    listings = (
+        Listing.objects.filter(residence__isnull=False)
+        .exclude(residence__current_status__in=[ListingStatus.SOLD, ListingStatus.SALE_PENDING])
+        .exclude(detail_scrape_runs__status=DetailScrapeRunStatus.DISPATCHED)
+        .order_by(F("detail_scraped_at").asc(nulls_first=True))[:100]
+    )
+    dispatched = _dispatch_detail_scrapes(listings)
+    logger.info("Periodic detail scrape: dispatched {} listing(s)", dispatched)
+    return dispatched
 
 
 @shared_task(name="scraping.cleanup_expired_residences")
