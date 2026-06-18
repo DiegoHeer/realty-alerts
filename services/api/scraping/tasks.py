@@ -230,6 +230,70 @@ def _enrich_building_details(residence: Residence) -> None:
         )
 
 
+@shared_task(name="scraping.enrich_building_details", rate_limit="10/s")
+def enrich_building_details(residence_id: int) -> None:
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
+    if not residence.postcode or not residence.house_number:
+        return
+
+    with EpOnlineLookup(api_key=settings.EP_ONLINE_API_KEY) as lookup:
+        result = lookup.lookup(
+            postcode=residence.postcode,
+            house_number=residence.house_number,
+            house_letter=residence.house_letter,
+            house_number_suffix=residence.house_number_suffix,
+        )
+    if result is None:
+        return
+
+    update_fields: list[str] = []
+    if result.building_type is not None:
+        residence.building_type = result.building_type
+        update_fields.append("building_type")
+    if result.energy_label is not None:
+        residence.energy_label = result.energy_label
+        update_fields.append("energy_label")
+    if result.energy_label_valid_until is not None:
+        residence.energy_label_valid_until = result.energy_label_valid_until
+        update_fields.append("energy_label_valid_until")
+    if update_fields:
+        residence.save(update_fields=update_fields)
+        logger.info(
+            "EP-Online enrichment for residence {}: building_type={}, energy_label={}",
+            residence.pk,
+            result.building_type,
+            result.energy_label,
+        )
+
+
+@shared_task(name="scraping.enrich_location", rate_limit="20/s")
+def enrich_location(residence_id: int) -> None:
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
+    with PdokLocationLookup() as lookup:
+        result = lookup.lookup(bag_id=residence.bag_id)
+    if result is None:
+        return
+
+    residence.latitude = result.latitude
+    residence.longitude = result.longitude
+    residence.neighbourhood = result.neighbourhood
+    residence.district = result.district
+    residence.save(update_fields=["latitude", "longitude", "neighbourhood", "district"])
+    logger.info(
+        "PDOK enrichment for residence {}: lat={}, lon={}, neighbourhood={}",
+        residence.pk,
+        result.latitude,
+        result.longitude,
+        result.neighbourhood,
+    )
+
+
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
     return {
         "city": result.city,
