@@ -14,9 +14,7 @@ _WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
 
 
 def _mock_foundation_risk() -> None:
-    respx.get(_WFS_URL).mock(
-        return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []})
-    )
+    respx.get(_WFS_URL).mock(return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []}))
 
 
 def _ep_response(

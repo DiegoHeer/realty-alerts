@@ -281,7 +281,12 @@ class ResidenceAdmin(admin.ModelAdmin):
         ),
     )
     inlines = (ListingInline,)
-    actions = [scrape_residence_details, enrich_location_action, enrich_building_details_action, enrich_foundation_risk_action]
+    actions = [
+        scrape_residence_details,
+        enrich_location_action,
+        enrich_building_details_action,
+        enrich_foundation_risk_action,
+    ]
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(listing_count=Count("listings"))

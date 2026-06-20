@@ -1,5 +1,4 @@
 import httpx
-import pytest
 import respx
 
 from scraping.services.pdok_foundation_risk import (
@@ -40,9 +39,7 @@ def test_lookup_returns_result_on_success():
 
 @respx.mock
 def test_lookup_returns_none_on_empty_features():
-    respx.get(_WFS_URL).mock(
-        return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []})
-    )
+    respx.get(_WFS_URL).mock(return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []}))
 
     with PdokFoundationRiskLookup() as lookup:
         result = lookup.lookup(latitude=52.376, longitude=4.893)

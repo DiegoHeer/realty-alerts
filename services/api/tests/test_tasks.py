@@ -18,9 +18,7 @@ def _mock_ep_online() -> None:
 
 
 def _mock_foundation_risk() -> None:
-    respx.get(_WFS_URL).mock(
-        return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []})
-    )
+    respx.get(_WFS_URL).mock(return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []}))
 
 
 def _mock_pdok_location(lat: float = 52.376, lon: float = 4.893) -> None:
