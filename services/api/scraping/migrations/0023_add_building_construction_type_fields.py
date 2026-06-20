@@ -13,16 +13,37 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='listing',
             name='building_type',
-            field=models.CharField(blank=True, choices=[('apartment', 'Appartement'), ('terraced', 'Tussenwoning'), ('corner', 'Hoekwoning'), ('semi_detached', 'Twee-onder-één-kap'), ('detached', 'Vrijstaand')], max_length=20, null=True),
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ('apartment', 'Appartement'),
+                    ('terraced', 'Tussenwoning'),
+                    ('corner', 'Hoekwoning'),
+                    ('semi_detached', 'Twee-onder-één-kap'),
+                    ('detached', 'Vrijstaand'),
+                ],
+                max_length=20,
+                null=True,
+            ),
         ),
         migrations.AddField(
             model_name='listing',
             name='construction_type',
-            field=models.CharField(blank=True, choices=[('nieuwbouw', 'Nieuwbouw'), ('bestaande_bouw', 'Bestaande bouw')], max_length=20, null=True),
+            field=models.CharField(
+                blank=True,
+                choices=[('nieuwbouw', 'Nieuwbouw'), ('bestaande_bouw', 'Bestaande bouw')],
+                max_length=20,
+                null=True,
+            ),
         ),
         migrations.AddField(
             model_name='residence',
             name='construction_type',
-            field=models.CharField(blank=True, choices=[('nieuwbouw', 'Nieuwbouw'), ('bestaande_bouw', 'Bestaande bouw')], max_length=20, null=True),
+            field=models.CharField(
+                blank=True,
+                choices=[('nieuwbouw', 'Nieuwbouw'), ('bestaande_bouw', 'Bestaande bouw')],
+                max_length=20,
+                null=True,
+            ),
         ),
     ]
