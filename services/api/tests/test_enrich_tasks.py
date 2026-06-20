@@ -10,6 +10,7 @@ from tests.factories import ResidenceFactory
 
 _PDOK_FREE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
 _EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
+_PDOK_WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
 
 
 def _ep_response(
@@ -152,3 +153,65 @@ def test_enrich_building_details_skips_when_no_postcode(settings):
 
     residence.refresh_from_db()
     assert residence.building_type is None
+
+
+# --- Foundation risk enrichment ---
+
+
+def _wfs_response(legenda: str = "Kwetsbaar gebied - 40-60 %") -> dict:
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"legenda": legenda},
+                "geometry": {"type": "Polygon", "coordinates": [[[4.0, 52.0]]]},
+            }
+        ],
+    }
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_foundation_risk_stores_label():
+    from scraping.tasks import enrich_foundation_risk
+
+    residence = cast(
+        Residence,
+        ResidenceFactory(latitude=52.376, longitude=4.893, foundation_risk_label=None),
+    )
+    respx.get(_PDOK_WFS_URL).mock(return_value=httpx.Response(200, json=_wfs_response()))
+
+    enrich_foundation_risk(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.foundation_risk_label == "Kwetsbaar gebied - 40-60 %"
+    assert residence.foundation_risk_fetched_at is not None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_foundation_risk_no_op_when_no_coordinates():
+    from scraping.tasks import enrich_foundation_risk
+
+    residence = cast(Residence, ResidenceFactory(latitude=None, longitude=None))
+
+    enrich_foundation_risk(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.foundation_risk_label is None
+    assert residence.foundation_risk_fetched_at is None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_foundation_risk_no_op_on_http_error():
+    from scraping.tasks import enrich_foundation_risk
+
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+    respx.get(_PDOK_WFS_URL).mock(return_value=httpx.Response(503))
+
+    enrich_foundation_risk(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.foundation_risk_label is None
