@@ -24,7 +24,7 @@ _BUILDING_TYPE_KEYWORDS: list[tuple[str, str]] = [
 def parse_building_type(raw: str) -> str | None:
     if not raw:
         return None
-    lowered = raw.lower()
+    lowered = raw.strip().lower()
     for keyword, building_type in _BUILDING_TYPE_KEYWORDS:
         if keyword in lowered:
             return building_type

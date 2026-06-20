@@ -186,3 +186,18 @@ def test_reconcile_does_not_overwrite_existing_building_type():
 
     residence.refresh_from_db()
     assert residence.building_type == "apartment"
+
+
+def test_reconcile_clears_construction_type_when_no_listing_has_value():
+    residence = cast(Residence, ResidenceFactory(construction_type="nieuwbouw"))
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        construction_type=None,
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    assert residence.construction_type is None

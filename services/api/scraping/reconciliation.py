@@ -40,20 +40,27 @@ def reconcile_residence(residence: Residence) -> None:
         residence.last_scraped_at = new_last_scraped_at
         update_fields.append("last_scraped_at")
 
+    _reconcile_building_and_construction(residence, resolved, update_fields)
+
+    if update_fields:
+        residence.save(update_fields=update_fields)
+
+
+def _reconcile_building_and_construction(
+    residence: Residence, resolved: list[Listing], update_fields: list[str]
+) -> None:
     _min_ts = datetime.min.replace(tzinfo=UTC)
     by_freshness = sorted(resolved, key=lambda listing: listing.list_scraped_at or _min_ts, reverse=True)
 
-    freshest_ct = next((listing for listing in by_freshness if listing.construction_type), None)
-    new_construction_type = freshest_ct.construction_type if freshest_ct else None
+    if freshest_ct := next((listing for listing in by_freshness if listing.construction_type), None):
+        new_construction_type = freshest_ct.construction_type
+    else:
+        new_construction_type = None
     if residence.construction_type != new_construction_type:
         residence.construction_type = new_construction_type
         update_fields.append("construction_type")
 
     if residence.building_type is None:
-        freshest_bt = next((listing for listing in by_freshness if listing.building_type), None)
-        if freshest_bt:
+        if freshest_bt := next((listing for listing in by_freshness if listing.building_type), None):
             residence.building_type = freshest_bt.building_type
             update_fields.append("building_type")
-
-    if update_fields:
-        residence.save(update_fields=update_fields)
