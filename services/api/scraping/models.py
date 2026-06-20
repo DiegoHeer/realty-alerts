@@ -42,6 +42,11 @@ class BuildingType(models.TextChoices):
     DETACHED = "detached", "Vrijstaand"
 
 
+class ConstructionType(models.TextChoices):
+    NIEUWBOUW = "nieuwbouw", "Nieuwbouw"
+    BESTAANDE_BOUW = "bestaande_bouw", "Bestaande bouw"
+
+
 class EnergyLabel(models.TextChoices):
     A5PLUS = "A+++++", "A+++++"
     A4PLUS = "A++++", "A++++"
@@ -78,6 +83,7 @@ class Residence(models.Model):
     building_type = models.CharField(max_length=20, choices=BuildingType.choices, null=True, blank=True)
     energy_label = models.CharField(max_length=10, choices=EnergyLabel.choices, null=True, blank=True)
     energy_label_valid_until = models.DateField(null=True, blank=True)
+    construction_type = models.CharField(max_length=20, choices=ConstructionType.choices, null=True, blank=True)
     zoning_designation = models.CharField(max_length=100, null=True, blank=True)
     zoning_fetched_at = models.DateTimeField(null=True, blank=True)
     soil_wbb_count = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -143,6 +149,8 @@ class Listing(models.Model):
     room_count = models.PositiveSmallIntegerField(null=True, blank=True)
     construction_period = models.CharField(max_length=50, null=True, blank=True)
     energy_label = models.CharField(max_length=10, null=True, blank=True)
+    building_type = models.CharField(max_length=20, choices=BuildingType.choices, null=True, blank=True)
+    construction_type = models.CharField(max_length=20, choices=ConstructionType.choices, null=True, blank=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
     # Raw address bits scraped from the portal — only what BAG needs to resolve
     # to an official record. Canonical address lives on Residence.

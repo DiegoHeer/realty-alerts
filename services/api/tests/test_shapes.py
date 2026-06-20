@@ -7,6 +7,45 @@ SAMPLE_GEOMETRY = [[[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]]]
 
 
 @pytest.mark.django_db
+class TestCityShapes:
+    def test_returns_cities_with_geometry(self, client):
+        CityFactory(code="0518", geometry=SAMPLE_GEOMETRY)
+
+        response = client.get("/v1/shapes/cities")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["code"] == "0518"
+        assert data[0]["geometry"] == SAMPLE_GEOMETRY
+
+    def test_excludes_cities_without_geometry(self, client):
+        CityFactory(code="0518", geometry=SAMPLE_GEOMETRY)
+        CityFactory(code="0363", geometry=None)
+
+        response = client.get("/v1/shapes/cities")
+
+        assert len(response.json()) == 1
+
+    def test_paginated_with_custom_limit(self, client):
+        for i in range(5):
+            CityFactory(code=f"{i:04d}", geometry=SAMPLE_GEOMETRY)
+
+        response = client.get("/v1/shapes/cities", {"limit": 2})
+
+        assert response.status_code == 200
+        assert len(response.json()) == 2
+
+    def test_default_limit_is_50(self, client):
+        for i in range(60):
+            CityFactory(code=f"{i:04d}", geometry=SAMPLE_GEOMETRY)
+
+        response = client.get("/v1/shapes/cities")
+
+        assert len(response.json()) == 50
+
+
+@pytest.mark.django_db
 class TestDistrictShapes:
     def test_returns_shapes_for_city(self, client):
         city = CityFactory(code="0518")

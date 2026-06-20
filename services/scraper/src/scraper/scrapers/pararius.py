@@ -10,6 +10,7 @@ from loguru import logger
 from scraper.address import parse_dutch_address, parse_dutch_postcode
 from scraper.enums import ListingStatus, Website
 from scraper.models import DetailListing, Listing
+from scraper.parsing import parse_building_type, parse_construction_type
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
 from scraper.status import detect_status
@@ -68,6 +69,14 @@ class ParariusScraper(BaseScraper):
 
         postcode = _parse_json_ld_postcode(soup)
 
+        property_types_el = soup.select_one("dd.listing-features__description--property_types")
+        building_type_raw = property_types_el.get_text(strip=True) if property_types_el else None
+        building_type = parse_building_type(building_type_raw) if building_type_raw else None
+
+        construction_type_el = soup.select_one("dd.listing-features__description--construction_type")
+        construction_type_raw = construction_type_el.get_text(strip=True) if construction_type_el else None
+        construction_type = parse_construction_type(construction_type_raw) if construction_type_raw else None
+
         return DetailListing(
             price=price,
             status=status,
@@ -78,6 +87,8 @@ class ParariusScraper(BaseScraper):
             construction_period=construction_period,
             energy_label=energy_label,
             postcode=postcode,
+            building_type=building_type,
+            construction_type=construction_type,
         )
 
     def _get_last_page(self) -> int:

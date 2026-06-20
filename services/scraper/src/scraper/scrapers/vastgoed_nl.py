@@ -8,6 +8,7 @@ from loguru import logger
 from scraper.address import parse_dutch_address, parse_dutch_postcode
 from scraper.enums import ListingStatus, Website
 from scraper.models import DetailListing, Listing
+from scraper.parsing import parse_building_type, parse_construction_type
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
 from scraper.status import detect_status
@@ -109,6 +110,16 @@ class VastgoedNLScraper(BaseScraper):
         address_p = address_el.select_one("p") if address_el else None
         postcode = parse_dutch_postcode(address_p.get_text() if address_p else None)
 
+        soort = _parse_bouw_dt_dd_text(soup, "Soort")
+        if soort and soort.lower() == "appartement":
+            building_type = "apartment"
+        else:
+            type_woonhuis = _parse_bouw_dt_dd_text(soup, "Type woonhuis")
+            building_type = parse_building_type(type_woonhuis) if type_woonhuis else None
+
+        construction_type_raw = _parse_bouw_dt_dd_text(soup, "Soort bouw")
+        construction_type = parse_construction_type(construction_type_raw) if construction_type_raw else None
+
         return DetailListing(
             price=price,
             status=status,
@@ -119,6 +130,8 @@ class VastgoedNLScraper(BaseScraper):
             construction_period=construction_period,
             energy_label=energy_label,
             postcode=postcode,
+            building_type=building_type,
+            construction_type=construction_type,
         )
 
 
@@ -158,4 +171,17 @@ def _parse_dt_dd_text(soup: BeautifulSoup, label: str) -> str | None:
             dd = dt.find_next_sibling("dd")
             if dd:
                 return dd.get_text(strip=True) or None
+    return None
+
+
+def _parse_bouw_dt_dd_text(soup: BeautifulSoup, label: str) -> str | None:
+    """Return dd text for a dt label within the 'Bouw' dl block only."""
+    for dl in soup.find_all("dl"):
+        strong = dl.find("strong")
+        if strong and strong.get_text(strip=True) == "Bouw":
+            for dt in dl.find_all("dt"):
+                if dt.get_text(strip=True) == label:
+                    dd = dt.find_next_sibling("dd")
+                    if dd:
+                        return dd.get_text(strip=True) or None
     return None

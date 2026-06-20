@@ -25,10 +25,12 @@ from scraping.models import (
 from scraping.schemas import (
     CityOut,
     CityStatsOut,
+    DetailListingIn,
     DetailResultIn,
     DetailResultStatus,
     DetailScrapeRunOut,
     DistrictStatsOut,
+    GeoCityOut,
     GeoDistrictOut,
     GeoNeighborhoodOut,
     ListingIn,
@@ -38,6 +40,7 @@ from scraping.schemas import (
     ResidenceOut,
     ScrapeResultsIn,
 )
+from scraping.reconciliation import reconcile_residence
 from scraping.tasks import resolve_bag
 
 
@@ -203,6 +206,59 @@ def _listing_defaults(item: ListingIn, *, scraped_at: datetime) -> dict:
     }
 
 
+_DETAIL_OPTIONAL_FIELDS = (
+    "surface_area_m2",
+    "bedroom_count",
+    "bathroom_count",
+    "room_count",
+    "construction_period",
+    "energy_label",
+    "building_type",
+    "construction_type",
+)
+
+
+def _apply_detail_to_listing(listing: Listing, detail: DetailListingIn, finished_at: datetime) -> None:
+    listing.price = detail.price
+    listing.status = detail.status
+    listing.detail_scraped_at = finished_at
+    update_fields = ["price", "status", "detail_scraped_at"]
+
+    for field in _DETAIL_OPTIONAL_FIELDS:
+        if (value := getattr(detail, field)) is not None:
+            setattr(listing, field, value)
+            update_fields.append(field)
+
+    if detail.postcode:
+        if listing.postcode and listing.postcode != detail.postcode:
+            logger.warning(
+                f"Postcode mismatch for listing_id={listing.pk}: existing={listing.postcode}, scraped={detail.postcode}"
+            )
+        elif not listing.postcode:
+            listing.postcode = detail.postcode
+            update_fields.append("postcode")
+
+    listing.save(update_fields=update_fields)
+
+    if listing.residence:
+        reconcile_residence(listing.residence)
+
+
+def _mark_run_success(run: DetailScrapeRun, finished_at: datetime, duration: float) -> None:
+    run.status = DetailScrapeRunStatus.SUCCESS
+    run.finished_at = finished_at
+    run.duration_seconds = duration
+    run.save(update_fields=["status", "finished_at", "duration_seconds"])
+
+
+def _mark_run_failed(run: DetailScrapeRun, finished_at: datetime, duration: float, error_message: str | None) -> None:
+    run.status = DetailScrapeRunStatus.FAILED
+    run.error_message = error_message
+    run.finished_at = finished_at
+    run.duration_seconds = duration
+    run.save(update_fields=["status", "error_message", "finished_at", "duration_seconds"])
+
+
 @internal_router.patch("/listings/{listing_id}/detail", response={200: DetailScrapeRunOut, 404: None})
 def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
     listing = Listing.objects.filter(pk=listing_id).first()
@@ -225,45 +281,11 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
     duration = (payload.finished_at - payload.started_at).total_seconds()
 
     if payload.status == DetailResultStatus.SUCCESS and payload.detail:
-        listing.price = payload.detail.price
-        listing.status = payload.detail.status
-        listing.detail_scraped_at = payload.finished_at
-        update_fields = ["price", "status", "detail_scraped_at"]
-        detail_fields = (
-            "surface_area_m2",
-            "bedroom_count",
-            "bathroom_count",
-            "room_count",
-            "construction_period",
-            "energy_label",
-        )
-        for field in detail_fields:
-            value = getattr(payload.detail, field)
-            if value is not None:
-                setattr(listing, field, value)
-                update_fields.append(field)
-        if payload.detail.postcode:
-            if listing.postcode and listing.postcode != payload.detail.postcode:
-                logger.warning(
-                    f"Postcode mismatch for listing_id={listing_id}: "
-                    f"existing={listing.postcode}, scraped={payload.detail.postcode}"
-                )
-            elif not listing.postcode:
-                listing.postcode = payload.detail.postcode
-                update_fields.append("postcode")
-        listing.save(update_fields=update_fields)
-
-        run.status = DetailScrapeRunStatus.SUCCESS
-        run.finished_at = payload.finished_at
-        run.duration_seconds = duration
-        run.save(update_fields=["status", "finished_at", "duration_seconds"])
+        _apply_detail_to_listing(listing, payload.detail, payload.finished_at)
+        _mark_run_success(run, payload.finished_at, duration)
         logger.info(f"Detail scrape succeeded for listing_id={listing_id} in {duration:.1f}s")
     else:
-        run.status = DetailScrapeRunStatus.FAILED
-        run.error_message = payload.error_message
-        run.finished_at = payload.finished_at
-        run.duration_seconds = duration
-        run.save(update_fields=["status", "error_message", "finished_at", "duration_seconds"])
+        _mark_run_failed(run, payload.finished_at, duration, payload.error_message)
         logger.warning(f"Detail scrape failed for listing_id={listing_id} in {duration:.1f}s: {payload.error_message}")
 
     return run
@@ -323,6 +345,15 @@ shapes_router = Router(tags=["shapes"])
 
 class _OptionalCity(Schema):
     city: str | None = None
+
+
+@shapes_router.get("/cities", response=list[GeoCityOut])
+def list_city_shapes(
+    request,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
+):
+    return list(City.objects.filter(geometry__isnull=False).order_by("name")[offset : offset + limit])
 
 
 @shapes_router.get("/districts", response={200: list[GeoDistrictOut], 404: None})
