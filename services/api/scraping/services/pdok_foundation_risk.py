@@ -11,7 +11,7 @@ _BBOX_DELTA = 0.0001
 
 @dataclass(frozen=True, slots=True)
 class FoundationRiskResult:
-    label: str
+    label: str | None
 
 
 class PdokFoundationRiskLookup:
@@ -54,11 +54,11 @@ class PdokFoundationRiskLookup:
 
         features = response.json().get("features", [])
         if not features:
-            return None
+            return FoundationRiskResult(label=None)
 
         label = features[0].get("properties", {}).get("legenda")
         if not label:
             logger.warning("PDOK foundation risk: missing legenda for ({}, {})", latitude, longitude)
-            return None
+            return FoundationRiskResult(label=None)
 
         return FoundationRiskResult(label=label)

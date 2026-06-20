@@ -38,13 +38,13 @@ def test_lookup_returns_result_on_success():
 
 
 @respx.mock
-def test_lookup_returns_none_on_empty_features():
+def test_lookup_returns_result_with_none_label_on_empty_features():
     respx.get(_WFS_URL).mock(return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []}))
 
     with PdokFoundationRiskLookup() as lookup:
         result = lookup.lookup(latitude=52.376, longitude=4.893)
 
-    assert result is None
+    assert result == FoundationRiskResult(label=None)
 
 
 @respx.mock

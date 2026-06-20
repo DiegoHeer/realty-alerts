@@ -282,16 +282,21 @@ def _enrich_zoning(residence: Residence) -> None:
     if residence.latitude is None or residence.longitude is None:
         logger.warning("Zoning enrichment skipped for residence {}: missing coordinates", residence.pk)
         return
+    if not settings.DSO_API_KEY:
+        return
 
     with BestemmingsplanLookup(api_key=settings.DSO_API_KEY) as lookup:
         result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
     if result is None:
         return
 
-    residence.zoning_designation = result.designation
     residence.zoning_fetched_at = timezone.now()
-    residence.save(update_fields=["zoning_designation", "zoning_fetched_at"])
-    logger.info("Zoning enrichment for residence {}: {}", residence.pk, result.designation)
+    update_fields = ["zoning_fetched_at"]
+    if result.designation is not None:
+        residence.zoning_designation = result.designation
+        update_fields.append("zoning_designation")
+        logger.info("Zoning enrichment for residence {}: {}", residence.pk, result.designation)
+    residence.save(update_fields=update_fields)
 
 
 def _enrich_soil_status(residence: Residence) -> None:
@@ -318,10 +323,13 @@ def _enrich_foundation_risk(residence: Residence) -> None:
     if result is None:
         return
 
-    residence.foundation_risk_label = result.label
     residence.foundation_risk_fetched_at = timezone.now()
-    residence.save(update_fields=["foundation_risk_label", "foundation_risk_fetched_at"])
-    logger.info("Foundation risk enrichment for residence {}: {}", residence.pk, result.label)
+    update_fields = ["foundation_risk_fetched_at"]
+    if result.label is not None:
+        residence.foundation_risk_label = result.label
+        update_fields.append("foundation_risk_label")
+        logger.info("Foundation risk enrichment for residence {}: {}", residence.pk, result.label)
+    residence.save(update_fields=update_fields)
 
 
 @shared_task(name="scraping.enrich_building_details", rate_limit="10/s")
@@ -394,19 +402,7 @@ def enrich_zoning(residence_id: int) -> None:
         residence = Residence.objects.get(pk=residence_id)
     except Residence.DoesNotExist:
         return
-    if residence.latitude is None or residence.longitude is None:
-        logger.warning("Zoning enrichment skipped for residence {}: missing coordinates", residence_id)
-        return
-
-    with BestemmingsplanLookup(api_key=settings.DSO_API_KEY) as lookup:
-        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
-    if result is None:
-        return
-
-    residence.zoning_designation = result.designation
-    residence.zoning_fetched_at = timezone.now()
-    residence.save(update_fields=["zoning_designation", "zoning_fetched_at"])
-    logger.info("Zoning enrichment for residence {}: {}", residence.pk, result.designation)
+    _enrich_zoning(residence)
 
 
 @shared_task(name="scraping.enrich_soil_status", rate_limit="10/s")
@@ -415,18 +411,7 @@ def enrich_soil_status(residence_id: int) -> None:
         residence = Residence.objects.get(pk=residence_id)
     except Residence.DoesNotExist:
         return
-    if residence.latitude is None or residence.longitude is None:
-        return
-
-    with BodemloketLookup() as lookup:
-        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
-    if result is None:
-        return
-
-    residence.soil_wbb_count = result.wbb_count
-    residence.soil_fetched_at = timezone.now()
-    residence.save(update_fields=["soil_wbb_count", "soil_fetched_at"])
-    logger.info("Soil status enrichment for residence {}: {} WBB location(s)", residence.pk, result.wbb_count)
+    _enrich_soil_status(residence)
 
 
 @shared_task(name="scraping.enrich_foundation_risk", rate_limit="10/s")
@@ -435,18 +420,7 @@ def enrich_foundation_risk(residence_id: int) -> None:
         residence = Residence.objects.get(pk=residence_id)
     except Residence.DoesNotExist:
         return
-    if residence.latitude is None or residence.longitude is None:
-        return
-
-    with PdokFoundationRiskLookup() as lookup:
-        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
-    if result is None:
-        return
-
-    residence.foundation_risk_label = result.label
-    residence.foundation_risk_fetched_at = timezone.now()
-    residence.save(update_fields=["foundation_risk_label", "foundation_risk_fetched_at"])
-    logger.info("Foundation risk enrichment for residence {}: {}", residence.pk, result.label)
+    _enrich_foundation_risk(residence)
 
 
 _CBS_TASK_OPTS = {

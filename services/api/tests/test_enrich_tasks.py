@@ -263,6 +263,36 @@ def test_enrich_zoning_no_op_when_no_coordinates(settings):
 
 
 @pytest.mark.django_db
+def test_enrich_zoning_skips_when_no_api_key(settings):
+    from scraping.tasks import enrich_zoning
+
+    settings.DSO_API_KEY = None
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+
+    enrich_zoning(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.zoning_designation is None
+    assert residence.zoning_fetched_at is None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_zoning_sets_fetched_at_on_no_plans(settings):
+    from scraping.tasks import enrich_zoning
+
+    settings.DSO_API_KEY = "test-key"
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+    respx.post(_BESTEMMINGSPLAN_PLANNEN_URL).mock(return_value=httpx.Response(200, json={"_embedded": {"plannen": []}}))
+
+    enrich_zoning(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.zoning_designation is None
+    assert residence.zoning_fetched_at is not None
+
+
+@pytest.mark.django_db
 @respx.mock
 def test_enrich_soil_status_stores_zero():
     from scraping.tasks import enrich_soil_status
@@ -316,3 +346,19 @@ def test_enrich_foundation_risk_no_op_on_http_error():
 
     residence.refresh_from_db()
     assert residence.foundation_risk_label is None
+    assert residence.foundation_risk_fetched_at is None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_foundation_risk_sets_fetched_at_on_empty_features():
+    from scraping.tasks import enrich_foundation_risk
+
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+    respx.get(_PDOK_WFS_URL).mock(return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []}))
+
+    enrich_foundation_risk(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.foundation_risk_label is None
+    assert residence.foundation_risk_fetched_at is not None

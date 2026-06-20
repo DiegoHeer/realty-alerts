@@ -33,13 +33,13 @@ def test_lookup_returns_designation():
 
 
 @respx.mock
-def test_lookup_returns_none_when_no_plans():
+def test_lookup_returns_result_with_none_designation_when_no_plans():
     respx.post(_PLANNEN_URL).mock(return_value=httpx.Response(200, json={"_embedded": {"plannen": []}}))
 
     with BestemmingsplanLookup(api_key="test-key") as lookup:
         result = lookup.lookup(latitude=52.376, longitude=4.893)
 
-    assert result is None
+    assert result == BestemmingsplanResult(designation=None)
 
 
 @respx.mock
