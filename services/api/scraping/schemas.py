@@ -178,6 +178,12 @@ class CityOut(Schema):
     name: str
 
 
+class GeoCityOut(Schema):
+    code: str
+    name: str
+    geometry: list
+
+
 class CityStatsOut(Schema):
     code: str
     name: str
