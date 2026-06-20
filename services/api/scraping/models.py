@@ -82,6 +82,8 @@ class Residence(models.Model):
     zoning_fetched_at = models.DateTimeField(null=True, blank=True)
     soil_wbb_count = models.PositiveSmallIntegerField(null=True, blank=True)
     soil_fetched_at = models.DateTimeField(null=True, blank=True)
+    foundation_risk_label = models.CharField(max_length=100, null=True, blank=True)
+    foundation_risk_fetched_at = models.DateTimeField(null=True, blank=True)
     # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence
     # whenever a child Listing is created or updated. The matcher reads these.
     current_price_eur = models.BigIntegerField(null=True, blank=True)

@@ -23,6 +23,7 @@ from scraping.models import (
 from scraping.tasks import (
     _dispatch_detail_scrapes,
     enrich_building_details,
+    enrich_foundation_risk,
     enrich_location,
     enrich_soil_status,
     enrich_zoning,
@@ -200,6 +201,19 @@ def enrich_soil_status_action(modeladmin, request, queryset):
     )
 
 
+@admin.action(description="Enrich foundation risk (PDOK)")
+def enrich_foundation_risk_action(modeladmin, request, queryset):
+    count = 0
+    for residence in queryset:
+        enrich_foundation_risk.delay(residence.pk)
+        count += 1
+    modeladmin.message_user(
+        request,
+        f"Dispatched foundation risk enrichment for {count} residence(s).",
+        messages.SUCCESS,
+    )
+
+
 class ListingInline(admin.TabularInline):
     model = Listing
     extra = 0
@@ -242,6 +256,8 @@ class ResidenceAdmin(admin.ModelAdmin):
         "zoning_fetched_at",
         "soil_wbb_count",
         "soil_fetched_at",
+        "foundation_risk_label",
+        "foundation_risk_fetched_at",
         "display_room_count",
         "display_bedroom_count",
         "display_bathroom_count",
@@ -303,6 +319,15 @@ class ResidenceAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Foundation Risk (PDOK)",
+            {
+                "fields": (
+                    "foundation_risk_label",
+                    "foundation_risk_fetched_at",
+                ),
+            },
+        ),
+        (
             "Listing Details (latest scrape)",
             {
                 "fields": (
@@ -323,6 +348,7 @@ class ResidenceAdmin(admin.ModelAdmin):
         enrich_building_details_action,
         enrich_zoning_action,
         enrich_soil_status_action,
+        enrich_foundation_risk_action,
     ]
 
     def get_queryset(self, request):

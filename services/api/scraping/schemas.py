@@ -80,6 +80,7 @@ class ResidenceOut(Schema):
     energy_label: EnergyLabel | None = None
     zoning_designation: str | None = None
     soil_wbb_count: int | None = None
+    foundation_risk_label: str | None = None
     current_price_eur: int | None = None
     current_status: ListingStatus
     last_scraped_at: datetime | None = None

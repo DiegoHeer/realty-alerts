@@ -10,6 +10,11 @@ from tests.factories import ListingFactory, ResidenceFactory
 
 _EP_BASE_URL = "https://public.ep-online.nl/api/v5"
 _EP_ADRES_URL = f"{_EP_BASE_URL}/PandEnergielabel/Adres"
+_WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
+
+
+def _mock_foundation_risk() -> None:
+    respx.get(_WFS_URL).mock(return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []}))
 
 
 def _ep_response(
@@ -185,6 +190,7 @@ def test_resolve_bag_enriches_building_details_on_new_residence(settings):
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=ep_response))
     _mock_bodemloket()
     _mock_bestemmingsplan()
+    _mock_foundation_risk()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -221,6 +227,7 @@ def test_resolve_bag_skips_ep_online_when_building_type_already_set(settings):
     ep_route = respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=_ep_response("Appartement", "A")))
     _mock_bodemloket()
     _mock_bestemmingsplan()
+    _mock_foundation_risk()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -243,6 +250,7 @@ def test_resolve_bag_continues_when_ep_online_fails(settings):
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(503))
     _mock_bodemloket()
     _mock_bestemmingsplan()
+    _mock_foundation_risk()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
