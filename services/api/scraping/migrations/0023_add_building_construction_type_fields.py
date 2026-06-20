@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('scraping', '0019_add_building_details_to_residence'),
+        ('scraping', '0022_add_foundation_risk_fields'),
     ]
 
     operations = [

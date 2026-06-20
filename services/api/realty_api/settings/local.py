@@ -5,6 +5,7 @@ from typing import cast
 os.environ.setdefault("REALTY_API_KEY", "dev-realty-api-key")
 os.environ.setdefault("BAG_API_KEY", "dev-bag-api-key")
 os.environ.setdefault("EP_ONLINE_API_KEY", "dev-ep-online-api-key")
+os.environ.setdefault("DSO_API_KEY", "dev-dso-api-key")
 
 from secret_key_generator import secret_key_generator  # noqa: E402
 

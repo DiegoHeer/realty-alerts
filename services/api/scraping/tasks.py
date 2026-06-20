@@ -10,17 +10,24 @@ from loguru import logger
 from scraping.cleanup import delete_expired_terminal_residences
 from scraping.models import (
     BagStatus,
+    City,
     DetailScrapeRun,
     DetailScrapeRunStatus,
+    District,
     Listing,
     ListingStatus,
+    Neighborhood,
     Residence,
     Website,
 )
 from scraping.reconciliation import reconcile_residence
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
 from scraping.resolvers.location import PdokLocationLookup
+from scraping.services.bestemmingsplan import BestemmingsplanLookup
+from scraping.services.bodemloket import BodemloketLookup
+from scraping.services import cbs
 from scraping.services.ep_online import EpOnlineLookup
+from scraping.services.pdok_foundation_risk import PdokFoundationRiskLookup
 from scraping.resolvers.types import AddressQuery
 from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
 
@@ -209,6 +216,12 @@ def _enrich_residence(residence: Residence) -> None:
         _enrich_location(residence)
     if residence.building_type is None:
         _enrich_building_details(residence)
+    if residence.zoning_fetched_at is None and residence.latitude is not None:
+        _enrich_zoning(residence)
+    if residence.soil_fetched_at is None and residence.latitude is not None:
+        _enrich_soil_status(residence)
+    if residence.foundation_risk_fetched_at is None and residence.latitude is not None:
+        _enrich_foundation_risk(residence)
 
 
 def _enrich_location(residence: Residence) -> None:
@@ -263,6 +276,52 @@ def _enrich_building_details(residence: Residence) -> None:
             result.building_type,
             result.energy_label,
         )
+
+
+def _enrich_zoning(residence: Residence) -> None:
+    if residence.latitude is None or residence.longitude is None:
+        logger.warning("Zoning enrichment skipped for residence {}: missing coordinates", residence.pk)
+        return
+
+    with BestemmingsplanLookup(api_key=settings.DSO_API_KEY) as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.zoning_designation = result.designation
+    residence.zoning_fetched_at = timezone.now()
+    residence.save(update_fields=["zoning_designation", "zoning_fetched_at"])
+    logger.info("Zoning enrichment for residence {}: {}", residence.pk, result.designation)
+
+
+def _enrich_soil_status(residence: Residence) -> None:
+    if residence.latitude is None or residence.longitude is None:
+        return
+
+    with BodemloketLookup() as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.soil_wbb_count = result.wbb_count
+    residence.soil_fetched_at = timezone.now()
+    residence.save(update_fields=["soil_wbb_count", "soil_fetched_at"])
+    logger.info("Soil status enrichment for residence {}: {} WBB location(s)", residence.pk, result.wbb_count)
+
+
+def _enrich_foundation_risk(residence: Residence) -> None:
+    if residence.latitude is None or residence.longitude is None:
+        return
+
+    with PdokFoundationRiskLookup() as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.foundation_risk_label = result.label
+    residence.foundation_risk_fetched_at = timezone.now()
+    residence.save(update_fields=["foundation_risk_label", "foundation_risk_fetched_at"])
+    logger.info("Foundation risk enrichment for residence {}: {}", residence.pk, result.label)
 
 
 @shared_task(name="scraping.enrich_building_details", rate_limit="10/s")
@@ -327,6 +386,177 @@ def enrich_location(residence_id: int) -> None:
         result.longitude,
         result.neighbourhood,
     )
+
+
+@shared_task(name="scraping.enrich_zoning", rate_limit="5/s")
+def enrich_zoning(residence_id: int) -> None:
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
+    if residence.latitude is None or residence.longitude is None:
+        logger.warning("Zoning enrichment skipped for residence {}: missing coordinates", residence_id)
+        return
+
+    with BestemmingsplanLookup(api_key=settings.DSO_API_KEY) as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.zoning_designation = result.designation
+    residence.zoning_fetched_at = timezone.now()
+    residence.save(update_fields=["zoning_designation", "zoning_fetched_at"])
+    logger.info("Zoning enrichment for residence {}: {}", residence.pk, result.designation)
+
+
+@shared_task(name="scraping.enrich_soil_status", rate_limit="10/s")
+def enrich_soil_status(residence_id: int) -> None:
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
+    if residence.latitude is None or residence.longitude is None:
+        return
+
+    with BodemloketLookup() as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.soil_wbb_count = result.wbb_count
+    residence.soil_fetched_at = timezone.now()
+    residence.save(update_fields=["soil_wbb_count", "soil_fetched_at"])
+    logger.info("Soil status enrichment for residence {}: {} WBB location(s)", residence.pk, result.wbb_count)
+
+
+@shared_task(name="scraping.enrich_foundation_risk", rate_limit="10/s")
+def enrich_foundation_risk(residence_id: int) -> None:
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
+    if residence.latitude is None or residence.longitude is None:
+        return
+
+    with PdokFoundationRiskLookup() as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.foundation_risk_label = result.label
+    residence.foundation_risk_fetched_at = timezone.now()
+    residence.save(update_fields=["foundation_risk_label", "foundation_risk_fetched_at"])
+    logger.info("Foundation risk enrichment for residence {}: {}", residence.pk, result.label)
+
+
+_CBS_TASK_OPTS = {
+    "autoretry_for": (httpx.HTTPError,),
+    "retry_backoff": True,
+    "retry_backoff_max": 60,
+    "max_retries": 3,
+    "rate_limit": "10/s",
+}
+
+
+@shared_task(name="scraping.fetch_city_geo_shape", **_CBS_TASK_OPTS)
+def fetch_city_geo_shape(city_id: int) -> None:
+    try:
+        city = City.objects.get(pk=city_id)
+    except City.DoesNotExist:
+        return
+    geometry = cbs.fetch_entity_geometry("gemeente_gegeneraliseerd", f"GM{city.code}")
+    if geometry is None:
+        logger.warning("No geo shape found for city {}: {}", city.code, city.name)
+        return
+    city.geometry = geometry
+    city.geometry_fetched_at = timezone.now()
+    city.save(update_fields=["geometry", "geometry_fetched_at"])
+    logger.info("Fetched geo shape for city {}: {}", city.code, city.name)
+
+
+@shared_task(name="scraping.fetch_district_geo_shape", **_CBS_TASK_OPTS)
+def fetch_district_geo_shape(district_id: int) -> None:
+    try:
+        district = District.objects.select_related("city").get(pk=district_id)
+    except District.DoesNotExist:
+        return
+    bbox = cbs.bbox_from_geometries([district.city.geometry]) if district.city.geometry else None
+    geometry = cbs.fetch_entity_geometry("wijk_gegeneraliseerd", district.code, bbox=bbox)
+    if geometry is None:
+        logger.warning("No geo shape found for district {}: {}", district.code, district.name)
+        return
+    district.geometry = geometry
+    district.geometry_fetched_at = timezone.now()
+    district.save(update_fields=["geometry", "geometry_fetched_at"])
+    logger.info("Fetched geo shape for district {}: {}", district.code, district.name)
+
+
+@shared_task(name="scraping.fetch_neighbourhood_geo_shape", **_CBS_TASK_OPTS)
+def fetch_neighbourhood_geo_shape(neighbourhood_id: int) -> None:
+    try:
+        neighbourhood = Neighborhood.objects.select_related("city").get(pk=neighbourhood_id)
+    except Neighborhood.DoesNotExist:
+        return
+    bbox = cbs.bbox_from_geometries([neighbourhood.city.geometry]) if neighbourhood.city.geometry else None
+    geometry = cbs.fetch_entity_geometry("buurt_gegeneraliseerd", neighbourhood.code, bbox=bbox)
+    if geometry is None:
+        logger.warning("No geo shape found for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
+        return
+    neighbourhood.geometry = geometry
+    neighbourhood.geometry_fetched_at = timezone.now()
+    neighbourhood.save(update_fields=["geometry", "geometry_fetched_at"])
+    logger.info("Fetched geo shape for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
+
+
+@shared_task(name="scraping.fetch_city_stats", **_CBS_TASK_OPTS)
+def fetch_city_stats(city_id: int) -> None:
+    try:
+        city = City.objects.get(pk=city_id)
+    except City.DoesNotExist:
+        return
+    stats = cbs.fetch_entity_stats(f"GM{city.code}")
+    if stats is None:
+        logger.warning("No stats found for city {}: {}", city.code, city.name)
+        return
+    city.stats = stats
+    city.stats_year = cbs.CBS_ODATA_YEAR
+    city.stats_fetched_at = timezone.now()
+    city.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+    logger.info("Fetched stats for city {}: {}", city.code, city.name)
+
+
+@shared_task(name="scraping.fetch_district_stats", **_CBS_TASK_OPTS)
+def fetch_district_stats(district_id: int) -> None:
+    try:
+        district = District.objects.get(pk=district_id)
+    except District.DoesNotExist:
+        return
+    stats = cbs.fetch_entity_stats(district.code)
+    if stats is None:
+        logger.warning("No stats found for district {}: {}", district.code, district.name)
+        return
+    district.stats = stats
+    district.stats_year = cbs.CBS_ODATA_YEAR
+    district.stats_fetched_at = timezone.now()
+    district.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+    logger.info("Fetched stats for district {}: {}", district.code, district.name)
+
+
+@shared_task(name="scraping.fetch_neighbourhood_stats", **_CBS_TASK_OPTS)
+def fetch_neighbourhood_stats(neighbourhood_id: int) -> None:
+    try:
+        neighbourhood = Neighborhood.objects.get(pk=neighbourhood_id)
+    except Neighborhood.DoesNotExist:
+        return
+    stats = cbs.fetch_entity_stats(neighbourhood.code)
+    if stats is None:
+        logger.warning("No stats found for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
+        return
+    neighbourhood.stats = stats
+    neighbourhood.stats_year = cbs.CBS_ODATA_YEAR
+    neighbourhood.stats_fetched_at = timezone.now()
+    neighbourhood.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+    logger.info("Fetched stats for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
