@@ -18,6 +18,7 @@ ALLOWED_HOSTS: list[str] = []
 REALTY_API_KEY = SETTINGS.realty_api_key
 BAG_API_KEY = SETTINGS.bag_api_key
 EP_ONLINE_API_KEY = SETTINGS.ep_online_api_key
+DSO_API_KEY = SETTINGS.dso_api_key
 
 INSTALLED_APPS = [
     "django.contrib.admin",

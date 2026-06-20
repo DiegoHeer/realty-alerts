@@ -24,6 +24,7 @@ from scraping.tasks import (
     _dispatch_detail_scrapes,
     enrich_building_details,
     enrich_location,
+    enrich_zoning,
     fetch_city_geo_shape,
     fetch_city_stats,
     fetch_district_geo_shape,
@@ -172,6 +173,19 @@ def enrich_building_details_action(modeladmin, request, queryset):
     )
 
 
+@admin.action(description="Enrich zoning (Bestemmingsplan)")
+def enrich_zoning_action(modeladmin, request, queryset):
+    count = 0
+    for residence in queryset:
+        enrich_zoning.delay(residence.pk)
+        count += 1
+    modeladmin.message_user(
+        request,
+        f"Dispatched zoning enrichment for {count} residence(s).",
+        messages.SUCCESS,
+    )
+
+
 class ListingInline(admin.TabularInline):
     model = Listing
     extra = 0
@@ -210,6 +224,8 @@ class ResidenceAdmin(admin.ModelAdmin):
         "building_type",
         "energy_label",
         "energy_label_valid_until",
+        "zoning_designation",
+        "zoning_fetched_at",
         "display_room_count",
         "display_bedroom_count",
         "display_bathroom_count",
@@ -253,6 +269,15 @@ class ResidenceAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Zoning (Bestemmingsplan)",
+            {
+                "fields": (
+                    "zoning_designation",
+                    "zoning_fetched_at",
+                ),
+            },
+        ),
+        (
             "Listing Details (latest scrape)",
             {
                 "fields": (
@@ -267,7 +292,7 @@ class ResidenceAdmin(admin.ModelAdmin):
         ),
     )
     inlines = (ListingInline,)
-    actions = [scrape_residence_details, enrich_location_action, enrich_building_details_action]
+    actions = [scrape_residence_details, enrich_location_action, enrich_building_details_action, enrich_zoning_action]
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(listing_count=Count("listings"))
