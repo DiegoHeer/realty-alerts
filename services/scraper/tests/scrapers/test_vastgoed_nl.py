@@ -17,6 +17,8 @@ def test_scrape_detail_returns_detail_listing(vastgoed_nl_scraper):
     assert detail.construction_period == "1991-2000"
     assert detail.energy_label == "A"
     assert detail.postcode == "5855ER"
+    assert detail.building_type == "detached"
+    assert detail.construction_type == "bestaande_bouw"
 
 
 def test_scrape_detail_returns_none_for_absent_fields(static_vastgoed_nl_scraper):
@@ -38,6 +40,8 @@ def test_scrape_detail_returns_none_for_absent_fields(static_vastgoed_nl_scraper
     assert detail.construction_period is None
     assert detail.energy_label is None
     assert detail.postcode is None
+    assert detail.building_type is None
+    assert detail.construction_type is None
 
 
 def test_scrape_first_page(vastgoed_nl_scraper):

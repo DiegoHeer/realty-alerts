@@ -90,6 +90,8 @@ def test_scrape_detail_returns_detail_listing(funda_scraper):
     assert detail.construction_period == "1928"
     assert detail.energy_label == "C"
     assert detail.postcode == "6712CX"
+    assert detail.building_type == "semi_detached"
+    assert detail.construction_type == "bestaande_bouw"
 
 
 def test_scrape_detail_returns_none_for_absent_fields(static_funda_scraper):
@@ -110,3 +112,5 @@ def test_scrape_detail_returns_none_for_absent_fields(static_funda_scraper):
     assert detail.construction_period is None
     assert detail.energy_label is None
     assert detail.postcode is None
+    assert detail.building_type is None
+    assert detail.construction_type is None
