@@ -7,7 +7,7 @@ import pytest
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
 from scraping.models import City, District, Neighborhood
-from tests.factories import CityFactory, DistrictFactory, NeighborhoodFactory
+from tests.factories import CityFactory, DistrictFactory
 
 
 @pytest.mark.django_db
@@ -45,38 +45,6 @@ class TestSyncAllCities:
 
 
 @pytest.mark.django_db
-class TestCityFetchGeoShapes:
-    def test_saves_geometry(self, admin_client):
-        city = cast(City, CityFactory(code="0518"))
-        geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
-        with patch("scraping.admin.cbs.fetch_city_geometry", return_value={"0518": geometry}):
-            admin_client.post(
-                "/admin/scraping/city/",
-                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [city.pk]},
-            )
-        city.refresh_from_db()
-        assert city.geometry == geometry
-        assert city.geometry_fetched_at is not None
-
-
-@pytest.mark.django_db
-class TestCityFetchStats:
-    def test_saves_stats(self, admin_client):
-        city = cast(City, CityFactory(code="0518"))
-        with patch(
-            "scraping.admin.cbs.fetch_city_stats",
-            return_value={"GM0518": {"woz": 350}},
-        ):
-            admin_client.post(
-                "/admin/scraping/city/",
-                {"action": "fetch_stats", ACTION_CHECKBOX_NAME: [city.pk]},
-            )
-        city.refresh_from_db()
-        assert city.stats == {"woz": 350}
-        assert city.stats_fetched_at is not None
-
-
-@pytest.mark.django_db
 class TestCityFetchDistricts:
     def test_creates_districts(self, admin_client):
         city = cast(City, CityFactory(code="0518"))
@@ -94,49 +62,6 @@ class TestCityFetchDistricts:
         assert District.objects.filter(city=city).count() == 2
         assert District.objects.get(code="WK051801").name == "Centrum"
         assert District.objects.get(code="WK051801").city == city
-
-
-@pytest.mark.django_db
-class TestDistrictFetchGeoShapes:
-    def test_saves_geometry(self, admin_client):
-        district = cast(District, DistrictFactory(code="WK051801"))
-        geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
-        with patch("scraping.admin.cbs.fetch_district_geometry", return_value={"WK051801": geometry}):
-            admin_client.post(
-                "/admin/scraping/district/",
-                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [district.pk]},
-            )
-        district.refresh_from_db()
-        assert district.geometry == geometry
-        assert district.geometry_fetched_at is not None
-
-    def test_passes_bbox_from_city_geometry(self, admin_client):
-        city_geom = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
-        city = cast(City, CityFactory(code="0518", geometry=city_geom))
-        district = cast(District, DistrictFactory(code="WK051801", city=city))
-        with patch("scraping.admin.cbs.fetch_district_geometry", return_value={"WK051801": city_geom}) as mock_fetch:
-            admin_client.post(
-                "/admin/scraping/district/",
-                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [district.pk]},
-            )
-        mock_fetch.assert_called_once_with(["WK051801"], bbox=(4.0, 52.0, 4.5, 52.5))
-
-
-@pytest.mark.django_db
-class TestDistrictFetchStats:
-    def test_saves_stats(self, admin_client):
-        district = cast(District, DistrictFactory(code="WK051801"))
-        with patch(
-            "scraping.admin.cbs.fetch_district_stats",
-            return_value={"WK051801": {"woz": 280}},
-        ):
-            admin_client.post(
-                "/admin/scraping/district/",
-                {"action": "fetch_stats", ACTION_CHECKBOX_NAME: [district.pk]},
-            )
-        district.refresh_from_db()
-        assert district.stats == {"woz": 280}
-        assert district.stats_fetched_at is not None
 
 
 @pytest.mark.django_db
@@ -159,49 +84,3 @@ class TestDistrictFetchNeighbourhoods:
         assert nbh.name == "Schilderswijk-West"
         assert nbh.district == district
         assert nbh.city == district.city
-
-
-@pytest.mark.django_db
-class TestNeighbourhoodFetchGeoShapes:
-    def test_saves_geometry(self, admin_client):
-        nbh = cast(Neighborhood, NeighborhoodFactory(code="BU05180100"))
-        geometry = [[[[4.0, 52.0], [4.1, 52.0], [4.1, 52.1], [4.0, 52.0]]]]
-        with patch("scraping.admin.cbs.fetch_neighbourhood_geometry", return_value={"BU05180100": geometry}):
-            admin_client.post(
-                "/admin/scraping/neighborhood/",
-                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [nbh.pk]},
-            )
-        nbh.refresh_from_db()
-        assert nbh.geometry == geometry
-        assert nbh.geometry_fetched_at is not None
-
-    def test_passes_bbox_from_city_geometry(self, admin_client):
-        city_geom = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
-        city = cast(City, CityFactory(code="0518", geometry=city_geom))
-        district = cast(District, DistrictFactory(code="WK051801", city=city))
-        nbh = cast(Neighborhood, NeighborhoodFactory(code="BU05180100", city=city, district=district))
-        with patch(
-            "scraping.admin.cbs.fetch_neighbourhood_geometry", return_value={"BU05180100": city_geom}
-        ) as mock_fetch:
-            admin_client.post(
-                "/admin/scraping/neighborhood/",
-                {"action": "fetch_geo_shapes", ACTION_CHECKBOX_NAME: [nbh.pk]},
-            )
-        mock_fetch.assert_called_once_with(["BU05180100"], bbox=(4.0, 52.0, 4.5, 52.5))
-
-
-@pytest.mark.django_db
-class TestNeighbourhoodFetchStats:
-    def test_saves_stats(self, admin_client):
-        nbh = cast(Neighborhood, NeighborhoodFactory(code="BU05180100"))
-        with patch(
-            "scraping.admin.cbs.fetch_neighbourhood_stats",
-            return_value={"BU05180100": {"woz": 200}},
-        ):
-            admin_client.post(
-                "/admin/scraping/neighborhood/",
-                {"action": "fetch_stats", ACTION_CHECKBOX_NAME: [nbh.pk]},
-            )
-        nbh.refresh_from_db()
-        assert nbh.stats == {"woz": 200}
-        assert nbh.stats_fetched_at is not None

@@ -10,16 +10,20 @@ from loguru import logger
 from scraping.cleanup import delete_expired_terminal_residences
 from scraping.models import (
     BagStatus,
+    City,
     DetailScrapeRun,
     DetailScrapeRunStatus,
+    District,
     Listing,
     ListingStatus,
+    Neighborhood,
     Residence,
     Website,
 )
 from scraping.reconciliation import reconcile_residence
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
 from scraping.resolvers.location import PdokLocationLookup
+from scraping.services import cbs
 from scraping.services.ep_online import EpOnlineLookup
 from scraping.resolvers.types import AddressQuery
 from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
@@ -327,6 +331,116 @@ def enrich_location(residence_id: int) -> None:
         result.longitude,
         result.neighbourhood,
     )
+
+
+_CBS_TASK_OPTS = {
+    "autoretry_for": (httpx.HTTPError,),
+    "retry_backoff": True,
+    "retry_backoff_max": 60,
+    "max_retries": 3,
+    "rate_limit": "10/s",
+}
+
+
+@shared_task(name="scraping.fetch_city_geo_shape", **_CBS_TASK_OPTS)
+def fetch_city_geo_shape(city_id: int) -> None:
+    try:
+        city = City.objects.get(pk=city_id)
+    except City.DoesNotExist:
+        return
+    geometry = cbs.fetch_entity_geometry("gemeente_gegeneraliseerd", f"GM{city.code}")
+    if geometry is None:
+        logger.warning("No geo shape found for city {}: {}", city.code, city.name)
+        return
+    city.geometry = geometry
+    city.geometry_fetched_at = timezone.now()
+    city.save(update_fields=["geometry", "geometry_fetched_at"])
+    logger.info("Fetched geo shape for city {}: {}", city.code, city.name)
+
+
+@shared_task(name="scraping.fetch_district_geo_shape", **_CBS_TASK_OPTS)
+def fetch_district_geo_shape(district_id: int) -> None:
+    try:
+        district = District.objects.select_related("city").get(pk=district_id)
+    except District.DoesNotExist:
+        return
+    bbox = cbs.bbox_from_geometries([district.city.geometry]) if district.city.geometry else None
+    geometry = cbs.fetch_entity_geometry("wijk_gegeneraliseerd", district.code, bbox=bbox)
+    if geometry is None:
+        logger.warning("No geo shape found for district {}: {}", district.code, district.name)
+        return
+    district.geometry = geometry
+    district.geometry_fetched_at = timezone.now()
+    district.save(update_fields=["geometry", "geometry_fetched_at"])
+    logger.info("Fetched geo shape for district {}: {}", district.code, district.name)
+
+
+@shared_task(name="scraping.fetch_neighbourhood_geo_shape", **_CBS_TASK_OPTS)
+def fetch_neighbourhood_geo_shape(neighbourhood_id: int) -> None:
+    try:
+        neighbourhood = Neighborhood.objects.select_related("city").get(pk=neighbourhood_id)
+    except Neighborhood.DoesNotExist:
+        return
+    bbox = cbs.bbox_from_geometries([neighbourhood.city.geometry]) if neighbourhood.city.geometry else None
+    geometry = cbs.fetch_entity_geometry("buurt_gegeneraliseerd", neighbourhood.code, bbox=bbox)
+    if geometry is None:
+        logger.warning("No geo shape found for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
+        return
+    neighbourhood.geometry = geometry
+    neighbourhood.geometry_fetched_at = timezone.now()
+    neighbourhood.save(update_fields=["geometry", "geometry_fetched_at"])
+    logger.info("Fetched geo shape for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
+
+
+@shared_task(name="scraping.fetch_city_stats", **_CBS_TASK_OPTS)
+def fetch_city_stats(city_id: int) -> None:
+    try:
+        city = City.objects.get(pk=city_id)
+    except City.DoesNotExist:
+        return
+    stats = cbs.fetch_entity_stats(f"GM{city.code}")
+    if stats is None:
+        logger.warning("No stats found for city {}: {}", city.code, city.name)
+        return
+    city.stats = stats
+    city.stats_year = cbs.CBS_ODATA_YEAR
+    city.stats_fetched_at = timezone.now()
+    city.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+    logger.info("Fetched stats for city {}: {}", city.code, city.name)
+
+
+@shared_task(name="scraping.fetch_district_stats", **_CBS_TASK_OPTS)
+def fetch_district_stats(district_id: int) -> None:
+    try:
+        district = District.objects.get(pk=district_id)
+    except District.DoesNotExist:
+        return
+    stats = cbs.fetch_entity_stats(district.code)
+    if stats is None:
+        logger.warning("No stats found for district {}: {}", district.code, district.name)
+        return
+    district.stats = stats
+    district.stats_year = cbs.CBS_ODATA_YEAR
+    district.stats_fetched_at = timezone.now()
+    district.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+    logger.info("Fetched stats for district {}: {}", district.code, district.name)
+
+
+@shared_task(name="scraping.fetch_neighbourhood_stats", **_CBS_TASK_OPTS)
+def fetch_neighbourhood_stats(neighbourhood_id: int) -> None:
+    try:
+        neighbourhood = Neighborhood.objects.get(pk=neighbourhood_id)
+    except Neighborhood.DoesNotExist:
+        return
+    stats = cbs.fetch_entity_stats(neighbourhood.code)
+    if stats is None:
+        logger.warning("No stats found for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
+        return
+    neighbourhood.stats = stats
+    neighbourhood.stats_year = cbs.CBS_ODATA_YEAR
+    neighbourhood.stats_fetched_at = timezone.now()
+    neighbourhood.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
+    logger.info("Fetched stats for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:
