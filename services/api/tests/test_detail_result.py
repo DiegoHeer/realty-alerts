@@ -5,13 +5,15 @@ import pytest
 from pydantic import ValidationError
 
 from scraping.models import (
+    BagStatus,
     DetailScrapeRun,
     DetailScrapeRunStatus,
     Listing,
     ListingStatus,
+    Residence,
 )
 from scraping.schemas import DetailListingIn, DetailResultIn, DetailResultStatus
-from tests.factories import ListingFactory
+from tests.factories import ListingFactory, ResidenceFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -268,3 +270,67 @@ def test_detail_result_success_matching_postcode_no_change(client, api_key_heade
     assert response.status_code == 200
     listing.refresh_from_db()
     assert listing.postcode == "1234 AB"
+
+
+def test_detail_result_success_writes_building_and_construction_type(client, api_key_headers):
+    listing = cast(Listing, ListingFactory())
+    DetailScrapeRun.objects.create(
+        listing=listing,
+        website=listing.website,
+        status=DetailScrapeRunStatus.DISPATCHED,
+    )
+    payload = _detail_payload(
+        detail={
+            "price": "€ 350.000 k.k.",
+            "status": "new",
+            "building_type": "terraced",
+            "construction_type": "bestaande_bouw",
+        }
+    )
+
+    response = client.patch(
+        f"/internal/v1/listings/{listing.pk}/detail",
+        json=payload,
+        headers=api_key_headers,
+    )
+
+    assert response.status_code == 200
+    listing.refresh_from_db()
+    assert listing.building_type == "terraced"
+    assert listing.construction_type == "bestaande_bouw"
+
+
+def test_detail_result_success_triggers_reconciliation(client, api_key_headers):
+    residence = cast(Residence, ResidenceFactory(building_type=None, construction_type=None))
+    listing = cast(
+        Listing,
+        ListingFactory(
+            residence=residence,
+            bag_status=BagStatus.RESOLVED,
+            list_scraped_at=datetime.now(UTC),
+        ),
+    )
+    DetailScrapeRun.objects.create(
+        listing=listing,
+        website=listing.website,
+        status=DetailScrapeRunStatus.DISPATCHED,
+    )
+    payload = _detail_payload(
+        detail={
+            "price": "€ 350.000 k.k.",
+            "status": "new",
+            "building_type": "corner",
+            "construction_type": "nieuwbouw",
+        }
+    )
+
+    response = client.patch(
+        f"/internal/v1/listings/{listing.pk}/detail",
+        json=payload,
+        headers=api_key_headers,
+    )
+
+    assert response.status_code == 200
+    residence.refresh_from_db()
+    assert residence.building_type == "corner"
+    assert residence.construction_type == "nieuwbouw"

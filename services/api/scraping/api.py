@@ -38,6 +38,7 @@ from scraping.schemas import (
     ResidenceOut,
     ScrapeResultsIn,
 )
+from scraping.reconciliation import reconcile_residence
 from scraping.tasks import resolve_bag
 
 
@@ -236,6 +237,8 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
             "room_count",
             "construction_period",
             "energy_label",
+            "building_type",
+            "construction_type",
         )
         for field in detail_fields:
             value = getattr(payload.detail, field)
@@ -252,6 +255,9 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
                 listing.postcode = payload.detail.postcode
                 update_fields.append("postcode")
         listing.save(update_fields=update_fields)
+
+        if listing.residence:
+            reconcile_residence(listing.residence)
 
         run.status = DetailScrapeRunStatus.SUCCESS
         run.finished_at = payload.finished_at
