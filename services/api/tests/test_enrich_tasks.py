@@ -194,19 +194,6 @@ def test_enrich_zoning_stores_designation(settings):
 
 
 @pytest.mark.django_db
-def test_enrich_zoning_skips_when_no_api_key(settings):
-    from scraping.tasks import enrich_zoning
-
-    settings.DSO_API_KEY = None
-    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
-
-    enrich_zoning(residence.pk)
-
-    residence.refresh_from_db()
-    assert residence.zoning_designation is None
-
-
-@pytest.mark.django_db
 @respx.mock
 def test_enrich_zoning_no_op_when_no_coordinates(settings):
     from scraping.tasks import enrich_zoning

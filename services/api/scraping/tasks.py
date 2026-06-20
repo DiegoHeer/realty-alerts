@@ -270,8 +270,7 @@ def _enrich_building_details(residence: Residence) -> None:
 
 def _enrich_zoning(residence: Residence) -> None:
     if residence.latitude is None or residence.longitude is None:
-        return
-    if not settings.DSO_API_KEY:
+        logger.warning("Zoning enrichment skipped for residence {}: missing coordinates", residence.pk)
         return
 
     with BestemmingsplanLookup(api_key=settings.DSO_API_KEY) as lookup:
@@ -356,9 +355,7 @@ def enrich_zoning(residence_id: int) -> None:
     except Residence.DoesNotExist:
         return
     if residence.latitude is None or residence.longitude is None:
-        return
-    if not settings.DSO_API_KEY:
-        logger.debug("DSO_API_KEY not configured; skipping zoning enrichment for residence {}", residence_id)
+        logger.warning("Zoning enrichment skipped for residence {}: missing coordinates", residence_id)
         return
 
     with BestemmingsplanLookup(api_key=settings.DSO_API_KEY) as lookup:

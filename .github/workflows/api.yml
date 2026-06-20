@@ -78,6 +78,7 @@ jobs:
           REALTY_API_KEY: test-key
           BAG_API_KEY: test-bag-key
           EP_ONLINE_API_KEY: test-ep-online-key
+          DSO_API_KEY: test-dso-key
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
   build:
