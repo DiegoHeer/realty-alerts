@@ -78,6 +78,10 @@ class Residence(models.Model):
     building_type = models.CharField(max_length=20, choices=BuildingType.choices, null=True, blank=True)
     energy_label = models.CharField(max_length=10, choices=EnergyLabel.choices, null=True, blank=True)
     energy_label_valid_until = models.DateField(null=True, blank=True)
+    zoning_designation = models.CharField(max_length=100, null=True, blank=True)
+    zoning_fetched_at = models.DateTimeField(null=True, blank=True)
+    soil_wbb_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    soil_fetched_at = models.DateTimeField(null=True, blank=True)
     foundation_risk_label = models.CharField(max_length=100, null=True, blank=True)
     foundation_risk_fetched_at = models.DateTimeField(null=True, blank=True)
     # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence

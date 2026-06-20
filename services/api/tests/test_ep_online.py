@@ -121,6 +121,11 @@ def test_lookup_handles_case_insensitive_building_type():
 _BAG_BASE_URL = "https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2"
 _PDOK_BASE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1"
 _PDOK_FREE_URL = f"{_PDOK_BASE_URL}/free"
+_BODEMLOKET_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
+
+
+def _mock_bodemloket() -> None:
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 0}))
 
 
 def _bag_address(**overrides) -> dict:
@@ -139,6 +144,15 @@ def _pdok_response() -> dict:
     return {
         "response": {"docs": [{"centroide_ll": "POINT(4.893 52.376)", "buurtnaam": "Centrum", "wijknaam": "Centrum"}]}
     }
+
+
+_BESTEMMINGSPLAN_BASE_URL = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4"
+
+
+def _mock_bestemmingsplan() -> None:
+    respx.post(url__startswith=_BESTEMMINGSPLAN_BASE_URL).mock(
+        return_value=httpx.Response(200, json={"_embedded": {"plannen": []}}),
+    )
 
 
 def _pending_listing(**overrides) -> Listing:
@@ -174,6 +188,8 @@ def test_resolve_bag_enriches_building_details_on_new_residence(settings):
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
     ep_response = _ep_response("Appartement", "B", "2034-06-01T00:00:00")
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=ep_response))
+    _mock_bodemloket()
+    _mock_bestemmingsplan()
     _mock_foundation_risk()
     listing = _pending_listing()
 
@@ -209,6 +225,8 @@ def test_resolve_bag_skips_ep_online_when_building_type_already_set(settings):
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     ep_route = respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=_ep_response("Appartement", "A")))
+    _mock_bodemloket()
+    _mock_bestemmingsplan()
     _mock_foundation_risk()
     listing = _pending_listing()
 
@@ -230,6 +248,8 @@ def test_resolve_bag_continues_when_ep_online_fails(settings):
     )
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(503))
+    _mock_bodemloket()
+    _mock_bestemmingsplan()
     _mock_foundation_risk()
     listing = _pending_listing()
 

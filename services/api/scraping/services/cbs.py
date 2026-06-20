@@ -73,7 +73,7 @@ def _pdok_ogc_all_features(
     return all_features
 
 
-def _bbox_from_geometries(geometries: list[list]) -> tuple[float, float, float, float] | None:
+def bbox_from_geometries(geometries: list[list]) -> tuple[float, float, float, float] | None:
     min_lon, min_lat = float("inf"), float("inf")
     max_lon, max_lat = float("-inf"), float("-inf")
     found = False
@@ -190,6 +190,24 @@ def fetch_neighbourhood_geometry(
     return result
 
 
+def fetch_entity_geometry(
+    collection: str,
+    code: str,
+    *,
+    bbox: tuple[float, float, float, float] | None = None,
+) -> list | None:
+    url = _pdok_collection_url(collection)
+    params: dict[str, str | int] = {"f": "json", "jaarcode": CBS_ODATA_YEAR, "statcode": code, "limit": 1}
+    if bbox:
+        params["bbox"] = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
+    resp = httpx.get(url, params=params, timeout=30.0)
+    resp.raise_for_status()
+    features = resp.json().get("features", [])
+    if not features:
+        return None
+    return _extract_geometry(features[0]["geometry"])
+
+
 # --- Stats functions ---
 
 
@@ -209,3 +227,14 @@ def fetch_neighbourhood_stats(codes: list[str]) -> dict[str, dict]:
     odata_filter = " or ".join(f"WijkenEnBuurten eq '{c.ljust(10)}'" for c in codes)
     rows = _odata_get("TypedDataSet", filter=odata_filter, top=len(codes))
     return {r["Codering_3"].strip(): _strip_stats(r) for r in rows}
+
+
+def fetch_entity_stats(odata_key: str) -> dict | None:
+    rows = _odata_get(
+        "TypedDataSet",
+        filter=f"WijkenEnBuurten eq '{odata_key.ljust(10)}'",
+        top=1,
+    )
+    if not rows:
+        return None
+    return _strip_stats(rows[0])
