@@ -78,6 +78,7 @@ class ResidenceOut(Schema):
     district: str | None = None
     building_type: BuildingType | None = None
     energy_label: EnergyLabel | None = None
+    soil_wbb_count: int | None = None
     current_price_eur: int | None = None
     current_status: ListingStatus
     last_scraped_at: datetime | None = None

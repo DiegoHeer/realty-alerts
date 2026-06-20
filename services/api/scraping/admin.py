@@ -200,6 +200,8 @@ class ResidenceAdmin(admin.ModelAdmin):
         "building_type",
         "energy_label",
         "energy_label_valid_until",
+        "soil_wbb_count",
+        "soil_fetched_at",
         "display_room_count",
         "display_bedroom_count",
         "display_bathroom_count",
@@ -239,6 +241,15 @@ class ResidenceAdmin(admin.ModelAdmin):
                     "building_type",
                     "energy_label",
                     "energy_label_valid_until",
+                ),
+            },
+        ),
+        (
+            "Soil Status (Bodemloket)",
+            {
+                "fields": (
+                    "soil_wbb_count",
+                    "soil_fetched_at",
                 ),
             },
         ),
