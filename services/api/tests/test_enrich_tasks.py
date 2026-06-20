@@ -152,3 +152,69 @@ def test_enrich_building_details_skips_when_no_postcode(settings):
 
     residence.refresh_from_db()
     assert residence.building_type is None
+
+
+# --- Zoning enrichment (Bestemmingsplan) ---
+
+_BESTEMMINGSPLAN_PLANNEN_URL = (
+    "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4/plannen/_zoek"
+)
+_BESTEMMINGSPLAN_VLAKKEN_URL = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4/plannen/"
+
+
+def _plannen_response(plan_id: str = "NL.IMRO.0363.A0901BPSTD-VG01") -> dict:
+    return {
+        "_embedded": {
+            "plannen": [{"id": plan_id, "naam": "Centrum", "planType": "bestemmingsplan", "regelStatus": "geldend"}]
+        }
+    }
+
+
+def _bestemmingsvlakken_response(hoofdgroep: str = "Wonen") -> dict:
+    return {"_embedded": {"bestemmingsvlakken": [{"naam": "Wonen - 1", "bestemmingshoofdgroep": hoofdgroep}]}}
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_zoning_stores_designation(settings):
+    from scraping.tasks import enrich_zoning
+
+    settings.DSO_API_KEY = "test-key"
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893, zoning_designation=None))
+    respx.post(_BESTEMMINGSPLAN_PLANNEN_URL).mock(return_value=httpx.Response(200, json=_plannen_response()))
+    respx.post(url__startswith=_BESTEMMINGSPLAN_VLAKKEN_URL).mock(
+        return_value=httpx.Response(200, json=_bestemmingsvlakken_response())
+    )
+
+    enrich_zoning(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.zoning_designation == "Wonen"
+    assert residence.zoning_fetched_at is not None
+
+
+@pytest.mark.django_db
+def test_enrich_zoning_skips_when_no_api_key(settings):
+    from scraping.tasks import enrich_zoning
+
+    settings.DSO_API_KEY = None
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+
+    enrich_zoning(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.zoning_designation is None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_zoning_no_op_when_no_coordinates(settings):
+    from scraping.tasks import enrich_zoning
+
+    settings.DSO_API_KEY = "test-key"
+    residence = cast(Residence, ResidenceFactory(latitude=None, longitude=None))
+
+    enrich_zoning(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.zoning_designation is None
