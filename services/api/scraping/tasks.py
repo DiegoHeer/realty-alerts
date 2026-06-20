@@ -350,6 +350,7 @@ def fetch_city_geo_shape(city_id: int) -> None:
         return
     geometry = cbs.fetch_entity_geometry("gemeente_gegeneraliseerd", f"GM{city.code}")
     if geometry is None:
+        logger.warning("No geo shape found for city {}: {}", city.code, city.name)
         return
     city.geometry = geometry
     city.geometry_fetched_at = timezone.now()
@@ -366,6 +367,7 @@ def fetch_district_geo_shape(district_id: int) -> None:
     bbox = cbs.bbox_from_geometries([district.city.geometry]) if district.city.geometry else None
     geometry = cbs.fetch_entity_geometry("wijk_gegeneraliseerd", district.code, bbox=bbox)
     if geometry is None:
+        logger.warning("No geo shape found for district {}: {}", district.code, district.name)
         return
     district.geometry = geometry
     district.geometry_fetched_at = timezone.now()
@@ -382,6 +384,7 @@ def fetch_neighbourhood_geo_shape(neighbourhood_id: int) -> None:
     bbox = cbs.bbox_from_geometries([neighbourhood.city.geometry]) if neighbourhood.city.geometry else None
     geometry = cbs.fetch_entity_geometry("buurt_gegeneraliseerd", neighbourhood.code, bbox=bbox)
     if geometry is None:
+        logger.warning("No geo shape found for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
         return
     neighbourhood.geometry = geometry
     neighbourhood.geometry_fetched_at = timezone.now()
@@ -397,6 +400,7 @@ def fetch_city_stats(city_id: int) -> None:
         return
     stats = cbs.fetch_entity_stats(f"GM{city.code}")
     if stats is None:
+        logger.warning("No stats found for city {}: {}", city.code, city.name)
         return
     city.stats = stats
     city.stats_year = cbs.CBS_ODATA_YEAR
@@ -413,6 +417,7 @@ def fetch_district_stats(district_id: int) -> None:
         return
     stats = cbs.fetch_entity_stats(district.code)
     if stats is None:
+        logger.warning("No stats found for district {}: {}", district.code, district.name)
         return
     district.stats = stats
     district.stats_year = cbs.CBS_ODATA_YEAR
@@ -429,6 +434,7 @@ def fetch_neighbourhood_stats(neighbourhood_id: int) -> None:
         return
     stats = cbs.fetch_entity_stats(neighbourhood.code)
     if stats is None:
+        logger.warning("No stats found for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
         return
     neighbourhood.stats = stats
     neighbourhood.stats_year = cbs.CBS_ODATA_YEAR
