@@ -184,12 +184,13 @@ class ResidenceAdmin(admin.ModelAdmin):
         "neighbourhood",
         "district",
         "building_type",
+        "construction_type",
         "current_price_eur",
         "current_status",
         "listing_count",
         "last_scraped_at",
     )
-    list_filter = ("current_status", "building_type", "city", "neighbourhood")
+    list_filter = ("current_status", "building_type", "construction_type", "city", "neighbourhood")
     # `title` lives on per-portal Listing now, so search joins through the
     # reverse FK rather than a Residence column.
     search_fields = ("listings__title", "street", "postcode", "bag_id")
@@ -338,7 +339,7 @@ class ListingAdmin(admin.ModelAdmin):
         "bag_resolved_at",
         "first_seen_at",
     )
-    list_filter = (BagStatusListFilter, "website")
+    list_filter = (BagStatusListFilter, "website", "building_type", "construction_type")
     search_fields = ("url", "title", "postcode", "street")
     ordering = ("-first_seen_at",)
     readonly_fields = ("first_seen_at",)
