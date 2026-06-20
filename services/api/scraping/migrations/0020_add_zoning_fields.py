@@ -11,12 +11,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="residence",
-            name="soil_fetched_at",
-            field=models.DateTimeField(blank=True, null=True),
+            name="zoning_designation",
+            field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
             model_name="residence",
-            name="soil_wbb_count",
-            field=models.PositiveSmallIntegerField(blank=True, null=True),
+            name="zoning_fetched_at",
+            field=models.DateTimeField(blank=True, null=True),
         ),
     ]

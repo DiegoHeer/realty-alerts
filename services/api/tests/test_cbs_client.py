@@ -6,7 +6,7 @@ import respx
 
 from scraping.services.cbs import (
     CBS_ODATA_BASE,
-    _bbox_from_geometries,
+    bbox_from_geometries,
     _extract_geometry,
     _odata_get,
     _pdok_collection_url,
@@ -50,20 +50,20 @@ class TestExtractGeometry:
 class TestBboxFromGeometries:
     def test_computes_bbox_from_single_geometry(self):
         geometry = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
-        result = _bbox_from_geometries([geometry])
+        result = bbox_from_geometries([geometry])
         assert result == (4.0, 52.0, 4.5, 52.5)
 
     def test_computes_bbox_spanning_multiple_geometries(self):
         geo1 = [[[[4.0, 52.0], [4.5, 52.0], [4.5, 52.5], [4.0, 52.5], [4.0, 52.0]]]]
         geo2 = [[[[5.0, 53.0], [5.5, 53.0], [5.5, 53.5], [5.0, 53.5], [5.0, 53.0]]]]
-        result = _bbox_from_geometries([geo1, geo2])
+        result = bbox_from_geometries([geo1, geo2])
         assert result == (4.0, 52.0, 5.5, 53.5)
 
     def test_returns_none_for_empty_list(self):
-        assert _bbox_from_geometries([]) is None
+        assert bbox_from_geometries([]) is None
 
     def test_returns_none_for_empty_geometry(self):
-        assert _bbox_from_geometries([[]]) is None
+        assert bbox_from_geometries([[]]) is None
 
 
 class TestOdataGet:

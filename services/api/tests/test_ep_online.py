@@ -141,6 +141,15 @@ def _pdok_response() -> dict:
     }
 
 
+_BESTEMMINGSPLAN_BASE_URL = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4"
+
+
+def _mock_bestemmingsplan() -> None:
+    respx.post(url__startswith=_BESTEMMINGSPLAN_BASE_URL).mock(
+        return_value=httpx.Response(200, json={"_embedded": {"plannen": []}}),
+    )
+
+
 def _pending_listing(**overrides) -> Listing:
     from typing import cast
 
@@ -175,6 +184,7 @@ def test_resolve_bag_enriches_building_details_on_new_residence(settings):
     ep_response = _ep_response("Appartement", "B", "2034-06-01T00:00:00")
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=ep_response))
     _mock_bodemloket()
+    _mock_bestemmingsplan()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -210,6 +220,7 @@ def test_resolve_bag_skips_ep_online_when_building_type_already_set(settings):
     )
     ep_route = respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=_ep_response("Appartement", "A")))
     _mock_bodemloket()
+    _mock_bestemmingsplan()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -231,6 +242,7 @@ def test_resolve_bag_continues_when_ep_online_fails(settings):
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response()))
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(503))
     _mock_bodemloket()
+    _mock_bestemmingsplan()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)

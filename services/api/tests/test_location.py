@@ -23,6 +23,15 @@ def _mock_bodemloket() -> None:
     respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 0}))
 
 
+_BESTEMMINGSPLAN_BASE_URL = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4"
+
+
+def _mock_bestemmingsplan() -> None:
+    respx.post(url__startswith=_BESTEMMINGSPLAN_BASE_URL).mock(
+        return_value=httpx.Response(200, json={"_embedded": {"plannen": []}}),
+    )
+
+
 def _pdok_response(
     lon: float = 4.89348311,
     lat: float = 52.37588008,
@@ -142,6 +151,7 @@ def test_resolve_bag_enriches_coordinates_on_new_residence():
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
     _mock_ep_online()
     _mock_bodemloket()
+    _mock_bestemmingsplan()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -168,6 +178,7 @@ def test_resolve_bag_skips_pdok_when_residence_fully_enriched():
     )
     pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
     _mock_bodemloket()
+    _mock_bestemmingsplan()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -234,6 +245,7 @@ def test_resolve_bag_enriches_neighbourhood_on_new_residence():
     )
     _mock_ep_online()
     _mock_bodemloket()
+    _mock_bestemmingsplan()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -260,6 +272,7 @@ def test_resolve_bag_enriches_neighbourhood_when_only_coordinates_exist():
         return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
     )
     _mock_bodemloket()
+    _mock_bestemmingsplan()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)

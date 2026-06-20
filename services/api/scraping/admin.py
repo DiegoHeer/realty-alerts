@@ -20,7 +20,19 @@ from scraping.models import (
     Neighborhood,
     Residence,
 )
-from scraping.tasks import _dispatch_detail_scrapes, enrich_building_details, enrich_location, enrich_soil_status
+from scraping.tasks import (
+    _dispatch_detail_scrapes,
+    enrich_building_details,
+    enrich_location,
+    enrich_soil_status,
+    enrich_zoning,
+    fetch_city_geo_shape,
+    fetch_city_stats,
+    fetch_district_geo_shape,
+    fetch_district_stats,
+    fetch_neighbourhood_geo_shape,
+    fetch_neighbourhood_stats,
+)
 from scraping.reconciliation import reconcile_residence
 
 _FAILED_BAG_STATUSES = frozenset(
@@ -162,6 +174,19 @@ def enrich_building_details_action(modeladmin, request, queryset):
     )
 
 
+@admin.action(description="Enrich zoning (Bestemmingsplan)")
+def enrich_zoning_action(modeladmin, request, queryset):
+    count = 0
+    for residence in queryset:
+        enrich_zoning.delay(residence.pk)
+        count += 1
+    modeladmin.message_user(
+        request,
+        f"Dispatched zoning enrichment for {count} residence(s).",
+        messages.SUCCESS,
+    )
+
+
 @admin.action(description="Enrich soil status (Bodemloket)")
 def enrich_soil_status_action(modeladmin, request, queryset):
     count = 0
@@ -213,6 +238,8 @@ class ResidenceAdmin(admin.ModelAdmin):
         "building_type",
         "energy_label",
         "energy_label_valid_until",
+        "zoning_designation",
+        "zoning_fetched_at",
         "soil_wbb_count",
         "soil_fetched_at",
         "display_room_count",
@@ -258,6 +285,15 @@ class ResidenceAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Zoning (Bestemmingsplan)",
+            {
+                "fields": (
+                    "zoning_designation",
+                    "zoning_fetched_at",
+                ),
+            },
+        ),
+        (
             "Soil Status (Bodemloket)",
             {
                 "fields": (
@@ -285,6 +321,7 @@ class ResidenceAdmin(admin.ModelAdmin):
         scrape_residence_details,
         enrich_location_action,
         enrich_building_details_action,
+        enrich_zoning_action,
         enrich_soil_status_action,
     ]
 
@@ -447,34 +484,19 @@ class CityAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        cities = list(queryset)
-        geometries = cbs.fetch_city_geometry([c.code for c in cities])
-        now = timezone.now()
-        success = 0
-        for city in cities:
-            geom = geometries.get(city.code)
-            if geom:
-                city.geometry = geom
-                city.geometry_fetched_at = now
-                city.save(update_fields=["geometry", "geometry_fetched_at"])
-                success += 1
-        self._report(request, "geo shapes", success, [], "cities")
+        count = 0
+        for city in queryset:
+            fetch_city_geo_shape.delay(city.pk)
+            count += 1
+        self.message_user(request, f"Dispatched geo shape fetch for {count} city/cities.", messages.SUCCESS)
 
     @admin.action(description="Fetch stats")
     def fetch_stats(self, request, queryset):
-        cities = list(queryset)
-        stats_map = cbs.fetch_city_stats([c.code for c in cities])
-        now = timezone.now()
-        success = 0
-        for city in cities:
-            stats = stats_map.get(f"GM{city.code}")
-            if stats:
-                city.stats = stats
-                city.stats_year = cbs.CBS_ODATA_YEAR
-                city.stats_fetched_at = now
-                city.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
-                success += 1
-        self._report(request, "stats", success, [], "cities")
+        count = 0
+        for city in queryset:
+            fetch_city_stats.delay(city.pk)
+            count += 1
+        self.message_user(request, f"Dispatched stats fetch for {count} city/cities.", messages.SUCCESS)
 
     @admin.action(description="Fetch districts")
     def fetch_districts(self, request, queryset):
@@ -517,36 +539,19 @@ class DistrictAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        districts = list(queryset.select_related("city"))
-        city_geoms = [d.city.geometry for d in districts if d.city and d.city.geometry]
-        bbox = cbs._bbox_from_geometries(city_geoms) if city_geoms else None
-        geometries = cbs.fetch_district_geometry([d.code for d in districts], bbox=bbox)
-        now = timezone.now()
-        success = 0
-        for district in districts:
-            geom = geometries.get(district.code)
-            if geom:
-                district.geometry = geom
-                district.geometry_fetched_at = now
-                district.save(update_fields=["geometry", "geometry_fetched_at"])
-                success += 1
-        self._report(request, "geo shapes", success, [], "districts")
+        count = 0
+        for district in queryset:
+            fetch_district_geo_shape.delay(district.pk)
+            count += 1
+        self.message_user(request, f"Dispatched geo shape fetch for {count} district(s).", messages.SUCCESS)
 
     @admin.action(description="Fetch stats")
     def fetch_stats(self, request, queryset):
-        districts = list(queryset)
-        stats_map = cbs.fetch_district_stats([d.code for d in districts])
-        now = timezone.now()
-        success = 0
-        for district in districts:
-            stats = stats_map.get(district.code)
-            if stats:
-                district.stats = stats
-                district.stats_year = cbs.CBS_ODATA_YEAR
-                district.stats_fetched_at = now
-                district.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
-                success += 1
-        self._report(request, "stats", success, [], "districts")
+        count = 0
+        for district in queryset:
+            fetch_district_stats.delay(district.pk)
+            count += 1
+        self.message_user(request, f"Dispatched stats fetch for {count} district(s).", messages.SUCCESS)
 
     @admin.action(description="Fetch neighbourhoods")
     def fetch_neighbourhoods(self, request, queryset):
@@ -601,45 +606,19 @@ class NeighborhoodAdmin(admin.ModelAdmin):
 
     @admin.action(description="Fetch geo shapes")
     def fetch_geo_shapes(self, request, queryset):
-        neighbourhoods = list(queryset.select_related("city"))
-        city_geoms = [n.city.geometry for n in neighbourhoods if n.city and n.city.geometry]
-        bbox = cbs._bbox_from_geometries(city_geoms) if city_geoms else None
-        geometries = cbs.fetch_neighbourhood_geometry([n.code for n in neighbourhoods], bbox=bbox)
-        now = timezone.now()
-        success = 0
-        for nbh in neighbourhoods:
-            geom = geometries.get(nbh.code)
-            if geom:
-                nbh.geometry = geom
-                nbh.geometry_fetched_at = now
-                nbh.save(update_fields=["geometry", "geometry_fetched_at"])
-                success += 1
-        self._report(request, "geo shapes", success, [], "neighbourhoods")
+        count = 0
+        for neighbourhood in queryset:
+            fetch_neighbourhood_geo_shape.delay(neighbourhood.pk)
+            count += 1
+        self.message_user(request, f"Dispatched geo shape fetch for {count} neighbourhood(s).", messages.SUCCESS)
 
     @admin.action(description="Fetch stats")
     def fetch_stats(self, request, queryset):
-        neighbourhoods = list(queryset)
-        stats_map = cbs.fetch_neighbourhood_stats([n.code for n in neighbourhoods])
-        now = timezone.now()
-        success = 0
-        for nbh in neighbourhoods:
-            stats = stats_map.get(nbh.code)
-            if stats:
-                nbh.stats = stats
-                nbh.stats_year = cbs.CBS_ODATA_YEAR
-                nbh.stats_fetched_at = now
-                nbh.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
-                success += 1
-        self._report(request, "stats", success, [], "neighbourhoods")
-
-    @staticmethod
-    def _report(request, entity, success, failures, level_name):
-        msg = f"Fetched {entity} for {success} {level_name}."
-        if failures:
-            msg += f" Failed: {', '.join(failures)}."
-            messages.warning(request, msg)
-        else:
-            messages.success(request, msg)
+        count = 0
+        for neighbourhood in queryset:
+            fetch_neighbourhood_stats.delay(neighbourhood.pk)
+            count += 1
+        self.message_user(request, f"Dispatched stats fetch for {count} neighbourhood(s).", messages.SUCCESS)
 
     @admin.display(boolean=True, description="Geo")
     def has_geometry(self, obj):
