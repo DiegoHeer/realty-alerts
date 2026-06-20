@@ -20,6 +20,7 @@ from scraping.models import (
 from scraping.reconciliation import reconcile_residence
 from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolver
 from scraping.resolvers.location import PdokLocationLookup
+from scraping.services.bodemloket import BodemloketLookup
 from scraping.services.ep_online import EpOnlineLookup
 from scraping.resolvers.types import AddressQuery
 from scraping.schemas import ScrapeDispatchPayload, ScrapeMode
@@ -209,6 +210,8 @@ def _enrich_residence(residence: Residence) -> None:
         _enrich_location(residence)
     if residence.building_type is None:
         _enrich_building_details(residence)
+    if residence.soil_fetched_at is None and residence.latitude is not None:
+        _enrich_soil_status(residence)
 
 
 def _enrich_location(residence: Residence) -> None:
@@ -263,6 +266,21 @@ def _enrich_building_details(residence: Residence) -> None:
             result.building_type,
             result.energy_label,
         )
+
+
+def _enrich_soil_status(residence: Residence) -> None:
+    if residence.latitude is None or residence.longitude is None:
+        return
+
+    with BodemloketLookup() as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.soil_wbb_count = result.wbb_count
+    residence.soil_fetched_at = timezone.now()
+    residence.save(update_fields=["soil_wbb_count", "soil_fetched_at"])
+    logger.info("Soil status enrichment for residence {}: {} WBB location(s)", residence.pk, result.wbb_count)
 
 
 @shared_task(name="scraping.enrich_building_details", rate_limit="10/s")
@@ -327,6 +345,26 @@ def enrich_location(residence_id: int) -> None:
         result.longitude,
         result.neighbourhood,
     )
+
+
+@shared_task(name="scraping.enrich_soil_status", rate_limit="10/s")
+def enrich_soil_status(residence_id: int) -> None:
+    try:
+        residence = Residence.objects.get(pk=residence_id)
+    except Residence.DoesNotExist:
+        return
+    if residence.latitude is None or residence.longitude is None:
+        return
+
+    with BodemloketLookup() as lookup:
+        result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+    if result is None:
+        return
+
+    residence.soil_wbb_count = result.wbb_count
+    residence.soil_fetched_at = timezone.now()
+    residence.save(update_fields=["soil_wbb_count", "soil_fetched_at"])
+    logger.info("Soil status enrichment for residence {}: {} WBB location(s)", residence.pk, result.wbb_count)
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:

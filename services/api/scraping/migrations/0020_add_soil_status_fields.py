@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0019_add_building_details_to_residence'),
+        ("scraping", "0019_add_building_details_to_residence"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='residence',
-            name='soil_fetched_at',
+            model_name="residence",
+            name="soil_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='residence',
-            name='soil_wbb_count',
+            model_name="residence",
+            name="soil_wbb_count",
             field=models.PositiveSmallIntegerField(blank=True, null=True),
         ),
     ]

@@ -20,7 +20,7 @@ from scraping.models import (
     Neighborhood,
     Residence,
 )
-from scraping.tasks import _dispatch_detail_scrapes, enrich_building_details, enrich_location
+from scraping.tasks import _dispatch_detail_scrapes, enrich_building_details, enrich_location, enrich_soil_status
 from scraping.reconciliation import reconcile_residence
 
 _FAILED_BAG_STATUSES = frozenset(
@@ -162,6 +162,19 @@ def enrich_building_details_action(modeladmin, request, queryset):
     )
 
 
+@admin.action(description="Enrich soil status (Bodemloket)")
+def enrich_soil_status_action(modeladmin, request, queryset):
+    count = 0
+    for residence in queryset:
+        enrich_soil_status.delay(residence.pk)
+        count += 1
+    modeladmin.message_user(
+        request,
+        f"Dispatched soil status enrichment for {count} residence(s).",
+        messages.SUCCESS,
+    )
+
+
 class ListingInline(admin.TabularInline):
     model = Listing
     extra = 0
@@ -268,7 +281,12 @@ class ResidenceAdmin(admin.ModelAdmin):
         ),
     )
     inlines = (ListingInline,)
-    actions = [scrape_residence_details, enrich_location_action, enrich_building_details_action]
+    actions = [
+        scrape_residence_details,
+        enrich_location_action,
+        enrich_building_details_action,
+        enrich_soil_status_action,
+    ]
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(listing_count=Count("listings"))
