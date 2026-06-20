@@ -363,7 +363,7 @@ def fetch_district_geo_shape(district_id: int) -> None:
         district = District.objects.select_related("city").get(pk=district_id)
     except District.DoesNotExist:
         return
-    bbox = cbs._bbox_from_geometries([district.city.geometry]) if district.city.geometry else None
+    bbox = cbs.bbox_from_geometries([district.city.geometry]) if district.city.geometry else None
     geometry = cbs.fetch_entity_geometry("wijk_gegeneraliseerd", district.code, bbox=bbox)
     if geometry is None:
         return
@@ -379,7 +379,7 @@ def fetch_neighbourhood_geo_shape(neighbourhood_id: int) -> None:
         neighbourhood = Neighborhood.objects.select_related("city").get(pk=neighbourhood_id)
     except Neighborhood.DoesNotExist:
         return
-    bbox = cbs._bbox_from_geometries([neighbourhood.city.geometry]) if neighbourhood.city.geometry else None
+    bbox = cbs.bbox_from_geometries([neighbourhood.city.geometry]) if neighbourhood.city.geometry else None
     geometry = cbs.fetch_entity_geometry("buurt_gegeneraliseerd", neighbourhood.code, bbox=bbox)
     if geometry is None:
         return

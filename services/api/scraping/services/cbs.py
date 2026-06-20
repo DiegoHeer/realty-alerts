@@ -73,7 +73,7 @@ def _pdok_ogc_all_features(
     return all_features
 
 
-def _bbox_from_geometries(geometries: list[list]) -> tuple[float, float, float, float] | None:
+def bbox_from_geometries(geometries: list[list]) -> tuple[float, float, float, float] | None:
     min_lon, min_lat = float("inf"), float("inf")
     max_lon, max_lat = float("-inf"), float("-inf")
     found = False

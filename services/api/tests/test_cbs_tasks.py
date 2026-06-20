@@ -54,7 +54,7 @@ class TestFetchDistrictGeoShape:
 
         with (
             patch("scraping.tasks.cbs.fetch_entity_geometry", return_value=_SAMPLE_GEOMETRY) as mock_fetch,
-            patch("scraping.tasks.cbs._bbox_from_geometries", return_value=(4.0, 52.0, 5.0, 53.0)) as mock_bbox,
+            patch("scraping.tasks.cbs.bbox_from_geometries", return_value=(4.0, 52.0, 5.0, 53.0)) as mock_bbox,
         ):
             fetch_district_geo_shape(district.pk)
 
@@ -90,7 +90,7 @@ class TestFetchNeighbourhoodGeoShape:
 
         with (
             patch("scraping.tasks.cbs.fetch_entity_geometry", return_value=_SAMPLE_GEOMETRY) as mock_fetch,
-            patch("scraping.tasks.cbs._bbox_from_geometries", return_value=(4.0, 52.0, 5.0, 53.0)) as mock_bbox,
+            patch("scraping.tasks.cbs.bbox_from_geometries", return_value=(4.0, 52.0, 5.0, 53.0)) as mock_bbox,
         ):
             fetch_neighbourhood_geo_shape(neighbourhood.pk)
 
