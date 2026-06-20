@@ -12,10 +12,17 @@ _PDOK_BASE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1"
 _PDOK_FREE_URL = f"{_PDOK_BASE_URL}/free"
 _BAG_BASE_URL = "https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2"
 _EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
+_WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
 
 
 def _mock_ep_online() -> None:
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=[]))
+
+
+def _mock_foundation_risk() -> None:
+    respx.get(_WFS_URL).mock(
+        return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []})
+    )
 
 
 def _pdok_response(
@@ -136,6 +143,7 @@ def test_resolve_bag_enriches_coordinates_on_new_residence():
     )
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
     _mock_ep_online()
+    _mock_foundation_risk()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -161,6 +169,7 @@ def test_resolve_bag_skips_pdok_when_residence_fully_enriched():
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
+    _mock_foundation_risk()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -226,6 +235,7 @@ def test_resolve_bag_enriches_neighbourhood_on_new_residence():
         return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
     )
     _mock_ep_online()
+    _mock_foundation_risk()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
@@ -251,6 +261,7 @@ def test_resolve_bag_enriches_neighbourhood_when_only_coordinates_exist():
     respx.get(_PDOK_FREE_URL).mock(
         return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
     )
+    _mock_foundation_risk()
     listing = _pending_listing()
 
     resolve_bag.delay(listing.pk).get(timeout=1)
