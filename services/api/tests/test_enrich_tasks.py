@@ -154,6 +154,11 @@ def test_enrich_building_details_skips_when_no_postcode(settings):
     assert residence.building_type is None
 
 
+# --- Soil status enrichment (Bodemloket) ---
+
+_BODEMLOKET_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
+
+
 # --- Zoning enrichment (Bestemmingsplan) ---
 
 _BESTEMMINGSPLAN_PLANNEN_URL = (
@@ -195,6 +200,21 @@ def test_enrich_zoning_stores_designation(settings):
 
 @pytest.mark.django_db
 @respx.mock
+def test_enrich_soil_status_stores_count():
+    from scraping.tasks import enrich_soil_status
+
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893, soil_wbb_count=None))
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 3}))
+
+    enrich_soil_status(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.soil_wbb_count == 3
+    assert residence.soil_fetched_at is not None
+
+
+@pytest.mark.django_db
+@respx.mock
 def test_enrich_zoning_no_op_when_no_coordinates(settings):
     from scraping.tasks import enrich_zoning
 
@@ -205,3 +225,31 @@ def test_enrich_zoning_no_op_when_no_coordinates(settings):
 
     residence.refresh_from_db()
     assert residence.zoning_designation is None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_soil_status_stores_zero():
+    from scraping.tasks import enrich_soil_status
+
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 0}))
+
+    enrich_soil_status(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.soil_wbb_count == 0
+    assert residence.soil_fetched_at is not None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_soil_status_no_op_when_no_coordinates():
+    from scraping.tasks import enrich_soil_status
+
+    residence = cast(Residence, ResidenceFactory(latitude=None, longitude=None))
+
+    enrich_soil_status(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.soil_wbb_count is None

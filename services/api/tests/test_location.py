@@ -12,10 +12,15 @@ _PDOK_BASE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1"
 _PDOK_FREE_URL = f"{_PDOK_BASE_URL}/free"
 _BAG_BASE_URL = "https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2"
 _EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
+_BODEMLOKET_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
 
 
 def _mock_ep_online() -> None:
     respx.get(_EP_ADRES_URL).mock(return_value=httpx.Response(200, json=[]))
+
+
+def _mock_bodemloket() -> None:
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 0}))
 
 
 _BESTEMMINGSPLAN_BASE_URL = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4"
@@ -145,6 +150,7 @@ def test_resolve_bag_enriches_coordinates_on_new_residence():
     )
     respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
     _mock_ep_online()
+    _mock_bodemloket()
     _mock_bestemmingsplan()
     listing = _pending_listing()
 
@@ -171,7 +177,7 @@ def test_resolve_bag_skips_pdok_when_residence_fully_enriched():
         return_value=httpx.Response(200, json={"_embedded": {"adressen": [_bag_address()]}})
     )
     pdok_route = respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376)))
-    _mock_bestemmingsplan()
+    _mock_bodemloket()
     _mock_bestemmingsplan()
     listing = _pending_listing()
 
@@ -238,6 +244,7 @@ def test_resolve_bag_enriches_neighbourhood_on_new_residence():
         return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
     )
     _mock_ep_online()
+    _mock_bodemloket()
     _mock_bestemmingsplan()
     listing = _pending_listing()
 
@@ -264,6 +271,7 @@ def test_resolve_bag_enriches_neighbourhood_when_only_coordinates_exist():
     respx.get(_PDOK_FREE_URL).mock(
         return_value=httpx.Response(200, json=_pdok_response(4.893, 52.376, "Jordaan", "Centrum"))
     )
+    _mock_bodemloket()
     _mock_bestemmingsplan()
     listing = _pending_listing()
 

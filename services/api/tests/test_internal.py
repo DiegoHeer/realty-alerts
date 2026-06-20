@@ -286,6 +286,9 @@ def test_submit_results_resolves_end_to_end(client, api_key_headers, scrape_payl
     respx.get("https://public.ep-online.nl/api/v5/PandEnergielabel/Adres").mock(
         return_value=httpx.Response(200, json=[])
     )
+    respx.get("https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query").mock(
+        return_value=httpx.Response(200, json={"count": 0})
+    )
     respx.post(url__startswith="https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4").mock(
         return_value=httpx.Response(200, json={"_embedded": {"plannen": []}})
     )

@@ -24,6 +24,7 @@ from scraping.tasks import (
     _dispatch_detail_scrapes,
     enrich_building_details,
     enrich_location,
+    enrich_soil_status,
     enrich_zoning,
     fetch_city_geo_shape,
     fetch_city_stats,
@@ -186,6 +187,19 @@ def enrich_zoning_action(modeladmin, request, queryset):
     )
 
 
+@admin.action(description="Enrich soil status (Bodemloket)")
+def enrich_soil_status_action(modeladmin, request, queryset):
+    count = 0
+    for residence in queryset:
+        enrich_soil_status.delay(residence.pk)
+        count += 1
+    modeladmin.message_user(
+        request,
+        f"Dispatched soil status enrichment for {count} residence(s).",
+        messages.SUCCESS,
+    )
+
+
 class ListingInline(admin.TabularInline):
     model = Listing
     extra = 0
@@ -226,6 +240,8 @@ class ResidenceAdmin(admin.ModelAdmin):
         "energy_label_valid_until",
         "zoning_designation",
         "zoning_fetched_at",
+        "soil_wbb_count",
+        "soil_fetched_at",
         "display_room_count",
         "display_bedroom_count",
         "display_bathroom_count",
@@ -278,6 +294,15 @@ class ResidenceAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Soil Status (Bodemloket)",
+            {
+                "fields": (
+                    "soil_wbb_count",
+                    "soil_fetched_at",
+                ),
+            },
+        ),
+        (
             "Listing Details (latest scrape)",
             {
                 "fields": (
@@ -292,7 +317,13 @@ class ResidenceAdmin(admin.ModelAdmin):
         ),
     )
     inlines = (ListingInline,)
-    actions = [scrape_residence_details, enrich_location_action, enrich_building_details_action, enrich_zoning_action]
+    actions = [
+        scrape_residence_details,
+        enrich_location_action,
+        enrich_building_details_action,
+        enrich_zoning_action,
+        enrich_soil_status_action,
+    ]
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(listing_count=Count("listings"))
