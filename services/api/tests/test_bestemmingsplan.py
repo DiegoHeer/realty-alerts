@@ -10,9 +10,7 @@ _VLAKKEN_URL_PREFIX = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plann
 def _plannen_response(plan_id: str = "NL.IMRO.0363.A0901BPSTD-VG01") -> dict:
     return {
         "_embedded": {
-            "plannen": [
-                {"id": plan_id, "naam": "Centrum", "planType": "bestemmingsplan", "regelStatus": "geldend"}
-            ]
+            "plannen": [{"id": plan_id, "naam": "Centrum", "planType": "bestemmingsplan", "regelStatus": "geldend"}]
         }
     }
 
@@ -36,9 +34,7 @@ def test_lookup_returns_designation():
 
 @respx.mock
 def test_lookup_returns_none_when_no_plans():
-    respx.post(_PLANNEN_URL).mock(
-        return_value=httpx.Response(200, json={"_embedded": {"plannen": []}})
-    )
+    respx.post(_PLANNEN_URL).mock(return_value=httpx.Response(200, json={"_embedded": {"plannen": []}}))
 
     with BestemmingsplanLookup(api_key="test-key") as lookup:
         result = lookup.lookup(latitude=52.376, longitude=4.893)
@@ -58,9 +54,7 @@ def test_lookup_returns_none_on_http_error():
 
 @respx.mock
 def test_lookup_sends_api_key_header():
-    route = respx.post(_PLANNEN_URL).mock(
-        return_value=httpx.Response(200, json={"_embedded": {"plannen": []}})
-    )
+    route = respx.post(_PLANNEN_URL).mock(return_value=httpx.Response(200, json={"_embedded": {"plannen": []}}))
 
     with BestemmingsplanLookup(api_key="my-secret-key") as lookup:
         lookup.lookup(latitude=52.376, longitude=4.893)
