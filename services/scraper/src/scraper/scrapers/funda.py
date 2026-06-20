@@ -8,6 +8,7 @@ from loguru import logger
 
 from scraper.address import parse_dutch_address, parse_dutch_postcode
 from scraper.enums import ListingStatus, Website
+from scraper.parsing import parse_building_type, parse_construction_type
 from scraper.models import DetailListing, Listing
 from scraper.protocols import FetchStrategy
 from scraper.scrapers.base import BaseScraper
@@ -119,6 +120,12 @@ class FundaScraper(BaseScraper):
         title_el = soup.select_one("title")
         postcode = parse_dutch_postcode(title_el.get_text() if title_el else None)
 
+        building_type_raw = _parse_dt_dd_text(soup, "Soort woonhuis") or _parse_dt_dd_text(soup, "Soort appartement")
+        building_type = parse_building_type(building_type_raw) if building_type_raw else None
+
+        construction_type_raw = _parse_dt_dd_text(soup, "Soort bouw")
+        construction_type = parse_construction_type(construction_type_raw) if construction_type_raw else None
+
         return DetailListing(
             price=price,
             status=status,
@@ -129,6 +136,8 @@ class FundaScraper(BaseScraper):
             construction_period=construction_period,
             energy_label=energy_label,
             postcode=postcode,
+            building_type=building_type,
+            construction_type=construction_type,
         )
 
     def _get_last_page(self) -> int:

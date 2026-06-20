@@ -114,3 +114,90 @@ def test_reconcile_clears_current_price_when_no_listing_has_price():
 
     residence.refresh_from_db()
     assert residence.current_price_eur is None
+
+
+def test_reconcile_picks_construction_type_from_freshest_listing():
+    residence = cast(Residence, ResidenceFactory())
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 1, 1, tzinfo=UTC),
+        construction_type="bestaande_bouw",
+    )
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        construction_type="nieuwbouw",
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    assert residence.construction_type == "nieuwbouw"
+
+
+def test_reconcile_construction_type_ignores_null_values():
+    residence = cast(Residence, ResidenceFactory())
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        construction_type=None,
+    )
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 1, 1, tzinfo=UTC),
+        construction_type="bestaande_bouw",
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    assert residence.construction_type == "bestaande_bouw"
+
+
+def test_reconcile_fills_building_type_when_residence_has_none():
+    residence = cast(Residence, ResidenceFactory(building_type=None))
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        building_type="terraced",
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    assert residence.building_type == "terraced"
+
+
+def test_reconcile_does_not_overwrite_existing_building_type():
+    residence = cast(Residence, ResidenceFactory(building_type="apartment"))
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        building_type="terraced",
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    assert residence.building_type == "apartment"
+
+
+def test_reconcile_clears_construction_type_when_no_listing_has_value():
+    residence = cast(Residence, ResidenceFactory(construction_type="nieuwbouw"))
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        construction_type=None,
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    assert residence.construction_type is None

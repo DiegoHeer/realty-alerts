@@ -135,6 +135,8 @@ class DetailListingIn(Schema):
     construction_period: str | None = None
     energy_label: str | None = None
     postcode: str | None = None
+    building_type: str | None = None
+    construction_type: str | None = None
 
 
 class DetailResultIn(Schema):
