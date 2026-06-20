@@ -10,7 +10,7 @@ _API_BASE_URL = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api
 
 @dataclass(frozen=True, slots=True)
 class BestemmingsplanResult:
-    designation: str
+    designation: str | None
 
 
 class BestemmingsplanLookup:
@@ -53,12 +53,6 @@ class BestemmingsplanLookup:
         }
 
     def lookup(self, latitude: float, longitude: float) -> BestemmingsplanResult | None:
-        plan_id = self._find_plan(latitude, longitude)
-        if plan_id is None:
-            return None
-        return self._find_designation(plan_id, latitude, longitude)
-
-    def _find_plan(self, latitude: float, longitude: float) -> str | None:
         try:
             response = self._client.post(
                 "/plannen/_zoek",
@@ -73,8 +67,9 @@ class BestemmingsplanLookup:
 
         plannen = response.json().get("_embedded", {}).get("plannen", [])
         if not plannen:
-            return None
-        return plannen[0]["id"]
+            return BestemmingsplanResult(designation=None)
+
+        return self._find_designation(plannen[0]["id"], latitude, longitude)
 
     def _find_designation(self, plan_id: str, latitude: float, longitude: float) -> BestemmingsplanResult | None:
         try:
@@ -90,10 +85,10 @@ class BestemmingsplanLookup:
 
         vlakken = response.json().get("_embedded", {}).get("bestemmingsvlakken", [])
         if not vlakken:
-            return None
+            return BestemmingsplanResult(designation=None)
 
         hoofdgroep = vlakken[0].get("bestemmingshoofdgroep")
         if not hoofdgroep:
-            return None
+            return BestemmingsplanResult(designation=None)
 
         return BestemmingsplanResult(designation=hoofdgroep)
