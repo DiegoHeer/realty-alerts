@@ -29,6 +29,7 @@ from scraping.schemas import (
     DetailResultStatus,
     DetailScrapeRunOut,
     DistrictStatsOut,
+    GeoCityOut,
     GeoDistrictOut,
     GeoNeighborhoodOut,
     ListingIn,
@@ -323,6 +324,15 @@ shapes_router = Router(tags=["shapes"])
 
 class _OptionalCity(Schema):
     city: str | None = None
+
+
+@shapes_router.get("/cities", response=list[GeoCityOut])
+def list_city_shapes(
+    request,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
+):
+    return list(City.objects.filter(geometry__isnull=False).order_by("name")[offset : offset + limit])
 
 
 @shapes_router.get("/districts", response={200: list[GeoDistrictOut], 404: None})
