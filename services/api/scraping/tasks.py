@@ -312,9 +312,21 @@ def _enrich_soil_status(residence: Residence) -> None:
         residence.save(update_fields=["soil_fetched_at"])
         return
 
-    residence.soil_wbb_count = result.wbb_count
-    residence.save(update_fields=["soil_wbb_count", "soil_fetched_at"])
-    logger.info("Soil status enrichment for residence {}: {} WBB location(s)", residence.pk, result.wbb_count)
+    residence.soil_investigation_count = result.investigation_count
+    update_fields = ["soil_investigation_count", "soil_fetched_at"]
+    if result.contamination_status is not None:
+        residence.soil_contamination_status = result.contamination_status
+        update_fields.append("soil_contamination_status")
+    if result.investigation_outcome is not None:
+        residence.soil_investigation_outcome = result.investigation_outcome
+        update_fields.append("soil_investigation_outcome")
+    residence.save(update_fields=update_fields)
+    logger.info(
+        "Soil status enrichment for residence {}: {} investigation(s), status={}",
+        residence.pk,
+        result.investigation_count,
+        result.contamination_status,
+    )
 
 
 def _enrich_foundation_risk(residence: Residence) -> None:

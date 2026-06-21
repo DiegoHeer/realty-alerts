@@ -79,7 +79,9 @@ class ResidenceOut(Schema):
     building_type: BuildingType | None = None
     energy_label: EnergyLabel | None = None
     zoning_designation: str | None = None
-    soil_wbb_count: int | None = None
+    soil_investigation_count: int | None = None
+    soil_contamination_status: str | None = None
+    soil_investigation_outcome: str | None = None
     foundation_risk_label: str | None = None
     foundation_risk_soil_type: str | None = None
     foundation_risk_pre1970_pct: float | None = None

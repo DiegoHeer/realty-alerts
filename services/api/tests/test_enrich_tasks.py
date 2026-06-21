@@ -243,16 +243,32 @@ def test_enrich_foundation_risk_stores_all_fields():
 
 @pytest.mark.django_db
 @respx.mock
-def test_enrich_soil_status_stores_count():
+def test_enrich_soil_status_stores_all_fields():
     from scraping.tasks import enrich_soil_status
 
-    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893, soil_wbb_count=None))
-    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 3}))
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893, soil_investigation_count=None))
+    respx.get(_BODEMLOKET_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "features": [
+                    {
+                        "attributes": {
+                            "STATUS_OORD": "niet ernstig, licht tot matig verontreinigd",
+                            "VERVOLG_WBB": "voldoende onderzocht",
+                        }
+                    }
+                ]
+            },
+        )
+    )
 
     enrich_soil_status(residence.pk)
 
     residence.refresh_from_db()
-    assert residence.soil_wbb_count == 3
+    assert residence.soil_investigation_count == 1
+    assert residence.soil_contamination_status == "niet ernstig, licht tot matig verontreinigd"
+    assert residence.soil_investigation_outcome == "voldoende onderzocht"
     assert residence.soil_fetched_at is not None
 
 
@@ -302,16 +318,18 @@ def test_enrich_zoning_sets_fetched_at_on_no_plans(settings):
 
 @pytest.mark.django_db
 @respx.mock
-def test_enrich_soil_status_stores_zero():
+def test_enrich_soil_status_stores_zero_on_no_features():
     from scraping.tasks import enrich_soil_status
 
     residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
-    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 0}))
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"features": []}))
 
     enrich_soil_status(residence.pk)
 
     residence.refresh_from_db()
-    assert residence.soil_wbb_count == 0
+    assert residence.soil_investigation_count == 0
+    assert residence.soil_contamination_status is None
+    assert residence.soil_investigation_outcome is None
     assert residence.soil_fetched_at is not None
 
 
@@ -326,7 +344,7 @@ def test_enrich_soil_status_sets_fetched_at_on_http_error():
     enrich_soil_status(residence.pk)
 
     residence.refresh_from_db()
-    assert residence.soil_wbb_count is None
+    assert residence.soil_investigation_count is None
     assert residence.soil_fetched_at is not None
 
 
@@ -340,7 +358,7 @@ def test_enrich_soil_status_no_op_when_no_coordinates():
     enrich_soil_status(residence.pk)
 
     residence.refresh_from_db()
-    assert residence.soil_wbb_count is None
+    assert residence.soil_investigation_count is None
 
 
 @pytest.mark.django_db

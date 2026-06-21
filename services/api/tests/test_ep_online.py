@@ -125,7 +125,7 @@ _BODEMLOKET_URL = "https://gis.gdngeoservices.nl/standalone/rest/services/blk_gd
 
 
 def _mock_bodemloket() -> None:
-    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 0}))
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"features": []}))
 
 
 def _bag_address(**overrides) -> dict:

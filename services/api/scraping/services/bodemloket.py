@@ -7,10 +7,26 @@ from loguru import logger
 
 _ARCGIS_BASE_URL = "https://gis.gdngeoservices.nl/standalone/rest/services/blk_gdn/lks_blk_rd_v1/MapServer/0/query"
 
+_STATUS_SEVERITY = {
+    "onverdacht/niet verontreinigd": 0,
+    "niet ernstig, niet verontreinigd": 0,
+    "niet ernstig, licht tot matig verontreinigd": 1,
+    "niet ernstig, verontreinigd": 1,
+    "potentieel ernstig": 2,
+    "ernstig, geen risico's bepaald": 3,
+    "ernstig, risico's bepaald": 4,
+}
+
+
+def _status_severity(status: str) -> int:
+    return _STATUS_SEVERITY.get(status.lower().strip(), 2)
+
 
 @dataclass(frozen=True, slots=True)
 class BodemloketResult:
-    wbb_count: int
+    investigation_count: int
+    contamination_status: str | None = None
+    investigation_outcome: str | None = None
 
 
 class BodemloketLookup:
@@ -35,7 +51,8 @@ class BodemloketLookup:
             "geometry": f"{longitude},{latitude}",
             "inSR": "4326",
             "spatialRel": "esriSpatialRelIntersects",
-            "returnCountOnly": "true",
+            "outFields": "STATUS_OORD,VERVOLG_WBB",
+            "returnGeometry": "false",
             "f": "json",
         }
         try:
@@ -45,10 +62,15 @@ class BodemloketLookup:
             logger.warning("Bodemloket lookup failed for ({}, {}): {}", latitude, longitude, exc)
             return None
 
-        data = response.json()
-        count = data.get("count")
-        if count is not None:
-            return BodemloketResult(wbb_count=count)
+        features = response.json().get("features", [])
+        if not features:
+            return BodemloketResult(investigation_count=0)
 
-        features = data.get("features", [])
-        return BodemloketResult(wbb_count=len(features))
+        worst = max(features, key=lambda f: _status_severity(f.get("attributes", {}).get("STATUS_OORD", "")))
+        attrs = worst.get("attributes", {})
+
+        return BodemloketResult(
+            investigation_count=len(features),
+            contamination_status=attrs.get("STATUS_OORD"),
+            investigation_outcome=attrs.get("VERVOLG_WBB"),
+        )
