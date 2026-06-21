@@ -10,7 +10,7 @@ from tests.factories import ResidenceFactory
 
 _PDOK_FREE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
 _EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
-_PDOK_WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
+_PDOK_WFS_URL = "https://service.pdok.nl/rvo/indicatieve-aandachtsgebieden-funderingsproblematiek/wfs/v1_0"
 
 
 def _ep_response(

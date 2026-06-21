@@ -6,7 +6,7 @@ from scraping.services.pdok_foundation_risk import (
     PdokFoundationRiskLookup,
 )
 
-_WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
+_WFS_URL = "https://service.pdok.nl/rvo/indicatieve-aandachtsgebieden-funderingsproblematiek/wfs/v1_0"
 
 
 def _wfs_response(legenda: str = "Kwetsbaar gebied - 40-60 %") -> dict:
@@ -65,6 +65,11 @@ def test_lookup_sends_correct_bbox_params():
         lookup.lookup(latitude=52.376, longitude=4.893)
 
     request = route.calls[0].request
-    assert "service=WFS" in str(request.url)
-    assert "request=GetFeature" in str(request.url)
-    assert "outputFormat=application%2Fjson" in str(request.url) or "outputFormat=application/json" in str(request.url)
+    url = str(request.url)
+    assert "service=WFS" in url
+    assert "request=GetFeature" in url
+    assert "outputFormat=application%2Fjson" in url or "outputFormat=application/json" in url
+    # WFS 2.0.0 EPSG:4326 requires lat,lon axis order (lat before lon)
+    bbox_start = url.split("BBOX=")[1].split("%2C")
+    first_coord = float(bbox_start[0])
+    assert first_coord > 50, "BBOX should start with latitude (>50), not longitude (<10)"

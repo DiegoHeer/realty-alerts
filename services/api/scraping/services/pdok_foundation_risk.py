@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import httpx
 from loguru import logger
 
-_WFS_BASE_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
+_WFS_BASE_URL = "https://service.pdok.nl/rvo/indicatieve-aandachtsgebieden-funderingsproblematiek/wfs/v1_0"
 _BBOX_DELTA = 0.0001
 
 
@@ -32,8 +32,8 @@ class PdokFoundationRiskLookup:
 
     def lookup(self, latitude: float, longitude: float) -> FoundationRiskResult | None:
         bbox = (
-            f"{longitude - _BBOX_DELTA},{latitude - _BBOX_DELTA},"
-            f"{longitude + _BBOX_DELTA},{latitude + _BBOX_DELTA},"
+            f"{latitude - _BBOX_DELTA},{longitude - _BBOX_DELTA},"
+            f"{latitude + _BBOX_DELTA},{longitude + _BBOX_DELTA},"
             f"urn:ogc:def:crs:EPSG::4326"
         )
         params = {
