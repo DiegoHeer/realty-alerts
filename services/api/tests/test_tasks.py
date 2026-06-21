@@ -10,7 +10,7 @@ from tests.factories import ListingFactory, ResidenceFactory
 
 _PDOK_FREE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
 _EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
-_BODEMLOKET_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
+_BODEMLOKET_URL = "https://gis.gdngeoservices.nl/standalone/rest/services/blk_gdn/lks_blk_rd_v1/MapServer/0/query"
 _WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
 
 

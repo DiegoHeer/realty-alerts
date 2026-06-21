@@ -157,7 +157,7 @@ def test_enrich_building_details_skips_when_no_postcode(settings):
 
 # --- Zoning enrichment (Bestemmingsplan) ---
 
-_BODEMLOKET_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
+_BODEMLOKET_URL = "https://gis.gdngeoservices.nl/standalone/rest/services/blk_gdn/lks_blk_rd_v1/MapServer/0/query"
 
 _BESTEMMINGSPLAN_PLANNEN_URL = (
     "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4/plannen/_zoek"
