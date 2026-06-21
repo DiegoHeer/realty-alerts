@@ -287,7 +287,7 @@ def test_submit_results_resolves_end_to_end(client, api_key_headers, scrape_payl
         return_value=httpx.Response(200, json=[])
     )
     respx.get("https://gis.gdngeoservices.nl/standalone/rest/services/blk_gdn/lks_blk_rd_v1/MapServer/0/query").mock(
-        return_value=httpx.Response(200, json={"count": 0})
+        return_value=httpx.Response(200, json={"features": []})
     )
     respx.post(url__startswith="https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4").mock(
         return_value=httpx.Response(200, json={"_embedded": {"plannen": []}})

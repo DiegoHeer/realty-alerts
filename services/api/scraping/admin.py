@@ -255,7 +255,9 @@ class ResidenceAdmin(admin.ModelAdmin):
         "energy_label_valid_until",
         "zoning_designation",
         "zoning_fetched_at",
-        "soil_wbb_count",
+        "soil_investigation_count",
+        "soil_contamination_status",
+        "soil_investigation_outcome",
         "soil_fetched_at",
         "foundation_risk_label",
         "foundation_risk_soil_type",
@@ -317,7 +319,9 @@ class ResidenceAdmin(admin.ModelAdmin):
             "Soil Status (Bodemloket)",
             {
                 "fields": (
-                    "soil_wbb_count",
+                    "soil_investigation_count",
+                    "soil_contamination_status",
+                    "soil_investigation_outcome",
                     "soil_fetched_at",
                 ),
             },

@@ -21,7 +21,7 @@ def _mock_ep_online() -> None:
 
 
 def _mock_bodemloket() -> None:
-    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"count": 0}))
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(200, json={"features": []}))
 
 
 _BESTEMMINGSPLAN_BASE_URL = "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4"
