@@ -157,7 +157,7 @@ def test_enrich_building_details_skips_when_no_postcode(settings):
 
 # --- Zoning enrichment (Bestemmingsplan) ---
 
-_BODEMLOKET_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
+_BODEMLOKET_URL = "https://gis.gdngeoservices.nl/standalone/rest/services/blk_gdn/lks_blk_rd_v1/MapServer/0/query"
 
 _BESTEMMINGSPLAN_PLANNEN_URL = (
     "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4/plannen/_zoek"
@@ -304,6 +304,21 @@ def test_enrich_soil_status_stores_zero():
 
     residence.refresh_from_db()
     assert residence.soil_wbb_count == 0
+    assert residence.soil_fetched_at is not None
+
+
+@pytest.mark.django_db
+@respx.mock
+def test_enrich_soil_status_sets_fetched_at_on_http_error():
+    from scraping.tasks import enrich_soil_status
+
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(503))
+
+    enrich_soil_status(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.soil_wbb_count is None
     assert residence.soil_fetched_at is not None
 
 

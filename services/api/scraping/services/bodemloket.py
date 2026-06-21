@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import httpx
 from loguru import logger
 
-_ARCGIS_BASE_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
+_ARCGIS_BASE_URL = "https://gis.gdngeoservices.nl/standalone/rest/services/blk_gdn/lks_blk_rd_v1/MapServer/0/query"
 
 
 @dataclass(frozen=True, slots=True)

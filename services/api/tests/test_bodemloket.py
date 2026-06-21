@@ -3,7 +3,7 @@ import respx
 
 from scraping.services.bodemloket import BodemloketLookup, BodemloketResult
 
-_ARCGIS_URL = "https://www.gdngeoservices.nl/arcgis/rest/services/blk/lks_blk_rd/MapServer/1/query"
+_ARCGIS_URL = "https://gis.gdngeoservices.nl/standalone/rest/services/blk_gdn/lks_blk_rd_v1/MapServer/0/query"
 
 
 @respx.mock
