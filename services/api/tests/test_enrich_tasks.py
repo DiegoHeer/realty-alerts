@@ -351,7 +351,7 @@ def test_enrich_foundation_risk_no_op_when_no_coordinates():
 
 @pytest.mark.django_db
 @respx.mock
-def test_enrich_foundation_risk_no_op_on_http_error():
+def test_enrich_foundation_risk_sets_fetched_at_on_http_error():
     from scraping.tasks import enrich_foundation_risk
 
     residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
@@ -361,7 +361,7 @@ def test_enrich_foundation_risk_no_op_on_http_error():
 
     residence.refresh_from_db()
     assert residence.foundation_risk_label is None
-    assert residence.foundation_risk_fetched_at is None
+    assert residence.foundation_risk_fetched_at is not None
 
 
 @pytest.mark.django_db

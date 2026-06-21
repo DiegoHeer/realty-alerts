@@ -319,14 +319,17 @@ def _enrich_soil_status(residence: Residence) -> None:
 
 def _enrich_foundation_risk(residence: Residence) -> None:
     if residence.latitude is None or residence.longitude is None:
+        logger.warning("Foundation risk enrichment skipped for residence {}: missing coordinates", residence.pk)
         return
 
     with PdokFoundationRiskLookup() as lookup:
         result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
-    if result is None:
-        return
 
     residence.foundation_risk_fetched_at = timezone.now()
+    if result is None:
+        residence.save(update_fields=["foundation_risk_fetched_at"])
+        return
+
     update_fields = ["foundation_risk_fetched_at"]
     if result.label is not None:
         residence.foundation_risk_label = result.label
