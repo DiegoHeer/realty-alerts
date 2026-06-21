@@ -21,8 +21,7 @@ def _wfs_response(legenda: str = "Kwetsbaar gebied - 40-60 %") -> dict:
                     "percvoor1970": "57.14",
                     "fgr": "Veengebied",
                     "popuptext": (
-                        "Dit postcodegebied bevat 7 panden.<br /><br />"
-                        "Aandacht voor de fundering is hier van belang."
+                        "Dit postcodegebied bevat 7 panden.<br /><br />Aandacht voor de fundering is hier van belang."
                     ),
                 },
                 "geometry": {"type": "Polygon", "coordinates": [[[4.0, 52.0]]]},

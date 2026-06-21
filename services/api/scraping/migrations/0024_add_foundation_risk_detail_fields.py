@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0023_add_building_construction_type_fields'),
+        ("scraping", "0023_add_building_construction_type_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='residence',
-            name='foundation_risk_description',
+            model_name="residence",
+            name="foundation_risk_description",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='residence',
-            name='foundation_risk_pre1970_pct',
+            model_name="residence",
+            name="foundation_risk_pre1970_pct",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='residence',
-            name='foundation_risk_soil_type',
+            model_name="residence",
+            name="foundation_risk_soil_type",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
     ]
