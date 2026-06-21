@@ -309,6 +309,21 @@ def test_enrich_soil_status_stores_zero():
 
 @pytest.mark.django_db
 @respx.mock
+def test_enrich_soil_status_sets_fetched_at_on_http_error():
+    from scraping.tasks import enrich_soil_status
+
+    residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
+    respx.get(_BODEMLOKET_URL).mock(return_value=httpx.Response(503))
+
+    enrich_soil_status(residence.pk)
+
+    residence.refresh_from_db()
+    assert residence.soil_wbb_count is None
+    assert residence.soil_fetched_at is not None
+
+
+@pytest.mark.django_db
+@respx.mock
 def test_enrich_soil_status_no_op_when_no_coordinates():
     from scraping.tasks import enrich_soil_status
 

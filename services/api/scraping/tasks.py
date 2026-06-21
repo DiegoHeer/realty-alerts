@@ -301,15 +301,18 @@ def _enrich_zoning(residence: Residence) -> None:
 
 def _enrich_soil_status(residence: Residence) -> None:
     if residence.latitude is None or residence.longitude is None:
+        logger.warning("Soil status enrichment skipped for residence {}: missing coordinates", residence.pk)
         return
 
     with BodemloketLookup() as lookup:
         result = lookup.lookup(latitude=residence.latitude, longitude=residence.longitude)
+
+    residence.soil_fetched_at = timezone.now()
     if result is None:
+        residence.save(update_fields=["soil_fetched_at"])
         return
 
     residence.soil_wbb_count = result.wbb_count
-    residence.soil_fetched_at = timezone.now()
     residence.save(update_fields=["soil_wbb_count", "soil_fetched_at"])
     logger.info("Soil status enrichment for residence {}: {} WBB location(s)", residence.pk, result.wbb_count)
 
