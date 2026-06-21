@@ -258,6 +258,9 @@ class ResidenceAdmin(admin.ModelAdmin):
         "soil_wbb_count",
         "soil_fetched_at",
         "foundation_risk_label",
+        "foundation_risk_soil_type",
+        "foundation_risk_pre1970_pct",
+        "foundation_risk_description",
         "foundation_risk_fetched_at",
         "display_room_count",
         "display_bedroom_count",
@@ -324,6 +327,9 @@ class ResidenceAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "foundation_risk_label",
+                    "foundation_risk_soil_type",
+                    "foundation_risk_pre1970_pct",
+                    "foundation_risk_description",
                     "foundation_risk_fetched_at",
                 ),
             },

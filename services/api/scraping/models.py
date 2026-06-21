@@ -89,6 +89,9 @@ class Residence(models.Model):
     soil_wbb_count = models.PositiveSmallIntegerField(null=True, blank=True)
     soil_fetched_at = models.DateTimeField(null=True, blank=True)
     foundation_risk_label = models.CharField(max_length=100, null=True, blank=True)
+    foundation_risk_soil_type = models.CharField(max_length=100, null=True, blank=True)
+    foundation_risk_pre1970_pct = models.FloatField(null=True, blank=True)
+    foundation_risk_description = models.TextField(null=True, blank=True)
     foundation_risk_fetched_at = models.DateTimeField(null=True, blank=True)
     # Reconciled aggregates — recomputed by scraping.reconciliation.reconcile_residence
     # whenever a child Listing is created or updated. The matcher reads these.

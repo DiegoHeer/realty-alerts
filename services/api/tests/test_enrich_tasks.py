@@ -10,7 +10,7 @@ from tests.factories import ResidenceFactory
 
 _PDOK_FREE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
 _EP_ADRES_URL = "https://public.ep-online.nl/api/v5/PandEnergielabel/Adres"
-_PDOK_WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
+_PDOK_WFS_URL = "https://service.pdok.nl/rvo/indicatieve-aandachtsgebieden-funderingsproblematiek/wfs/v1_0"
 
 
 def _ep_response(
@@ -208,7 +208,12 @@ def _wfs_response(legenda: str = "Kwetsbaar gebied - 40-60 %") -> dict:
         "features": [
             {
                 "type": "Feature",
-                "properties": {"legenda": legenda},
+                "properties": {
+                    "legenda": legenda,
+                    "fgr": "Veengebied",
+                    "percvoor1970": "57.14",
+                    "popuptext": "Aandacht voor de fundering.<br />Meer info op KCAF.",
+                },
                 "geometry": {"type": "Polygon", "coordinates": [[[4.0, 52.0]]]},
             }
         ],
@@ -217,7 +222,7 @@ def _wfs_response(legenda: str = "Kwetsbaar gebied - 40-60 %") -> dict:
 
 @pytest.mark.django_db
 @respx.mock
-def test_enrich_foundation_risk_stores_label():
+def test_enrich_foundation_risk_stores_all_fields():
     from scraping.tasks import enrich_foundation_risk
 
     residence = cast(
@@ -230,6 +235,9 @@ def test_enrich_foundation_risk_stores_label():
 
     residence.refresh_from_db()
     assert residence.foundation_risk_label == "Kwetsbaar gebied - 40-60 %"
+    assert residence.foundation_risk_soil_type == "Veengebied"
+    assert residence.foundation_risk_pre1970_pct == 57.14
+    assert residence.foundation_risk_description == "Aandacht voor de fundering.\nMeer info op KCAF."
     assert residence.foundation_risk_fetched_at is not None
 
 
@@ -351,7 +359,7 @@ def test_enrich_foundation_risk_no_op_when_no_coordinates():
 
 @pytest.mark.django_db
 @respx.mock
-def test_enrich_foundation_risk_no_op_on_http_error():
+def test_enrich_foundation_risk_sets_fetched_at_on_http_error():
     from scraping.tasks import enrich_foundation_risk
 
     residence = cast(Residence, ResidenceFactory(latitude=52.376, longitude=4.893))
@@ -361,7 +369,7 @@ def test_enrich_foundation_risk_no_op_on_http_error():
 
     residence.refresh_from_db()
     assert residence.foundation_risk_label is None
-    assert residence.foundation_risk_fetched_at is None
+    assert residence.foundation_risk_fetched_at is not None
 
 
 @pytest.mark.django_db

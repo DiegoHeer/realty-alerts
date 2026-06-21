@@ -10,7 +10,7 @@ from tests.factories import ListingFactory, ResidenceFactory
 
 _EP_BASE_URL = "https://public.ep-online.nl/api/v5"
 _EP_ADRES_URL = f"{_EP_BASE_URL}/PandEnergielabel/Adres"
-_WFS_URL = "https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0"
+_WFS_URL = "https://service.pdok.nl/rvo/indicatieve-aandachtsgebieden-funderingsproblematiek/wfs/v1_0"
 
 
 def _mock_foundation_risk() -> None:

@@ -292,7 +292,7 @@ def test_submit_results_resolves_end_to_end(client, api_key_headers, scrape_payl
     respx.post(url__startswith="https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4").mock(
         return_value=httpx.Response(200, json={"_embedded": {"plannen": []}})
     )
-    respx.get("https://service.pdok.nl/rvo/indgebfunderingsproblematiek/wfs/v1_0").mock(
+    respx.get("https://service.pdok.nl/rvo/indicatieve-aandachtsgebieden-funderingsproblematiek/wfs/v1_0").mock(
         return_value=httpx.Response(200, json={"type": "FeatureCollection", "features": []})
     )
     item = listing_payload(
