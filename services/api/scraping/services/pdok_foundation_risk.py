@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 import httpx
@@ -9,9 +10,22 @@ _WFS_BASE_URL = "https://service.pdok.nl/rvo/indicatieve-aandachtsgebieden-funde
 _BBOX_DELTA = 0.0001
 
 
+_HTML_TAG_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
+_STRIP_TAGS_RE = re.compile(r"<[^>]+>")
+
+
+def _html_to_plain(html: str) -> str:
+    text = _HTML_TAG_RE.sub("\n", html)
+    text = _STRIP_TAGS_RE.sub("", text)
+    return text.strip()
+
+
 @dataclass(frozen=True, slots=True)
 class FoundationRiskResult:
     label: str | None
+    soil_type: str | None = None
+    pre1970_pct: float | None = None
+    description: str | None = None
 
 
 class PdokFoundationRiskLookup:
@@ -56,9 +70,21 @@ class PdokFoundationRiskLookup:
         if not features:
             return FoundationRiskResult(label=None)
 
-        label = features[0].get("properties", {}).get("legenda")
+        props = features[0].get("properties", {})
+        label = props.get("legenda")
         if not label:
             logger.warning("PDOK foundation risk: missing legenda for ({}, {})", latitude, longitude)
             return FoundationRiskResult(label=None)
 
-        return FoundationRiskResult(label=label)
+        pre1970_raw = props.get("percvoor1970")
+        pre1970_pct = float(pre1970_raw) if pre1970_raw is not None else None
+
+        popuptext = props.get("popuptext")
+        description = _html_to_plain(popuptext) if popuptext else None
+
+        return FoundationRiskResult(
+            label=label,
+            soil_type=props.get("fgr"),
+            pre1970_pct=pre1970_pct,
+            description=description,
+        )

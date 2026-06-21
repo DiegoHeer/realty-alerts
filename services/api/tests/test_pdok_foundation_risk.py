@@ -20,6 +20,10 @@ def _wfs_response(legenda: str = "Kwetsbaar gebied - 40-60 %") -> dict:
                     "pc6": "1015AA",
                     "percvoor1970": "57.14",
                     "fgr": "Veengebied",
+                    "popuptext": (
+                        "Dit postcodegebied bevat 7 panden.<br /><br />"
+                        "Aandacht voor de fundering is hier van belang."
+                    ),
                 },
                 "geometry": {"type": "Polygon", "coordinates": [[[4.0, 52.0]]]},
             }
@@ -34,7 +38,12 @@ def test_lookup_returns_result_on_success():
     with PdokFoundationRiskLookup() as lookup:
         result = lookup.lookup(latitude=52.376, longitude=4.893)
 
-    assert result == FoundationRiskResult(label="Kwetsbaar gebied - 40-60 %")
+    assert result == FoundationRiskResult(
+        label="Kwetsbaar gebied - 40-60 %",
+        soil_type="Veengebied",
+        pre1970_pct=57.14,
+        description="Dit postcodegebied bevat 7 panden.\n\nAandacht voor de fundering is hier van belang.",
+    )
 
 
 @respx.mock

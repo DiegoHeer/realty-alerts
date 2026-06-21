@@ -334,6 +334,16 @@ def _enrich_foundation_risk(residence: Residence) -> None:
     if result.label is not None:
         residence.foundation_risk_label = result.label
         update_fields.append("foundation_risk_label")
+    if result.soil_type is not None:
+        residence.foundation_risk_soil_type = result.soil_type
+        update_fields.append("foundation_risk_soil_type")
+    if result.pre1970_pct is not None:
+        residence.foundation_risk_pre1970_pct = result.pre1970_pct
+        update_fields.append("foundation_risk_pre1970_pct")
+    if result.description is not None:
+        residence.foundation_risk_description = result.description
+        update_fields.append("foundation_risk_description")
+    if result.label is not None:
         logger.info("Foundation risk enrichment for residence {}: {}", residence.pk, result.label)
     residence.save(update_fields=update_fields)
 
