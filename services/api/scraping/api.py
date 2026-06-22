@@ -7,6 +7,7 @@ from django.db import OperationalError, connection, transaction
 from loguru import logger
 from ninja import NinjaAPI, Query, Router, Schema
 from ninja.responses import Status
+from allauth.headless.contrib.ninja.security import jwt_token_auth
 from ninja.security import APIKeyHeader
 
 from scraping.models import (
@@ -388,7 +389,7 @@ def list_neighborhood_shapes(
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
-api.add_router("/v1", v1_router)
+api.add_router("/v1", v1_router, auth=jwt_token_auth)
 
 
 def _parse_price_eur(price_str: str) -> int | None:
