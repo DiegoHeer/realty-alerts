@@ -339,38 +339,22 @@ class _OptionalCity(Schema):
 
 
 @v1_router.get("/shapes/cities", response=list[GeoCityOut], tags=["shapes"])
-def list_city_shapes(
-    request,
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
-    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
-):
-    return list(City.objects.filter(geometry__isnull=False).order_by("name")[offset : offset + limit])
+def list_city_shapes(request):
+    return list(City.objects.filter(geometry__isnull=False).order_by("name"))
 
 
 @v1_router.get("/shapes/districts", response={200: list[GeoDistrictOut], 404: None}, tags=["shapes"])
-def list_district_shapes(
-    request,
-    filters: Query[_OptionalCity],
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
-    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
-):
+def list_district_shapes(request, filters: Query[_OptionalCity]):
     if filters.city:
         city = City.objects.filter(code=filters.city).first()
         if city is None:
             return Status(404, None)
         return list(District.objects.filter(city=city, geometry__isnull=False).select_related("city").order_by("name"))
-    return list(
-        District.objects.filter(geometry__isnull=False).select_related("city").order_by("name")[offset : offset + limit]
-    )
+    return list(District.objects.filter(geometry__isnull=False).select_related("city").order_by("name"))
 
 
 @v1_router.get("/shapes/neighborhoods", response={200: list[GeoNeighborhoodOut], 404: None}, tags=["shapes"])
-def list_neighborhood_shapes(
-    request,
-    filters: Query[_OptionalCity],
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
-    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
-):
+def list_neighborhood_shapes(request, filters: Query[_OptionalCity]):
     if filters.city:
         city = City.objects.filter(code=filters.city).first()
         if city is None:
@@ -380,11 +364,7 @@ def list_neighborhood_shapes(
             .select_related("city", "district")
             .order_by("name")
         )
-    return list(
-        Neighborhood.objects.filter(geometry__isnull=False)
-        .select_related("city", "district")
-        .order_by("name")[offset : offset + limit]
-    )
+    return list(Neighborhood.objects.filter(geometry__isnull=False).select_related("city", "district").order_by("name"))
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
