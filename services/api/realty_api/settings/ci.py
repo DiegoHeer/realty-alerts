@@ -19,3 +19,5 @@ DATABASES = {"default": cast(dict, dj_database_url.config())}
 
 _ci_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 HEADLESS_JWT_PRIVATE_KEY = _ci_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode()
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

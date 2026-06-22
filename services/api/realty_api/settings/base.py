@@ -110,14 +110,18 @@ ARGO_EVENTS_WEBHOOK_URL = SETTINGS.argo_events_webhook_url
 
 # --- django-allauth (headless) ---
 HEADLESS_ONLY = True
+HEADLESS_CLIENTS = ("app",)
+
+AUTHENTICATION_BACKENDS = [
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
 
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
 
 HEADLESS_TOKEN_STRATEGY = "allauth.headless.tokens.strategies.jwt.JWTTokenStrategy"
 HEADLESS_JWT_ACCESS_TOKEN_EXPIRES_IN = 1800  # 30 minutes
 HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 604_800  # 7 days
 HEADLESS_JWT_ROTATE_REFRESH_TOKEN = True
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
