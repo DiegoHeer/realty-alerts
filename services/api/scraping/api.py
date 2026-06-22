@@ -74,10 +74,10 @@ def readyz(request):
     return {"status": "ok"}
 
 
-public_router = Router(tags=["public"])
+v1_router = Router()
 
 
-@public_router.get("/residences", response=list[ResidenceOut])
+@v1_router.get("/residences", response=list[ResidenceOut], tags=["catalog"])
 def list_residences(
     request,
     filters: Query[ResidenceFilters],
@@ -291,18 +291,12 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
     return run
 
 
-cities_router = Router(tags=["cities"])
-
-
-@cities_router.get("", response=list[CityOut])
+@v1_router.get("/cities", response=list[CityOut], tags=["catalog"])
 def list_cities(request):
     return list(City.objects.all().order_by("name"))
 
 
-stats_router = Router(tags=["stats"])
-
-
-@stats_router.get("/cities/{city_id}", response={200: CityStatsOut, 404: None})
+@v1_router.get("/stats/cities/{city_id}", response={200: CityStatsOut, 404: None}, tags=["stats"])
 def get_city_stats(request, city_id: str):
     city = City.objects.filter(code=city_id).first()
     if city is None:
@@ -314,7 +308,7 @@ class _CityRequired(Schema):
     city: str
 
 
-@stats_router.get("/districts", response={200: list[DistrictStatsOut], 404: None})
+@v1_router.get("/stats/districts", response={200: list[DistrictStatsOut], 404: None}, tags=["stats"])
 def list_district_stats(request, filters: Query[_CityRequired], include: str | None = None):
     city = City.objects.filter(code=filters.city).first()
     if city is None:
@@ -327,7 +321,7 @@ def list_district_stats(request, filters: Query[_CityRequired], include: str | N
     return districts
 
 
-@stats_router.get("/neighborhoods", response={200: list[NeighborhoodStatsOut], 404: None})
+@v1_router.get("/stats/neighborhoods", response={200: list[NeighborhoodStatsOut], 404: None}, tags=["stats"])
 def list_neighborhood_stats(request, filters: Query[_CityRequired], include: str | None = None):
     city = City.objects.filter(code=filters.city).first()
     if city is None:
@@ -340,14 +334,11 @@ def list_neighborhood_stats(request, filters: Query[_CityRequired], include: str
     return neighborhoods
 
 
-shapes_router = Router(tags=["shapes"])
-
-
 class _OptionalCity(Schema):
     city: str | None = None
 
 
-@shapes_router.get("/cities", response=list[GeoCityOut])
+@v1_router.get("/shapes/cities", response=list[GeoCityOut], tags=["shapes"])
 def list_city_shapes(
     request,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,  # ty: ignore[call-non-callable]
@@ -356,7 +347,7 @@ def list_city_shapes(
     return list(City.objects.filter(geometry__isnull=False).order_by("name")[offset : offset + limit])
 
 
-@shapes_router.get("/districts", response={200: list[GeoDistrictOut], 404: None})
+@v1_router.get("/shapes/districts", response={200: list[GeoDistrictOut], 404: None}, tags=["shapes"])
 def list_district_shapes(
     request,
     filters: Query[_OptionalCity],
@@ -373,7 +364,7 @@ def list_district_shapes(
     )
 
 
-@shapes_router.get("/neighborhoods", response={200: list[GeoNeighborhoodOut], 404: None})
+@v1_router.get("/shapes/neighborhoods", response={200: list[GeoNeighborhoodOut], 404: None}, tags=["shapes"])
 def list_neighborhood_shapes(
     request,
     filters: Query[_OptionalCity],
@@ -397,10 +388,7 @@ def list_neighborhood_shapes(
 
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
-api.add_router("/v1", public_router)
-api.add_router("/v1/cities", cities_router, auth=None)
-api.add_router("/v1/stats", stats_router, auth=None)
-api.add_router("/v1/shapes", shapes_router, auth=None)
+api.add_router("/v1", v1_router)
 
 
 def _parse_price_eur(price_str: str) -> int | None:

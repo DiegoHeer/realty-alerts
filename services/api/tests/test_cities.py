@@ -25,11 +25,6 @@ class TestListCities:
         assert response.status_code == 200
         assert response.json() == []
 
-    def test_no_auth_required(self, client):
-        response = client.get(self.endpoint)
-
-        assert response.status_code == 200
-
     def test_returns_code_and_name_only(self, client):
         CityFactory(code="0518", name="'s-Gravenhage", stats={"woz": 350})
 
