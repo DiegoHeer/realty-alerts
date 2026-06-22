@@ -8,10 +8,10 @@ SAMPLE_GEOMETRY = [[[[4.2, 52.0], [4.3, 52.0], [4.3, 52.1], [4.2, 52.0]]]]
 
 @pytest.mark.django_db
 class TestCityShapes:
-    def test_returns_cities_with_geometry(self, client):
+    def test_returns_cities_with_geometry(self, client, user_headers):
         CityFactory(code="0518", geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/cities")
+        response = client.get("/v1/shapes/cities", headers=user_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -19,87 +19,87 @@ class TestCityShapes:
         assert data[0]["code"] == "0518"
         assert data[0]["geometry"] == SAMPLE_GEOMETRY
 
-    def test_excludes_cities_without_geometry(self, client):
+    def test_excludes_cities_without_geometry(self, client, user_headers):
         CityFactory(code="0518", geometry=SAMPLE_GEOMETRY)
         CityFactory(code="0363", geometry=None)
 
-        response = client.get("/v1/shapes/cities")
+        response = client.get("/v1/shapes/cities", headers=user_headers)
 
         assert len(response.json()) == 1
 
-    def test_paginated_with_custom_limit(self, client):
+    def test_paginated_with_custom_limit(self, client, user_headers):
         for i in range(5):
             CityFactory(code=f"{i:04d}", geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/cities", {"limit": 2})
+        response = client.get("/v1/shapes/cities", {"limit": 2}, headers=user_headers)
 
         assert response.status_code == 200
         assert len(response.json()) == 2
 
-    def test_default_limit_is_50(self, client):
+    def test_default_limit_is_50(self, client, user_headers):
         for i in range(60):
             CityFactory(code=f"{i:04d}", geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/cities")
+        response = client.get("/v1/shapes/cities", headers=user_headers)
 
         assert len(response.json()) == 50
 
 
 @pytest.mark.django_db
 class TestDistrictShapes:
-    def test_returns_shapes_for_city(self, client):
+    def test_returns_shapes_for_city(self, client, user_headers):
         city = CityFactory(code="0518")
         DistrictFactory(city=city, geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/districts", {"city": "0518"})
+        response = client.get("/v1/shapes/districts", {"city": "0518"}, headers=user_headers)
 
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
         assert data[0]["geometry"] == SAMPLE_GEOMETRY
 
-    def test_returns_404_for_unknown_city(self, client):
-        response = client.get("/v1/shapes/districts", {"city": "9999"})
+    def test_returns_404_for_unknown_city(self, client, user_headers):
+        response = client.get("/v1/shapes/districts", {"city": "9999"}, headers=user_headers)
 
         assert response.status_code == 404
 
-    def test_national_paginated(self, client):
+    def test_national_paginated(self, client, user_headers):
         city = CityFactory(code="0518")
         for i in range(5):
             DistrictFactory(code=f"WK0518{i:02d}", city=city, geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/districts", {"limit": 2})
+        response = client.get("/v1/shapes/districts", {"limit": 2}, headers=user_headers)
 
         assert response.status_code == 200
         assert len(response.json()) == 2
 
-    def test_national_default_limit(self, client):
+    def test_national_default_limit(self, client, user_headers):
         city = CityFactory(code="0518")
         for i in range(60):
             DistrictFactory(code=f"WK0518{i:02d}", city=city, geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/districts")
+        response = client.get("/v1/shapes/districts", headers=user_headers)
 
         assert len(response.json()) == 50
 
-    def test_excludes_districts_without_geometry(self, client):
+    def test_excludes_districts_without_geometry(self, client, user_headers):
         city = CityFactory(code="0518")
         DistrictFactory(city=city, geometry=SAMPLE_GEOMETRY)
         DistrictFactory(city=city, geometry=None)
 
-        response = client.get("/v1/shapes/districts", {"city": "0518"})
+        response = client.get("/v1/shapes/districts", {"city": "0518"}, headers=user_headers)
 
         assert len(response.json()) == 1
 
 
 @pytest.mark.django_db
 class TestNeighborhoodShapes:
-    def test_returns_shapes_for_city(self, client):
+    def test_returns_shapes_for_city(self, client, user_headers):
         city = CityFactory(code="0518")
         district = DistrictFactory(city=city)
         NeighborhoodFactory(city=city, district=district, geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/neighborhoods", {"city": "0518"})
+        response = client.get("/v1/shapes/neighborhoods", {"city": "0518"}, headers=user_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -107,18 +107,18 @@ class TestNeighborhoodShapes:
         assert data[0]["geometry"] == SAMPLE_GEOMETRY
         assert data[0]["district_code"] == district.code
 
-    def test_returns_404_for_unknown_city(self, client):
-        response = client.get("/v1/shapes/neighborhoods", {"city": "9999"})
+    def test_returns_404_for_unknown_city(self, client, user_headers):
+        response = client.get("/v1/shapes/neighborhoods", {"city": "9999"}, headers=user_headers)
 
         assert response.status_code == 404
 
-    def test_national_paginated(self, client):
+    def test_national_paginated(self, client, user_headers):
         city = CityFactory(code="0518")
         district = DistrictFactory(city=city)
         for i in range(5):
             NeighborhoodFactory(code=f"BU0518{i:04d}", city=city, district=district, geometry=SAMPLE_GEOMETRY)
 
-        response = client.get("/v1/shapes/neighborhoods", {"limit": 2})
+        response = client.get("/v1/shapes/neighborhoods", {"limit": 2}, headers=user_headers)
 
         assert response.status_code == 200
         assert len(response.json()) == 2
