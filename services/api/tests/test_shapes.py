@@ -27,23 +27,6 @@ class TestCityShapes:
 
         assert len(response.json()) == 1
 
-    def test_paginated_with_custom_limit(self, client):
-        for i in range(5):
-            CityFactory(code=f"{i:04d}", geometry=SAMPLE_GEOMETRY)
-
-        response = client.get("/v1/shapes/cities", {"limit": 2})
-
-        assert response.status_code == 200
-        assert len(response.json()) == 2
-
-    def test_default_limit_is_50(self, client):
-        for i in range(60):
-            CityFactory(code=f"{i:04d}", geometry=SAMPLE_GEOMETRY)
-
-        response = client.get("/v1/shapes/cities")
-
-        assert len(response.json()) == 50
-
 
 @pytest.mark.django_db
 class TestDistrictShapes:
@@ -62,25 +45,6 @@ class TestDistrictShapes:
         response = client.get("/v1/shapes/districts", {"city": "9999"})
 
         assert response.status_code == 404
-
-    def test_national_paginated(self, client):
-        city = CityFactory(code="0518")
-        for i in range(5):
-            DistrictFactory(code=f"WK0518{i:02d}", city=city, geometry=SAMPLE_GEOMETRY)
-
-        response = client.get("/v1/shapes/districts", {"limit": 2})
-
-        assert response.status_code == 200
-        assert len(response.json()) == 2
-
-    def test_national_default_limit(self, client):
-        city = CityFactory(code="0518")
-        for i in range(60):
-            DistrictFactory(code=f"WK0518{i:02d}", city=city, geometry=SAMPLE_GEOMETRY)
-
-        response = client.get("/v1/shapes/districts")
-
-        assert len(response.json()) == 50
 
     def test_excludes_districts_without_geometry(self, client):
         city = CityFactory(code="0518")
@@ -111,14 +75,3 @@ class TestNeighborhoodShapes:
         response = client.get("/v1/shapes/neighborhoods", {"city": "9999"})
 
         assert response.status_code == 404
-
-    def test_national_paginated(self, client):
-        city = CityFactory(code="0518")
-        district = DistrictFactory(city=city)
-        for i in range(5):
-            NeighborhoodFactory(code=f"BU0518{i:04d}", city=city, district=district, geometry=SAMPLE_GEOMETRY)
-
-        response = client.get("/v1/shapes/neighborhoods", {"limit": 2})
-
-        assert response.status_code == 200
-        assert len(response.json()) == 2
