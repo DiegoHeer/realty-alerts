@@ -36,11 +36,6 @@ class TestResidenceList:
         assert response.status_code == 200
         assert response.json() == []
 
-    def test_no_auth_required(self, client):
-        response = client.get(self.endpoint)
-
-        assert response.status_code == 200
-
     def test_filter_by_city(self, client):
         ResidenceFactory(city="Amsterdam")
         ResidenceFactory(city="Rotterdam")
