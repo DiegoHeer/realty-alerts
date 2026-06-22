@@ -196,16 +196,11 @@ def fetch_entity_geometry(
     *,
     bbox: tuple[float, float, float, float] | None = None,
 ) -> list | None:
-    url = _pdok_collection_url(collection)
-    params: dict[str, str | int] = {"f": "json", "jaarcode": CBS_ODATA_YEAR, "statcode": code, "limit": 1}
-    if bbox:
-        params["bbox"] = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-    resp = httpx.get(url, params=params, timeout=30.0)
-    resp.raise_for_status()
-    features = resp.json().get("features", [])
-    if not features:
-        return None
-    return _extract_geometry(features[0]["geometry"])
+    features = _pdok_ogc_all_features(collection, bbox=bbox)
+    for f in features:
+        if f["properties"]["statcode"].strip() == code:
+            return _extract_geometry(f["geometry"])
+    return None
 
 
 # --- Stats functions ---

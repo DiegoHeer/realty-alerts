@@ -59,10 +59,16 @@ def _pdok_feature(statcode: str, geometry_type: str = "Polygon", coords: list | 
 
 @respx.mock
 def test_fetch_entity_geometry_returns_geometry_for_matching_code():
-    route = respx.get(PDOK_GEMEENTE_URL).mock(
+    respx.get(PDOK_GEMEENTE_URL).mock(
         return_value=httpx.Response(
             200,
-            json={"features": [_pdok_feature("GM0518")]},
+            json={
+                "features": [
+                    _pdok_feature("GM0518"),
+                    _pdok_feature("GM0363"),
+                ],
+                "links": [],
+            },
         ),
     )
 
@@ -71,13 +77,15 @@ def test_fetch_entity_geometry_returns_geometry_for_matching_code():
     assert result is not None
     assert len(result) == 1
     assert result[0][0][0] == [4.0, 52.0]
-    assert "statcode=GM0518" in str(route.calls[0].request.url)
 
 
 @respx.mock
 def test_fetch_entity_geometry_returns_none_when_no_match():
     respx.get(PDOK_GEMEENTE_URL).mock(
-        return_value=httpx.Response(200, json={"features": []}),
+        return_value=httpx.Response(
+            200,
+            json={"features": [_pdok_feature("GM0363")], "links": []},
+        ),
     )
 
     result = cbs.fetch_entity_geometry("gemeente_gegeneraliseerd", "GM9999")
@@ -90,11 +98,10 @@ def test_fetch_entity_geometry_passes_bbox():
     route = respx.get(PDOK_WIJK_URL).mock(
         return_value=httpx.Response(
             200,
-            json={"features": [_pdok_feature("WK051801")]},
+            json={"features": [_pdok_feature("WK051801")], "links": []},
         ),
     )
 
     cbs.fetch_entity_geometry("wijk_gegeneraliseerd", "WK051801", bbox=(4.0, 52.0, 5.0, 53.0))
 
     assert "bbox" in str(route.calls[0].request.url)
-    assert "statcode=WK051801" in str(route.calls[0].request.url)
