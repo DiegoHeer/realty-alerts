@@ -637,6 +637,7 @@ class NeighborhoodAdmin(admin.ModelAdmin):
     )
     list_filter = ("city",)
     search_fields = ("code", "name")
+    autocomplete_fields = ("city", "district")
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
     actions = ["fetch_geo_shapes", "fetch_stats"]
