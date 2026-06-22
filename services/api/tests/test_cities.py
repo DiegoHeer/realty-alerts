@@ -7,11 +7,11 @@ from tests.factories import CityFactory
 class TestListCities:
     endpoint = "/v1/cities"
 
-    def test_returns_cached_cities(self, client):
+    def test_returns_cached_cities(self, client, user_headers):
         CityFactory(code="0518", name="'s-Gravenhage")
         CityFactory(code="0363", name="Amsterdam")
 
-        response = client.get(self.endpoint)
+        response = client.get(self.endpoint, headers=user_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -19,16 +19,16 @@ class TestListCities:
         codes = {c["code"] for c in data}
         assert codes == {"0518", "0363"}
 
-    def test_empty_db_returns_empty_list(self, client):
-        response = client.get(self.endpoint)
+    def test_empty_db_returns_empty_list(self, client, user_headers):
+        response = client.get(self.endpoint, headers=user_headers)
 
         assert response.status_code == 200
         assert response.json() == []
 
-    def test_returns_code_and_name_only(self, client):
+    def test_returns_code_and_name_only(self, client, user_headers):
         CityFactory(code="0518", name="'s-Gravenhage", stats={"woz": 350})
 
-        response = client.get(self.endpoint)
+        response = client.get(self.endpoint, headers=user_headers)
 
         item = response.json()[0]
         assert set(item.keys()) == {"code", "name"}
