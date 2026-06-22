@@ -34,6 +34,28 @@ def api_key_headers() -> dict[str, str]:
 
 
 @pytest.fixture
+def test_user(db):
+    from allauth.account.models import EmailAddress
+    from django.contrib.auth.models import User
+
+    user = User.objects.create_user(email="test@example.com", username="test@example.com", password="testpass123!")
+    EmailAddress.objects.create(user=user, email=user.email, verified=True, primary=True)
+    return user
+
+
+@pytest.fixture
+def user_headers(test_user) -> dict[str, str]:
+    from django.contrib.sessions.backends.db import SessionStore
+
+    from allauth.headless.tokens.strategies.jwt.internal import create_access_token
+
+    session = SessionStore()
+    session.create()
+    token = create_access_token(test_user, session, {})
+    return {"AUTHORIZATION": f"Bearer {token}"}
+
+
+@pytest.fixture
 def listing_payload() -> Callable[..., dict[str, Any]]:
     counter = {"n": 0}
 

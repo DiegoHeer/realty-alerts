@@ -46,3 +46,9 @@ STORAGES = {
 
 # Database (DATABASE_URL required)
 DATABASES = {"default": cast(dict, dj_database_url.config(conn_max_age=600, conn_health_checks=True))}
+
+# JWT signing key (PEM-encoded RSA private key)
+if not SETTINGS.headless_jwt_private_key:
+    raise ImproperlyConfigured("HEADLESS_JWT_PRIVATE_KEY must be set in production (PEM-encoded RSA private key).")
+
+HEADLESS_JWT_PRIVATE_KEY = SETTINGS.headless_jwt_private_key
