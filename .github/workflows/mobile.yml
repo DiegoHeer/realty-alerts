@@ -53,6 +53,29 @@ jobs:
       - name: Run tests
         run: cd apps/mobile && npm test
 
+  tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: cd apps/mobile && npm ci
+
+      - name: Rebuild theme tokens from tokens.json
+        run: cd apps/mobile && npm run tokens:build
+
+      - name: Verify generated theme is in sync
+        run: |
+          cd apps/mobile
+          git diff --exit-code -- src/theme/tokens.generated.ts \
+            || { echo "::error::src/theme/tokens.generated.ts is stale. Run 'npm run tokens:build' and commit the result."; exit 1; }
+
   eas-build:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest

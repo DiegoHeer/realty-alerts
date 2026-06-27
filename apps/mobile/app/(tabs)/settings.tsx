@@ -2,6 +2,38 @@ import { View, Text, Pressable, Alert, ScrollView, ActivityIndicator } from "rea
 import { useAuthStore } from "@/stores/authStore";
 import { useScrapeRuns } from "@/hooks/useScrapeRuns";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useThemeMode } from "@/theme/useThemeMode";
+import type { ThemeMode } from "@/theme/types";
+
+const MODES: { label: string; value: ThemeMode }[] = [
+  { label: "System", value: "system" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+];
+
+export function ThemeModeSelector() {
+  const { mode, setMode } = useThemeMode();
+  return (
+    <View style={{ flexDirection: "row", gap: 8 }}>
+      {MODES.map(({ label, value }) => (
+        <Pressable
+          key={value}
+          onPress={() => setMode(value)}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 8,
+            backgroundColor: mode === value ? "#e5e7eb" : "transparent",
+            borderWidth: 1,
+            borderColor: "#d1d5db",
+          }}
+        >
+          <Text>{label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuthStore();
@@ -80,6 +112,23 @@ export default function SettingsScreen() {
             </View>
           ))
         )}
+      </View>
+
+      {/* Appearance */}
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: "600",
+          color: "#6b7280",
+          marginBottom: 8,
+          marginTop: 24,
+          textTransform: "uppercase",
+        }}
+      >
+        Appearance
+      </Text>
+      <View style={sectionStyle}>
+        <ThemeModeSelector />
       </View>
 
       {/* Sign Out */}
