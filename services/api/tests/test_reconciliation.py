@@ -270,8 +270,8 @@ def test_reconcile_refreshes_listing_attributes_when_freshest_changes():
     residence.refresh_from_db()
     assert residence.bedroom_count == 2
 
-    listing.bedroom_count = 5
-    listing.save(update_fields=["bedroom_count"])
+    listing.bedroom_count = 5  # ty: ignore[unresolved-attribute]
+    listing.save(update_fields=["bedroom_count"])  # ty: ignore[unresolved-attribute]
     reconcile_residence(residence)
     residence.refresh_from_db()
     assert residence.bedroom_count == 5
