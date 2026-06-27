@@ -73,7 +73,7 @@ export default function SettingsScreen() {
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Text style={{ color: "#6b7280", fontSize: 13 }}>
-                  {run.new_properties_count} new
+                  {run.new_listings_count} new
                 </Text>
                 <StatusBadge status={run.status} />
               </View>

@@ -61,7 +61,6 @@ export interface ScrapeRun {
   finished_at: string | null;
   status: "running" | "success" | "failed";
   listings_found: number;
-  new_residences_count: number;
   new_listings_count: number;
   error_message: string | null;
   duration_seconds: number | null;
