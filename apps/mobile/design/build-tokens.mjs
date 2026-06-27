@@ -14,16 +14,68 @@ const manifest = JSON.parse(await fs.readFile(path.join(SETS, "_manifest.json"),
 // permutateThemes -> { "<themeName>": ["Set A", "Set B", ...], ... }
 const themes = permutateThemes(raw.$themes, { separator: "_" });
 
+// expo-google-fonts family names by numeric weight (the 4 weights loaded in _layout
+// and the only ones the 8 typography styles use).
+const WEIGHT_TO_FAMILY = {
+  "400": "PlusJakartaSans_400Regular",
+  "500": "PlusJakartaSans_500Medium",
+  "600": "PlusJakartaSans_600SemiBold",
+  "700": "PlusJakartaSans_700Bold",
+};
+
+// "8px" -> 8, "0" -> 0, "1.5" -> 1.5 ; leaves colors (#.. / rgba(..)) and font
+// names untouched (they are never pure-numeric).
+function coerceNumber(value) {
+  if (typeof value === "string" && /^-?\d*\.?\d+(px)?$/.test(value)) {
+    return parseFloat(value);
+  }
+  return value;
+}
+
+// Detect a Tokens Studio typography composite value.
+function isTypographyValue(v) {
+  return (
+    v &&
+    typeof v === "object" &&
+    !Array.isArray(v) &&
+    "fontFamilies" in v &&
+    "fontWeights" in v &&
+    "fontSizes" in v &&
+    "lineHeights" in v
+  );
+}
+
+// Composite typography -> RN TextStyle.
+function toTextStyle(v) {
+  const weight = String(v.fontWeights);
+  const fontFamily = WEIGHT_TO_FAMILY[weight];
+  if (!fontFamily) {
+    throw new Error(`Unmapped font weight "${weight}" — add it to WEIGHT_TO_FAMILY and load it in _layout.tsx`);
+  }
+  const fontSize = parseFloat(v.fontSizes);
+  const multiplier = parseFloat(v.lineHeights);
+  return { fontFamily, fontSize, lineHeight: Math.round(fontSize * multiplier) };
+}
+
+// Adapt a single resolved leaf value to its RN-ready form.
+function adaptLeaf(value) {
+  if (isTypographyValue(value)) return toTextStyle(value);
+  return coerceNumber(value);
+}
+
 // Recursively turn an SD nested token tree into a plain {key: resolvedValue} object.
 function plain(node) {
-  if (node && typeof node === "object" && "value" in node) return node.value;
-  if (node && typeof node === "object" && "$value" in node) return node.$value;
+  if (node && typeof node === "object" && "value" in node) return adaptLeaf(node.value);
+  if (node && typeof node === "object" && "$value" in node) return adaptLeaf(node.$value);
   const out = {};
   for (const k of Object.keys(node)) {
     if (k.startsWith("$") || k === "filePath" || k === "isSource" || k === "original" || k === "name" || k === "attributes" || k === "path") continue;
     const v = node[k];
     if (v && typeof v === "object") out[k] = plain(v);
   }
+  // The SD `expand` step splits typography composites into child tokens, so the
+  // composite arrives here as an assembled object rather than a single leaf value.
+  if (isTypographyValue(out)) return toTextStyle(out);
   return out;
 }
 
