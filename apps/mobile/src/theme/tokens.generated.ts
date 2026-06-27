@@ -315,6 +315,10 @@ export const lightTheme = {
     "950": "#081329",
     "050": "#f0f3f8"
   },
+  "text": {
+    "secondary": "#8a857e",
+    "tertiary": "#a9a49c"
+  },
   "layerBase": {
     "background": "#efede8",
     "text": "#6e6a63",
@@ -795,6 +799,10 @@ export const darkTheme = {
     "900": "#0f1e3f",
     "950": "#081329",
     "050": "#f0f3f8"
+  },
+  "text": {
+    "secondary": "#617d9e",
+    "tertiary": "#3d5c82"
   },
   "layerBase": {
     "background": "#081329",
