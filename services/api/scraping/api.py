@@ -9,12 +9,16 @@ from ninja import NinjaAPI, Query, Router, Schema
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
+from ninja.errors import HttpError
+
 from scraping.models import (
     BagStatus,
+    BuildingType,
     City,
     DetailScrapeRun,
     DetailScrapeRunStatus,
     District,
+    EnergyLabel,
     ListScrapeRun,
     ListScrapeRunStatus,
     Listing,
@@ -92,16 +96,23 @@ def _resolve_api_version(request, api_version: int | None) -> int:
     return 1
 
 
-@v1_router.get("/residences", response=list[ResidenceOut] | ResidencePage, tags=["catalog"])
-def list_residences(
-    request,
-    filters: Query[ResidenceFilters],
-    api_version: int | None = None,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,  # ty: ignore[call-non-callable]
-    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
-):
-    qs = Residence.objects.prefetch_related("listings").order_by("-created_at")
+def _parse_enum_multi(raw: list[str] | None, enum_cls) -> list[str] | None:
+    """Flatten repeatable + CSV query values into a validated list of enum
+    values. Unknown values raise 422. Returns None when nothing was supplied."""
+    if not raw:
+        return None
+    values: list[str] = []
+    for item in raw:
+        values.extend(part.strip() for part in item.split(",") if part.strip())
+    valid = set(enum_cls.values)
+    for value in values:
+        if value not in valid:
+            raise HttpError(422, f"invalid value '{value}' for {enum_cls.__name__}")
+    return values or None
 
+
+def _apply_text_filters(qs, filters: ResidenceFilters):
+    """Apply text/location filter predicates to a Residence queryset."""
     if filters.city:
         qs = qs.filter(city__icontains=filters.city)
     if filters.neighbourhood:
@@ -112,6 +123,17 @@ def list_residences(
         qs = qs.filter(street__icontains=filters.street)
     if filters.postcode:
         qs = qs.filter(postcode__iexact=filters.postcode)
+    return qs
+
+
+def _apply_residence_filters(
+    qs,
+    filters: ResidenceFilters,
+    building_type: list[str] | None,
+    energy_label: list[str] | None,
+):
+    """Apply all optional filter predicates to a Residence queryset."""
+    qs = _apply_text_filters(qs, filters)
     if filters.min_price is not None:
         qs = qs.filter(current_price_eur__gte=filters.min_price)
     if filters.max_price is not None:
@@ -119,6 +141,25 @@ def list_residences(
     if filters.status:
         qs = qs.filter(current_status=filters.status)
     qs = qs.filter(deal_type=filters.deal_type)
+    if building_types := _parse_enum_multi(building_type, BuildingType):
+        qs = qs.filter(building_type__in=building_types)
+    if energy_labels := _parse_enum_multi(energy_label, EnergyLabel):
+        qs = qs.filter(energy_label__in=energy_labels)
+    return qs
+
+
+@v1_router.get("/residences", response=list[ResidenceOut] | ResidencePage, tags=["catalog"])
+def list_residences(
+    request,
+    filters: Query[ResidenceFilters],
+    api_version: int | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,  # ty: ignore[call-non-callable]
+    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
+    building_type: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
+    energy_label: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
+):
+    qs = Residence.objects.prefetch_related("listings").order_by("-created_at")
+    qs = _apply_residence_filters(qs, filters, building_type, energy_label)
 
     if _resolve_api_version(request, api_version) >= 2:
         total = qs.count()
