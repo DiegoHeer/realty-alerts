@@ -16,12 +16,13 @@ def _parse_build_year(construction_period):
 
 def backfill(apps, schema_editor):
     Residence = apps.get_model("scraping", "Residence")
-    Listing = apps.get_model("scraping", "Listing")
     min_ts = datetime.min.replace(tzinfo=UTC)
 
     pending = []
-    for residence in Residence.objects.all().iterator():
-        resolved = list(Listing.objects.filter(residence=residence, bag_status="resolved"))
+    # Prefetch listings and iterate in chunks so the whole table is read with
+    # O(rows / _BATCH) queries instead of one Listing query per residence.
+    for residence in Residence.objects.prefetch_related("listings").iterator(chunk_size=_BATCH):
+        resolved = [listing for listing in residence.listings.all() if listing.bag_status == "resolved"]
         if not resolved:
             continue
         freshest = max(resolved, key=lambda listing: listing.list_scraped_at or min_ts)
