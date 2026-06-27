@@ -176,7 +176,7 @@ def list_residences(
     energy_label: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
     bbox: str | None = None,
 ):
-    qs = Residence.objects.prefetch_related("listings").order_by("-created_at")
+    qs = Residence.objects.prefetch_related("listings").order_by("-created_at", "-id")
     qs = _apply_residence_filters(qs, filters, building_type, energy_label)
     if bbox:
         min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)

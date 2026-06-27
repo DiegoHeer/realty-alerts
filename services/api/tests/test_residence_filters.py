@@ -1,5 +1,7 @@
 import pytest
+from datetime import UTC, datetime
 
+from scraping.models import Residence
 from tests.factories import ResidenceFactory
 
 
@@ -101,3 +103,12 @@ class TestResidenceFilters:
         ResidenceFactory(current_price_eur=300_000)
         response = client.get(self.endpoint, {"min_price": 500_000, "max_price": 400_000})
         assert response.json() == []
+
+    def test_default_order_id_tiebreaker(self, client):
+        r1 = ResidenceFactory()
+        r2 = ResidenceFactory()
+        now = datetime.now(UTC)
+        Residence.objects.filter(pk__in=[r1.pk, r2.pk]).update(created_at=now)  # ty: ignore[unresolved-attribute]
+        response = client.get(self.endpoint)
+        ids = [r["id"] for r in response.json()]
+        assert ids == [r2.id, r1.id]  # ty: ignore[unresolved-attribute]
