@@ -24,11 +24,13 @@ class TestResidencePage:
     def test_v2_header_returns_envelope(self, client):
         ResidenceFactory()
         response = client.get(self.endpoint, headers={"X-API-Version": "2"})
+        assert response.status_code == 200
         assert isinstance(response.json(), dict)
 
     def test_query_param_wins_over_header(self, client):
         ResidenceFactory()
         response = client.get(f"{self.endpoint}?api_version=1", headers={"X-API-Version": "2"})
+        assert response.status_code == 200
         assert isinstance(response.json(), list)
 
     def test_total_ignores_pagination(self, client):

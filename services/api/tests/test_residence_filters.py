@@ -99,6 +99,10 @@ class TestResidenceFilters:
         response = client.get(self.endpoint, {"bbox": "4.26,99.0,4.32,100.0"})
         assert response.status_code == 422
 
+    def test_bbox_longitude_out_of_range_422(self, client):
+        response = client.get(self.endpoint, {"bbox": "200.0,52.0,210.0,53.0"})
+        assert response.status_code == 422
+
     def test_min_price_above_max_price_returns_empty(self, client):
         ResidenceFactory(current_price_eur=300_000)
         response = client.get(self.endpoint, {"min_price": 500_000, "max_price": 400_000})

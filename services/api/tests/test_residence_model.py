@@ -18,6 +18,7 @@ def test_expected_indexes_present():
         "idx_res_lat_lon",
         "idx_res_building_type",
         "idx_res_energy_label",
+        "idx_residences_filters",
     } <= names
 
 
