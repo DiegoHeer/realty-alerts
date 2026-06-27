@@ -142,6 +142,21 @@ def _parse_bbox(raw: str) -> tuple[float, float, float, float]:
     return min_lon, min_lat, max_lon, max_lat
 
 
+def _apply_listing_filters(qs, filters: ResidenceFilters):
+    """Apply listing-level numeric filter predicates to a Residence queryset."""
+    if filters.min_bedrooms is not None:
+        qs = qs.filter(bedroom_count__gte=filters.min_bedrooms)
+    if filters.min_bathrooms is not None:
+        qs = qs.filter(bathroom_count__gte=filters.min_bathrooms)
+    if filters.min_area_m2 is not None:
+        qs = qs.filter(surface_area_m2__gte=filters.min_area_m2)
+    if filters.max_area_m2 is not None:
+        qs = qs.filter(surface_area_m2__lte=filters.max_area_m2)
+    if filters.min_build_year is not None:
+        qs = qs.filter(build_year__gte=filters.min_build_year)
+    return qs
+
+
 def _apply_residence_filters(
     qs,
     filters: ResidenceFilters,
@@ -161,6 +176,7 @@ def _apply_residence_filters(
         qs = qs.filter(building_type__in=building_types)
     if energy_labels := _parse_enum_multi(energy_label, EnergyLabel):
         qs = qs.filter(energy_label__in=energy_labels)
+    qs = _apply_listing_filters(qs, filters)
     return qs
 
 
