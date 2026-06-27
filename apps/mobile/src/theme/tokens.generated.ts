@@ -66,20 +66,20 @@ export const lightTheme = {
     "black": "#000000"
   },
   "opacity": {
-    "transparent": "0",
-    "005": "0.05",
-    "010": "0.1",
-    "015": "0.15",
-    "020": "0.2",
-    "030": "0.3",
-    "040": "0.4",
-    "050": "0.5",
-    "060": "0.6",
-    "070": "0.7",
-    "080": "0.8",
-    "085": "0.85",
-    "090": "0.9",
-    "opaque": "1"
+    "transparent": 0,
+    "005": 0.05,
+    "010": 0.1,
+    "015": 0.15,
+    "020": 0.2,
+    "030": 0.3,
+    "040": 0.4,
+    "050": 0.5,
+    "060": 0.6,
+    "070": 0.7,
+    "080": 0.8,
+    "085": 0.85,
+    "090": 0.9,
+    "opaque": 1
   },
   "scale": {
     "100": 8,
@@ -92,154 +92,154 @@ export const lightTheme = {
     "600": 48,
     "800": 64,
     "1000": 80,
-    "base": "8",
+    "base": 8,
     "050": 4,
     "075": 6
   },
   "dimension": {
-    "100": "8px",
-    "150": "12px",
-    "200": "16px",
-    "250": "20px",
-    "300": "24px",
-    "400": "32px",
-    "500": "40px",
-    "600": "48px",
-    "800": "64px",
-    "1000": "80px",
-    "050": "4px",
-    "075": "6px"
+    "100": 8,
+    "150": 12,
+    "200": 16,
+    "250": 20,
+    "300": 24,
+    "400": 32,
+    "500": 40,
+    "600": 48,
+    "800": 64,
+    "1000": 80,
+    "050": 4,
+    "075": 6
   },
   "space": {
-    "100": "8px",
-    "150": "12px",
-    "200": "16px",
-    "250": "20px",
-    "300": "24px",
-    "400": "32px",
-    "500": "40px",
-    "600": "48px",
-    "800": "64px",
-    "1000": "80px",
-    "none": "0",
-    "050": "4px",
-    "075": "6px"
+    "100": 8,
+    "150": 12,
+    "200": 16,
+    "250": 20,
+    "300": 24,
+    "400": 32,
+    "500": 40,
+    "600": 48,
+    "800": 64,
+    "1000": 80,
+    "none": 0,
+    "050": 4,
+    "075": 6
   },
   "radius": {
-    "100": "8px",
-    "150": "12px",
-    "200": "16px",
-    "300": "24px",
-    "none": "0",
-    "050": "4px",
-    "full": "9999px"
+    "100": 8,
+    "150": 12,
+    "200": 16,
+    "300": 24,
+    "none": 0,
+    "050": 4,
+    "full": 9999
   },
   "sizing": {
-    "icon-sm": "16px",
-    "icon-md": "20px",
-    "icon-lg": "24px",
-    "touch-target": "48px",
-    "avatar-sm": "32px",
-    "avatar-md": "40px",
-    "avatar-lg": "64px"
+    "icon-sm": 16,
+    "icon-md": 20,
+    "icon-lg": 24,
+    "touch-target": 48,
+    "avatar-sm": 32,
+    "avatar-md": 40,
+    "avatar-lg": 64
   },
   "line": {
-    "none": "0",
-    "xs": "0.5px",
-    "sm": "1px",
-    "md": "2px",
-    "lg": "3px"
+    "none": 0,
+    "xs": 0.5,
+    "sm": 1,
+    "md": 2,
+    "lg": 3
   },
   "font-family": {
     "default": "'Plus Jakarta Sans'",
     "mono": "'JetBrains Mono'"
   },
   "font-weight": {
-    "regular": "400",
-    "medium": "500",
-    "semibold": "600",
-    "bold": "700"
+    "regular": 400,
+    "medium": 500,
+    "semibold": 600,
+    "bold": 700
   },
   "font-size": {
-    "2xs": "10px",
-    "xs": "12px",
-    "sm": "14px",
-    "md": "16px",
-    "lg": "18px",
-    "xl": "20px",
-    "2xl": "24px",
-    "3xl": "30px",
-    "4xl": "36px"
+    "2xs": 10,
+    "xs": 12,
+    "sm": 14,
+    "md": 16,
+    "lg": 18,
+    "xl": 20,
+    "2xl": 24,
+    "3xl": 30,
+    "4xl": 36
   },
   "line-height": {
-    "tight": "1.2",
-    "normal": "1.5",
-    "relaxed": "1.75"
+    "tight": 1.2,
+    "normal": 1.5,
+    "relaxed": 1.75
   },
   "shadow": {
     "color": "rgba(15, 30, 63, 0.12)",
     "color-strong": "rgba(15, 30, 63, 0.24)",
     "distance": {
-      "x": "0",
-      "y": "0"
+      "x": 0,
+      "y": 0
     },
     "outer": {
       "soft": {
         "xs": {
-          "offsetX": "0",
-          "offsetY": "1px",
-          "blur": "2px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 1,
+          "blur": 2,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "sm": {
-          "offsetX": "0",
-          "offsetY": "2px",
-          "blur": "4px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 2,
+          "blur": 4,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "md": {
-          "offsetX": "0",
-          "offsetY": "4px",
-          "blur": "8px",
-          "spread": "-1px",
+          "offsetX": 0,
+          "offsetY": 4,
+          "blur": 8,
+          "spread": -1,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "lg": {
-          "offsetX": "0",
-          "offsetY": "8px",
-          "blur": "16px",
-          "spread": "-2px",
+          "offsetX": 0,
+          "offsetY": 8,
+          "blur": 16,
+          "spread": -2,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "xl": {
-          "offsetX": "0",
-          "offsetY": "16px",
-          "blur": "32px",
-          "spread": "-4px",
+          "offsetX": 0,
+          "offsetY": 16,
+          "blur": 32,
+          "spread": -4,
           "color": "rgba(15, 30, 63, 0.24)",
           "inset": false
         }
       },
       "hard": {
         "sm": {
-          "offsetX": "0",
-          "offsetY": "2px",
-          "blur": "0",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 2,
+          "blur": 0,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "md": {
-          "offsetX": "0",
-          "offsetY": "4px",
-          "blur": "0",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 4,
+          "blur": 0,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         }
@@ -248,18 +248,18 @@ export const lightTheme = {
     "inner": {
       "soft": {
         "sm": {
-          "offsetX": "0",
-          "offsetY": "1px",
-          "blur": "2px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 1,
+          "blur": 2,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": true
         },
         "md": {
-          "offsetX": "0",
-          "offsetY": "2px",
-          "blur": "4px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 2,
+          "blur": 4,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": true
         }
@@ -267,12 +267,12 @@ export const lightTheme = {
     }
   },
   "duration": {
-    "instant": "50",
-    "fast": "100",
-    "normal": "200",
-    "moderate": "300",
-    "slow": "500",
-    "slower": "700"
+    "instant": 50,
+    "fast": 100,
+    "normal": 200,
+    "moderate": 300,
+    "slow": 500,
+    "slower": 700
   },
   "easing": {
     "default": "cubic-bezier(0.25, 0.1, 0.25, 1)",
@@ -446,84 +446,44 @@ export const lightTheme = {
   },
   "type": {
     "display": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "700",
-      "fontSizes": "36px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_700Bold",
+      "fontSize": 36,
+      "lineHeight": 43
     },
     "heading-one": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "600",
-      "fontSizes": "30px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_600SemiBold",
+      "fontSize": 30,
+      "lineHeight": 36
     },
     "heading-two": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "600",
-      "fontSizes": "24px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_600SemiBold",
+      "fontSize": 24,
+      "lineHeight": 29
     },
     "heading-three": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "600",
-      "fontSizes": "20px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_600SemiBold",
+      "fontSize": 20,
+      "lineHeight": 24
     },
     "body": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "400",
-      "fontSizes": "16px",
-      "lineHeights": "1.5"
+      "fontFamily": "PlusJakartaSans_400Regular",
+      "fontSize": 16,
+      "lineHeight": 24
     },
     "body-small": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "400",
-      "fontSizes": "14px",
-      "lineHeights": "1.5"
+      "fontFamily": "PlusJakartaSans_400Regular",
+      "fontSize": 14,
+      "lineHeight": 21
     },
     "label": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "500",
-      "fontSizes": "14px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_500Medium",
+      "fontSize": 14,
+      "lineHeight": 17
     },
     "caption": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "400",
-      "fontSizes": "12px",
-      "lineHeights": "1.5"
+      "fontFamily": "PlusJakartaSans_400Regular",
+      "fontSize": 12,
+      "lineHeight": 18
     }
   }
 } as const;
@@ -593,20 +553,20 @@ export const darkTheme = {
     "black": "#000000"
   },
   "opacity": {
-    "transparent": "0",
-    "005": "0.05",
-    "010": "0.1",
-    "015": "0.15",
-    "020": "0.2",
-    "030": "0.3",
-    "040": "0.4",
-    "050": "0.5",
-    "060": "0.6",
-    "070": "0.7",
-    "080": "0.8",
-    "085": "0.85",
-    "090": "0.9",
-    "opaque": "1"
+    "transparent": 0,
+    "005": 0.05,
+    "010": 0.1,
+    "015": 0.15,
+    "020": 0.2,
+    "030": 0.3,
+    "040": 0.4,
+    "050": 0.5,
+    "060": 0.6,
+    "070": 0.7,
+    "080": 0.8,
+    "085": 0.85,
+    "090": 0.9,
+    "opaque": 1
   },
   "scale": {
     "100": 8,
@@ -619,154 +579,154 @@ export const darkTheme = {
     "600": 48,
     "800": 64,
     "1000": 80,
-    "base": "8",
+    "base": 8,
     "050": 4,
     "075": 6
   },
   "dimension": {
-    "100": "8px",
-    "150": "12px",
-    "200": "16px",
-    "250": "20px",
-    "300": "24px",
-    "400": "32px",
-    "500": "40px",
-    "600": "48px",
-    "800": "64px",
-    "1000": "80px",
-    "050": "4px",
-    "075": "6px"
+    "100": 8,
+    "150": 12,
+    "200": 16,
+    "250": 20,
+    "300": 24,
+    "400": 32,
+    "500": 40,
+    "600": 48,
+    "800": 64,
+    "1000": 80,
+    "050": 4,
+    "075": 6
   },
   "space": {
-    "100": "8px",
-    "150": "12px",
-    "200": "16px",
-    "250": "20px",
-    "300": "24px",
-    "400": "32px",
-    "500": "40px",
-    "600": "48px",
-    "800": "64px",
-    "1000": "80px",
-    "none": "0",
-    "050": "4px",
-    "075": "6px"
+    "100": 8,
+    "150": 12,
+    "200": 16,
+    "250": 20,
+    "300": 24,
+    "400": 32,
+    "500": 40,
+    "600": 48,
+    "800": 64,
+    "1000": 80,
+    "none": 0,
+    "050": 4,
+    "075": 6
   },
   "radius": {
-    "100": "8px",
-    "150": "12px",
-    "200": "16px",
-    "300": "24px",
-    "none": "0",
-    "050": "4px",
-    "full": "9999px"
+    "100": 8,
+    "150": 12,
+    "200": 16,
+    "300": 24,
+    "none": 0,
+    "050": 4,
+    "full": 9999
   },
   "sizing": {
-    "icon-sm": "16px",
-    "icon-md": "20px",
-    "icon-lg": "24px",
-    "touch-target": "48px",
-    "avatar-sm": "32px",
-    "avatar-md": "40px",
-    "avatar-lg": "64px"
+    "icon-sm": 16,
+    "icon-md": 20,
+    "icon-lg": 24,
+    "touch-target": 48,
+    "avatar-sm": 32,
+    "avatar-md": 40,
+    "avatar-lg": 64
   },
   "line": {
-    "none": "0",
-    "xs": "0.5px",
-    "sm": "1px",
-    "md": "2px",
-    "lg": "3px"
+    "none": 0,
+    "xs": 0.5,
+    "sm": 1,
+    "md": 2,
+    "lg": 3
   },
   "font-family": {
     "default": "'Plus Jakarta Sans'",
     "mono": "'JetBrains Mono'"
   },
   "font-weight": {
-    "regular": "400",
-    "medium": "500",
-    "semibold": "600",
-    "bold": "700"
+    "regular": 400,
+    "medium": 500,
+    "semibold": 600,
+    "bold": 700
   },
   "font-size": {
-    "2xs": "10px",
-    "xs": "12px",
-    "sm": "14px",
-    "md": "16px",
-    "lg": "18px",
-    "xl": "20px",
-    "2xl": "24px",
-    "3xl": "30px",
-    "4xl": "36px"
+    "2xs": 10,
+    "xs": 12,
+    "sm": 14,
+    "md": 16,
+    "lg": 18,
+    "xl": 20,
+    "2xl": 24,
+    "3xl": 30,
+    "4xl": 36
   },
   "line-height": {
-    "tight": "1.2",
-    "normal": "1.5",
-    "relaxed": "1.75"
+    "tight": 1.2,
+    "normal": 1.5,
+    "relaxed": 1.75
   },
   "shadow": {
     "color": "rgba(15, 30, 63, 0.12)",
     "color-strong": "rgba(15, 30, 63, 0.24)",
     "distance": {
-      "x": "0",
-      "y": "0"
+      "x": 0,
+      "y": 0
     },
     "outer": {
       "soft": {
         "xs": {
-          "offsetX": "0",
-          "offsetY": "1px",
-          "blur": "2px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 1,
+          "blur": 2,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "sm": {
-          "offsetX": "0",
-          "offsetY": "2px",
-          "blur": "4px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 2,
+          "blur": 4,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "md": {
-          "offsetX": "0",
-          "offsetY": "4px",
-          "blur": "8px",
-          "spread": "-1px",
+          "offsetX": 0,
+          "offsetY": 4,
+          "blur": 8,
+          "spread": -1,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "lg": {
-          "offsetX": "0",
-          "offsetY": "8px",
-          "blur": "16px",
-          "spread": "-2px",
+          "offsetX": 0,
+          "offsetY": 8,
+          "blur": 16,
+          "spread": -2,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "xl": {
-          "offsetX": "0",
-          "offsetY": "16px",
-          "blur": "32px",
-          "spread": "-4px",
+          "offsetX": 0,
+          "offsetY": 16,
+          "blur": 32,
+          "spread": -4,
           "color": "rgba(15, 30, 63, 0.24)",
           "inset": false
         }
       },
       "hard": {
         "sm": {
-          "offsetX": "0",
-          "offsetY": "2px",
-          "blur": "0",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 2,
+          "blur": 0,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         },
         "md": {
-          "offsetX": "0",
-          "offsetY": "4px",
-          "blur": "0",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 4,
+          "blur": 0,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": false
         }
@@ -775,18 +735,18 @@ export const darkTheme = {
     "inner": {
       "soft": {
         "sm": {
-          "offsetX": "0",
-          "offsetY": "1px",
-          "blur": "2px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 1,
+          "blur": 2,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": true
         },
         "md": {
-          "offsetX": "0",
-          "offsetY": "2px",
-          "blur": "4px",
-          "spread": "0",
+          "offsetX": 0,
+          "offsetY": 2,
+          "blur": 4,
+          "spread": 0,
           "color": "rgba(15, 30, 63, 0.12)",
           "inset": true
         }
@@ -794,12 +754,12 @@ export const darkTheme = {
     }
   },
   "duration": {
-    "instant": "50",
-    "fast": "100",
-    "normal": "200",
-    "moderate": "300",
-    "slow": "500",
-    "slower": "700"
+    "instant": 50,
+    "fast": 100,
+    "normal": 200,
+    "moderate": 300,
+    "slow": 500,
+    "slower": 700
   },
   "easing": {
     "default": "cubic-bezier(0.25, 0.1, 0.25, 1)",
@@ -973,84 +933,44 @@ export const darkTheme = {
   },
   "type": {
     "display": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "700",
-      "fontSizes": "36px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_700Bold",
+      "fontSize": 36,
+      "lineHeight": 43
     },
     "heading-one": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "600",
-      "fontSizes": "30px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_600SemiBold",
+      "fontSize": 30,
+      "lineHeight": 36
     },
     "heading-two": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "600",
-      "fontSizes": "24px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_600SemiBold",
+      "fontSize": 24,
+      "lineHeight": 29
     },
     "heading-three": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "600",
-      "fontSizes": "20px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_600SemiBold",
+      "fontSize": 20,
+      "lineHeight": 24
     },
     "body": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "400",
-      "fontSizes": "16px",
-      "lineHeights": "1.5"
+      "fontFamily": "PlusJakartaSans_400Regular",
+      "fontSize": 16,
+      "lineHeight": 24
     },
     "body-small": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "400",
-      "fontSizes": "14px",
-      "lineHeights": "1.5"
+      "fontFamily": "PlusJakartaSans_400Regular",
+      "fontSize": 14,
+      "lineHeight": 21
     },
     "label": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "500",
-      "fontSizes": "14px",
-      "lineHeights": "1.2"
+      "fontFamily": "PlusJakartaSans_500Medium",
+      "fontSize": 14,
+      "lineHeight": 17
     },
     "caption": {
-      "fontFamilies": [
-        [
-          "Plus Jakarta Sans"
-        ]
-      ],
-      "fontWeights": "400",
-      "fontSizes": "12px",
-      "lineHeights": "1.5"
+      "fontFamily": "PlusJakartaSans_400Regular",
+      "fontSize": 12,
+      "lineHeight": 18
     }
   }
 } as const;
