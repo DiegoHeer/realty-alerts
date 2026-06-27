@@ -193,6 +193,11 @@ class ResidenceFilters(Schema):
     max_price: int | None = None
     status: ListingStatus | None = None
     deal_type: DealType = DealType.SALE
+    min_bedrooms: int | None = None
+    min_bathrooms: int | None = None
+    min_area_m2: int | None = None
+    max_area_m2: int | None = None
+    min_build_year: int | None = None
 
 
 class CityOut(Schema):
