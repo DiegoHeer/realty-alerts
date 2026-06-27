@@ -201,3 +201,77 @@ def test_reconcile_clears_construction_type_when_no_listing_has_value():
 
     residence.refresh_from_db()
     assert residence.construction_type is None
+
+
+def test_reconcile_copies_listing_attributes_from_freshest():
+    residence = cast(Residence, ResidenceFactory())
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 1, 1, tzinfo=UTC),
+        bedroom_count=2,
+        bathroom_count=1,
+        surface_area_m2=70,
+        construction_period="1960",
+    )
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        bedroom_count=4,
+        bathroom_count=2,
+        surface_area_m2=120,
+        construction_period="1998",
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    assert residence.bedroom_count == 4
+    assert residence.bathroom_count == 2
+    assert residence.surface_area_m2 == 120
+    assert residence.build_year == 1998
+
+
+def test_reconcile_listing_attributes_are_coherent_not_borrowed():
+    residence = cast(Residence, ResidenceFactory())
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 1, 1, tzinfo=UTC),
+        bedroom_count=3,
+        surface_area_m2=90,
+    )
+    ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 5, 1, tzinfo=UTC),
+        bedroom_count=None,
+        surface_area_m2=110,
+    )
+
+    reconcile_residence(residence)
+
+    residence.refresh_from_db()
+    # Freshest (May) has bedroom_count None -> residence is None, NOT Jan's 3.
+    assert residence.bedroom_count is None
+    assert residence.surface_area_m2 == 110
+
+
+def test_reconcile_refreshes_listing_attributes_when_freshest_changes():
+    residence = cast(Residence, ResidenceFactory())
+    listing = ListingFactory(
+        residence=residence,
+        bag_status=BagStatus.RESOLVED,
+        list_scraped_at=datetime(2026, 1, 1, tzinfo=UTC),
+        bedroom_count=2,
+    )
+    reconcile_residence(residence)
+    residence.refresh_from_db()
+    assert residence.bedroom_count == 2
+
+    listing.bedroom_count = 5
+    listing.save(update_fields=["bedroom_count"])
+    reconcile_residence(residence)
+    residence.refresh_from_db()
+    assert residence.bedroom_count == 5

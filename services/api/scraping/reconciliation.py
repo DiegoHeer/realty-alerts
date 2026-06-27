@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from django.utils import timezone
 
 from scraping.models import BagStatus, Listing, ListingStatus, Residence
+from scraping.parsing import parse_build_year
 
 # Ordering for "most-advanced" status rollup. SOLD beats SALE_PENDING beats NEW —
 # once any portal marks the property gone, we treat the residence as gone.
@@ -41,6 +42,7 @@ def reconcile_residence(residence: Residence) -> None:
         update_fields.append("last_scraped_at")
 
     _reconcile_building_and_construction(residence, resolved, update_fields)
+    _reconcile_listing_attributes(residence, resolved, update_fields)
 
     if update_fields:
         residence.save(update_fields=update_fields)
@@ -64,3 +66,24 @@ def _reconcile_building_and_construction(
         if freshest_bt := next((listing for listing in by_freshness if listing.building_type), None):
             residence.building_type = freshest_bt.building_type
             update_fields.append("building_type")
+
+
+def _reconcile_listing_attributes(
+    residence: Residence, resolved: list[Listing], update_fields: list[str]
+) -> None:
+    """Denormalize the freshest resolved Listing's display attributes onto the
+    Residence as a coherent set — the same listing that drives title/image_url.
+    Values are always refreshed; a null on the freshest listing yields a null
+    here (never borrowed from an older listing)."""
+    _min_ts = datetime.min.replace(tzinfo=UTC)
+    freshest = max(resolved, key=lambda listing: listing.list_scraped_at or _min_ts)
+    new_values = {
+        "bedroom_count": freshest.bedroom_count,
+        "bathroom_count": freshest.bathroom_count,
+        "surface_area_m2": freshest.surface_area_m2,
+        "build_year": parse_build_year(freshest.construction_period),
+    }
+    for field, value in new_values.items():
+        if getattr(residence, field) != value:
+            setattr(residence, field, value)
+            update_fields.append(field)
