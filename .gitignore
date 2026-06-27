@@ -28,6 +28,7 @@ dist/
 # Claude Code
 .claude/settings.local.json
 .claude/superpowers/
+.superpowers/
 .worktrees/
 
 # IDE
