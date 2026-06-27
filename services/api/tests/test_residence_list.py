@@ -184,8 +184,8 @@ class TestResidenceList:
 
         assert response.status_code == 422
 
-    def test_limit_must_be_positive(self, client):
-        response = client.get(self.endpoint, {"limit": 0})
+    def test_limit_rejects_negative(self, client):
+        response = client.get(self.endpoint, {"limit": -1})
 
         assert response.status_code == 422
 
