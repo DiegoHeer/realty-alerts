@@ -42,3 +42,21 @@ def test_listing_attribute_indexes_present():
         "idx_res_surface_area",
         "idx_res_build_year",
     } <= names
+
+
+def test_neighbourhood_code_column_nullable():
+    field = Residence._meta.get_field("neighbourhood_code")
+    assert field.null is True
+    assert field.max_length == 12
+
+
+def test_neighbourhood_code_index_present():
+    names = {idx.name for idx in Residence._meta.indexes}
+    assert "idx_res_neighbourhood_code" in names
+
+
+@pytest.mark.django_db
+def test_residence_stores_neighbourhood_code():
+    residence = cast(Residence, ResidenceFactory(neighbourhood_code="BU03630000"))
+    residence.refresh_from_db()
+    assert residence.neighbourhood_code == "BU03630000"
