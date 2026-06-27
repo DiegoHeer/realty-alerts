@@ -107,6 +107,11 @@ class Residence(models.Model):
     deal_type = models.CharField(max_length=10, choices=DealType.choices, default=DealType.SALE)
     last_scraped_at = models.DateTimeField(null=True, blank=True)
     status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Denormalized from the freshest resolved Listing (see reconciliation).
+    bedroom_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    bathroom_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    surface_area_m2 = models.PositiveIntegerField(null=True, blank=True)
+    build_year = models.PositiveSmallIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -118,6 +123,10 @@ class Residence(models.Model):
             models.Index(fields=["latitude", "longitude"], name="idx_res_lat_lon"),
             models.Index(fields=["building_type"], name="idx_res_building_type"),
             models.Index(fields=["energy_label"], name="idx_res_energy_label"),
+            models.Index(fields=["bedroom_count"], name="idx_res_bedroom_count"),
+            models.Index(fields=["bathroom_count"], name="idx_res_bathroom_count"),
+            models.Index(fields=["surface_area_m2"], name="idx_res_surface_area"),
+            models.Index(fields=["build_year"], name="idx_res_build_year"),
         ]
 
     def __str__(self) -> str:
