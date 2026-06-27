@@ -4,31 +4,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scraping', '0025_rename_and_add_soil_fields'),
+        ("scraping", "0025_rename_and_add_soil_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='residence',
-            name='deal_type',
-            field=models.CharField(choices=[('sale', 'Te koop'), ('rent', 'Te huur')], default='sale', max_length=10),
+            model_name="residence",
+            name="deal_type",
+            field=models.CharField(choices=[("sale", "Te koop"), ("rent", "Te huur")], default="sale", max_length=10),
         ),
         migrations.AddIndex(
-            model_name='residence',
-            index=models.Index(fields=['deal_type', '-created_at', '-id'], name='idx_res_dealtype_created'),
+            model_name="residence",
+            index=models.Index(fields=["deal_type", "-created_at", "-id"], name="idx_res_dealtype_created"),
         ),
         migrations.AddIndex(
-            model_name='residence',
-            index=models.Index(fields=['latitude', 'longitude'], name='idx_res_lat_lon'),
+            model_name="residence",
+            index=models.Index(fields=["latitude", "longitude"], name="idx_res_lat_lon"),
         ),
         migrations.AddIndex(
-            model_name='residence',
-            index=models.Index(fields=['building_type'], name='idx_res_building_type'),
+            model_name="residence",
+            index=models.Index(fields=["building_type"], name="idx_res_building_type"),
         ),
         migrations.AddIndex(
-            model_name='residence',
-            index=models.Index(fields=['energy_label'], name='idx_res_energy_label'),
+            model_name="residence",
+            index=models.Index(fields=["energy_label"], name="idx_res_energy_label"),
         ),
     ]
