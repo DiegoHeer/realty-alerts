@@ -186,82 +186,76 @@ export const lightTheme = {
     "outer": {
       "soft": {
         "xs": {
-          "offsetX": 0,
-          "offsetY": 1,
-          "blur": 2,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 1
+          },
+          "shadowRadius": 2,
+          "elevation": 2
         },
         "sm": {
-          "offsetX": 0,
-          "offsetY": 2,
-          "blur": 4,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowRadius": 4,
+          "elevation": 4
         },
         "md": {
-          "offsetX": 0,
-          "offsetY": 4,
-          "blur": 8,
-          "spread": -1,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 4
+          },
+          "shadowRadius": 8,
+          "elevation": 8
         },
         "lg": {
-          "offsetX": 0,
-          "offsetY": 8,
-          "blur": 16,
-          "spread": -2,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 8
+          },
+          "shadowRadius": 16,
+          "elevation": 16
         },
         "xl": {
-          "offsetX": 0,
-          "offsetY": 16,
-          "blur": 32,
-          "spread": -4,
-          "color": "rgba(15, 30, 63, 0.24)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.24,
+          "shadowOffset": {
+            "width": 0,
+            "height": 16
+          },
+          "shadowRadius": 32,
+          "elevation": 32
         }
       },
       "hard": {
         "sm": {
-          "offsetX": 0,
-          "offsetY": 2,
-          "blur": 0,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowRadius": 0,
+          "elevation": 0
         },
         "md": {
-          "offsetX": 0,
-          "offsetY": 4,
-          "blur": 0,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
-        }
-      }
-    },
-    "inner": {
-      "soft": {
-        "sm": {
-          "offsetX": 0,
-          "offsetY": 1,
-          "blur": 2,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": true
-        },
-        "md": {
-          "offsetX": 0,
-          "offsetY": 2,
-          "blur": 4,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": true
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 4
+          },
+          "shadowRadius": 0,
+          "elevation": 0
         }
       }
     }
@@ -673,82 +667,76 @@ export const darkTheme = {
     "outer": {
       "soft": {
         "xs": {
-          "offsetX": 0,
-          "offsetY": 1,
-          "blur": 2,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 1
+          },
+          "shadowRadius": 2,
+          "elevation": 2
         },
         "sm": {
-          "offsetX": 0,
-          "offsetY": 2,
-          "blur": 4,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowRadius": 4,
+          "elevation": 4
         },
         "md": {
-          "offsetX": 0,
-          "offsetY": 4,
-          "blur": 8,
-          "spread": -1,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 4
+          },
+          "shadowRadius": 8,
+          "elevation": 8
         },
         "lg": {
-          "offsetX": 0,
-          "offsetY": 8,
-          "blur": 16,
-          "spread": -2,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 8
+          },
+          "shadowRadius": 16,
+          "elevation": 16
         },
         "xl": {
-          "offsetX": 0,
-          "offsetY": 16,
-          "blur": 32,
-          "spread": -4,
-          "color": "rgba(15, 30, 63, 0.24)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.24,
+          "shadowOffset": {
+            "width": 0,
+            "height": 16
+          },
+          "shadowRadius": 32,
+          "elevation": 32
         }
       },
       "hard": {
         "sm": {
-          "offsetX": 0,
-          "offsetY": 2,
-          "blur": 0,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowRadius": 0,
+          "elevation": 0
         },
         "md": {
-          "offsetX": 0,
-          "offsetY": 4,
-          "blur": 0,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": false
-        }
-      }
-    },
-    "inner": {
-      "soft": {
-        "sm": {
-          "offsetX": 0,
-          "offsetY": 1,
-          "blur": 2,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": true
-        },
-        "md": {
-          "offsetX": 0,
-          "offsetY": 2,
-          "blur": 4,
-          "spread": 0,
-          "color": "rgba(15, 30, 63, 0.12)",
-          "inset": true
+          "shadowColor": "rgb(15, 30, 63)",
+          "shadowOpacity": 0.12,
+          "shadowOffset": {
+            "width": 0,
+            "height": 4
+          },
+          "shadowRadius": 0,
+          "elevation": 0
         }
       }
     }

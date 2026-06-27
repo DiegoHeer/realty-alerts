@@ -63,6 +63,45 @@ function adaptLeaf(value) {
   return coerceNumber(value);
 }
 
+// "rgba(15, 30, 63, 0.12)" -> { shadowColor: "rgb(15, 30, 63)", shadowOpacity: 0.12 }.
+// Opaque / non-rgba colors keep full opacity.
+function parseShadowColor(color) {
+  const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(color);
+  if (m) {
+    const [, r, g, b, a] = m;
+    return { shadowColor: `rgb(${r}, ${g}, ${b})`, shadowOpacity: a === undefined ? 1 : parseFloat(a) };
+  }
+  return { shadowColor: color, shadowOpacity: 1 };
+}
+
+// Detect an (expanded) box-shadow composite leaf.
+function isShadowValue(v) {
+  return (
+    v &&
+    typeof v === "object" &&
+    !Array.isArray(v) &&
+    "offsetX" in v &&
+    "blur" in v &&
+    "inset" in v &&
+    "color" in v
+  );
+}
+
+// Outer box-shadow -> RN shadow object. `spread` is dropped (RN has none) and
+// inset/inner shadows return undefined so the key is omitted (RN can't render
+// them; consuming one then becomes a compile error).
+function toRNShadow(v) {
+  if (v.inset) return undefined;
+  const { shadowColor, shadowOpacity } = parseShadowColor(v.color);
+  return {
+    shadowColor,
+    shadowOpacity,
+    shadowOffset: { width: v.offsetX, height: v.offsetY },
+    shadowRadius: v.blur,
+    elevation: Math.round(v.blur),
+  };
+}
+
 // Recursively turn an SD nested token tree into a plain {key: resolvedValue} object.
 function plain(node) {
   if (node && typeof node === "object" && "value" in node) return adaptLeaf(node.value);
@@ -71,11 +110,17 @@ function plain(node) {
   for (const k of Object.keys(node)) {
     if (k.startsWith("$") || k === "filePath" || k === "isSource" || k === "original" || k === "name" || k === "attributes" || k === "path") continue;
     const v = node[k];
-    if (v && typeof v === "object") out[k] = plain(v);
+    if (v && typeof v === "object") {
+      const pv = plain(v);
+      if (pv === undefined) continue; // dropped (e.g. an inset/inner shadow)
+      if (typeof pv === "object" && !Array.isArray(pv) && Object.keys(pv).length === 0) continue; // prune emptied containers
+      out[k] = pv;
+    }
   }
-  // The SD `expand` step splits typography composites into child tokens, so the
-  // composite arrives here as an assembled object rather than a single leaf value.
+  // The SD `expand` step splits composite tokens into child tokens, so a
+  // typography or box-shadow composite arrives here as an assembled object.
   if (isTypographyValue(out)) return toTextStyle(out);
+  if (isShadowValue(out)) return toRNShadow(out);
   return out;
 }
 
