@@ -68,9 +68,7 @@ def _reconcile_building_and_construction(
             update_fields.append("building_type")
 
 
-def _reconcile_listing_attributes(
-    residence: Residence, resolved: list[Listing], update_fields: list[str]
-) -> None:
+def _reconcile_listing_attributes(residence: Residence, resolved: list[Listing], update_fields: list[str]) -> None:
     """Denormalize the freshest resolved Listing's display attributes onto the
     Residence as a coherent set — the same listing that drives title/image_url.
     Values are always refreshed; a null on the freshest listing yields a null
