@@ -105,10 +105,11 @@ class TestResidenceFilters:
         assert response.json() == []
 
     def test_default_order_id_tiebreaker(self, client):
-        r1 = ResidenceFactory()
-        r2 = ResidenceFactory()
+        residences = [ResidenceFactory() for _ in range(5)]
         now = datetime.now(UTC)
-        Residence.objects.filter(pk__in=[r1.pk, r2.pk]).update(created_at=now)  # ty: ignore[unresolved-attribute]
+        pks = [r.pk for r in residences]  # ty: ignore[unresolved-attribute]
+        Residence.objects.filter(pk__in=pks).update(created_at=now)  # ty: ignore[unresolved-attribute]
         response = client.get(self.endpoint)
         ids = [r["id"] for r in response.json()]
-        assert ids == [r2.id, r1.id]  # ty: ignore[unresolved-attribute]
+        assert ids == sorted(ids, reverse=True)
+        assert set(ids) == {r.id for r in residences}  # ty: ignore[unresolved-attribute]
