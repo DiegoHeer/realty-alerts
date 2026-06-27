@@ -62,6 +62,11 @@ class EnergyLabel(models.TextChoices):
     G = "G", "G"
 
 
+class DealType(models.TextChoices):
+    SALE = "sale", "Te koop"
+    RENT = "rent", "Te huur"
+
+
 class Residence(models.Model):
     """One physical property, keyed on its BAG ID. Per-portal scraped data
     (price, title, image, status) lives on the child `Listing` rows; this
@@ -99,6 +104,7 @@ class Residence(models.Model):
     # whenever a child Listing is created or updated. The matcher reads these.
     current_price_eur = models.BigIntegerField(null=True, blank=True)
     current_status = models.CharField(max_length=16, choices=ListingStatus.choices, default=ListingStatus.NEW)
+    deal_type = models.CharField(max_length=10, choices=DealType.choices, default=DealType.SALE)
     last_scraped_at = models.DateTimeField(null=True, blank=True)
     status_changed_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -108,6 +114,10 @@ class Residence(models.Model):
         db_table = "residences"
         indexes = [
             models.Index(fields=["city", "current_price_eur"], name="idx_residences_filters"),
+            models.Index(fields=["deal_type", "-created_at", "-id"], name="idx_res_dealtype_created"),
+            models.Index(fields=["latitude", "longitude"], name="idx_res_lat_lon"),
+            models.Index(fields=["building_type"], name="idx_res_building_type"),
+            models.Index(fields=["energy_label"], name="idx_res_energy_label"),
         ]
 
     def __str__(self) -> str:

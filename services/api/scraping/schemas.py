@@ -7,6 +7,7 @@ from pydantic import StringConstraints, model_validator
 
 from scraping.models import (
     BuildingType,
+    DealType,
     DetailScrapeRunStatus,
     EnergyLabel,
     ListScrapeRunStatus,
@@ -95,6 +96,14 @@ class ResidenceOut(Schema):
     listings: list[ListingOut]
 
 
+class ResidencePage(Schema):
+    items: list[ResidenceOut]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool
+
+
 class ListScrapeRunOut(Schema):
     id: int
     website: Website
@@ -178,6 +187,7 @@ class ResidenceFilters(Schema):
     min_price: int | None = None
     max_price: int | None = None
     status: ListingStatus | None = None
+    deal_type: DealType = DealType.SALE
 
 
 class CityOut(Schema):
