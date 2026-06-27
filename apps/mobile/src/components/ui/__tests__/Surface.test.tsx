@@ -4,9 +4,8 @@ import { Surface } from "../Surface";
 import { useThemeStore } from "@/theme/themeStore";
 import { lightTheme, darkTheme } from "@/theme/tokens.generated";
 
-jest.mock("@react-native-async-storage/async-storage", () =>
-  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
-);
+// AsyncStorage is mocked globally in jest.setup.js. Here we only need to control
+// the system colour scheme for the dark-reactivity case.
 jest.mock("react-native/Libraries/Utilities/useColorScheme");
 
 const mockedScheme = useColorScheme as jest.Mock;
