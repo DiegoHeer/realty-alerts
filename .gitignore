@@ -17,6 +17,9 @@ dist/
 # Expo
 .expo
 
+# Design tokens (derived from apps/mobile/design/tokens.json via `npm run tokens:split`)
+apps/mobile/design/sets/
+
 # Environments
 .env
 *.env
