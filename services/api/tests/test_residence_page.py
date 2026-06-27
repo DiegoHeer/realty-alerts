@@ -58,3 +58,26 @@ class TestResidencePage:
             ListingFactory.create_batch(2, residence=residence)
         with django_assert_num_queries(3):  # count + residences + prefetch
             client.get(self.endpoint, {"api_version": 2})
+
+    def test_limit_zero_count_only_v2(self, client):
+        for _ in range(4):
+            ResidenceFactory()
+        response = client.get(self.endpoint, {"api_version": 2, "limit": 0})
+        assert response.status_code == 200
+        body = response.json()
+        assert body["items"] == []
+        assert body["total"] == 4
+        assert body["limit"] == 0
+        assert body["has_more"] is True
+
+    def test_limit_zero_total_zero_has_more_false(self, client):
+        response = client.get(self.endpoint, {"api_version": 2, "limit": 0})
+        body = response.json()
+        assert body["total"] == 0
+        assert body["has_more"] is False
+
+    def test_limit_zero_legacy_returns_empty_array(self, client):
+        ResidenceFactory()
+        response = client.get(self.endpoint, {"limit": 0})
+        assert response.status_code == 200
+        assert response.json() == []

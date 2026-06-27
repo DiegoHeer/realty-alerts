@@ -175,7 +175,7 @@ def list_residences(
     request,
     filters: Query[ResidenceFilters],
     api_version: QueryEx[int | None, P(ge=1)] = None,
-    limit: QueryEx[int, P(ge=1, le=100)] = 20,
+    limit: QueryEx[int, P(ge=0, le=100)] = 20,
     offset: QueryEx[int, P(ge=0)] = 0,
     building_type: QueryEx[list[str] | None, P()] = None,
     energy_label: QueryEx[list[str] | None, P()] = None,
