@@ -126,6 +126,23 @@ def _apply_text_filters(qs, filters: ResidenceFilters):
     return qs
 
 
+def _parse_bbox(raw: str) -> tuple[float, float, float, float]:
+    """Parse 'minLon,minLat,maxLon,maxLat' (WGS84) into floats. Raises 422 on a
+    wrong count, non-numeric value, or out-of-range coordinate."""
+    parts = raw.split(",")
+    if len(parts) != 4:
+        raise HttpError(422, "bbox must be 'minLon,minLat,maxLon,maxLat'")
+    try:
+        min_lon, min_lat, max_lon, max_lat = (float(p) for p in parts)
+    except ValueError:
+        raise HttpError(422, "bbox values must be numeric")
+    if not (-180 <= min_lon <= 180 and -180 <= max_lon <= 180):
+        raise HttpError(422, "bbox longitude out of range")
+    if not (-90 <= min_lat <= 90 and -90 <= max_lat <= 90):
+        raise HttpError(422, "bbox latitude out of range")
+    return min_lon, min_lat, max_lon, max_lat
+
+
 def _apply_residence_filters(
     qs,
     filters: ResidenceFilters,
@@ -157,9 +174,20 @@ def list_residences(
     offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
     building_type: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
     energy_label: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
+    bbox: str | None = None,
 ):
     qs = Residence.objects.prefetch_related("listings").order_by("-created_at")
     qs = _apply_residence_filters(qs, filters, building_type, energy_label)
+    if bbox:
+        min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)
+        qs = qs.filter(
+            latitude__isnull=False,
+            longitude__isnull=False,
+            latitude__gte=min_lat,
+            latitude__lte=max_lat,
+            longitude__gte=min_lon,
+            longitude__lte=max_lon,
+        )
 
     if _resolve_api_version(request, api_version) >= 2:
         total = qs.count()

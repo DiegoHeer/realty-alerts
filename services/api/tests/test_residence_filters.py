@@ -68,3 +68,36 @@ class TestResidenceFilters:
     def test_energy_label_invalid_422(self, client):
         response = client.get(self.endpoint, {"energy_label": "Z"})
         assert response.status_code == 422
+
+    def test_bbox_includes_point_inside(self, client):
+        ResidenceFactory(latitude=52.08, longitude=4.29)
+        response = client.get(self.endpoint, {"bbox": "4.26,52.06,4.32,52.10"})
+        assert len(response.json()) == 1
+
+    def test_bbox_excludes_point_outside(self, client):
+        ResidenceFactory(latitude=53.0, longitude=5.0)
+        response = client.get(self.endpoint, {"bbox": "4.26,52.06,4.32,52.10"})
+        assert response.json() == []
+
+    def test_bbox_excludes_null_coordinates(self, client):
+        ResidenceFactory(latitude=None, longitude=None)
+        response = client.get(self.endpoint, {"bbox": "4.26,52.06,4.32,52.10"})
+        assert response.json() == []
+
+    def test_bbox_inverted_returns_empty(self, client):
+        ResidenceFactory(latitude=52.08, longitude=4.29)
+        response = client.get(self.endpoint, {"bbox": "4.32,52.10,4.26,52.06"})
+        assert response.json() == []
+
+    def test_bbox_malformed_422(self, client):
+        response = client.get(self.endpoint, {"bbox": "4.26,52.06,4.32"})
+        assert response.status_code == 422
+
+    def test_bbox_out_of_range_422(self, client):
+        response = client.get(self.endpoint, {"bbox": "4.26,99.0,4.32,100.0"})
+        assert response.status_code == 422
+
+    def test_min_price_above_max_price_returns_empty(self, client):
+        ResidenceFactory(current_price_eur=300_000)
+        response = client.get(self.endpoint, {"min_price": 500_000, "max_price": 400_000})
+        assert response.json() == []
