@@ -27,3 +27,18 @@ def test_deal_type_persists_default():
     residence = cast(Residence, ResidenceFactory())
     residence.refresh_from_db()
     assert residence.deal_type == DealType.SALE
+
+
+def test_listing_attribute_columns_nullable():
+    for name in ("bedroom_count", "bathroom_count", "surface_area_m2", "build_year"):
+        assert Residence._meta.get_field(name).null is True
+
+
+def test_listing_attribute_indexes_present():
+    names = {idx.name for idx in Residence._meta.indexes}
+    assert {
+        "idx_res_bedroom_count",
+        "idx_res_bathroom_count",
+        "idx_res_surface_area",
+        "idx_res_build_year",
+    } <= names

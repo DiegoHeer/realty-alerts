@@ -112,7 +112,7 @@ class TestResidenceFilters:
         residences = [ResidenceFactory() for _ in range(5)]
         now = datetime.now(UTC)
         pks = [r.pk for r in residences]  # ty: ignore[unresolved-attribute]
-        Residence.objects.filter(pk__in=pks).update(created_at=now)  # ty: ignore[unresolved-attribute]
+        Residence.objects.filter(pk__in=pks).update(created_at=now)
         response = client.get(self.endpoint)
         ids = [r["id"] for r in response.json()]
         assert ids == sorted(ids, reverse=True)
