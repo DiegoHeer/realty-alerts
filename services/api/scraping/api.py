@@ -168,7 +168,7 @@ def _apply_residence_filters(
 def list_residences(
     request,
     filters: Query[ResidenceFilters],
-    api_version: int | None = None,
+    api_version: Annotated[int | None, Query(ge=1)] = None,  # ty: ignore[call-non-callable]
     limit: Annotated[int, Query(ge=1, le=100)] = 20,  # ty: ignore[call-non-callable]
     offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
     building_type: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
