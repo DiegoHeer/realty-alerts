@@ -15,24 +15,24 @@ class TestResidenceSort:
         residences = [ResidenceFactory() for _ in range(3)]
         response = client.get(self.endpoint)
         ids = [r["id"] for r in response.json()]
-        assert ids == [r.id for r in reversed(residences)]
+        assert ids == [r.id for r in reversed(residences)]  # ty: ignore[unresolved-attribute]
 
     def test_sort_newest_explicit_matches_default(self, client):
         residences = [ResidenceFactory() for _ in range(3)]
         response = client.get(self.endpoint, {"sort": "newest"})
         ids = [r["id"] for r in response.json()]
-        assert ids == [r.id for r in reversed(residences)]
+        assert ids == [r.id for r in reversed(residences)]  # ty: ignore[unresolved-attribute]
 
     def test_sort_oldest_reverses_order(self, client):
         residences = [ResidenceFactory() for _ in range(3)]
         response = client.get(self.endpoint, {"sort": "oldest"})
         ids = [r["id"] for r in response.json()]
-        assert ids == [r.id for r in residences]
+        assert ids == [r.id for r in residences]  # ty: ignore[unresolved-attribute]
 
     def test_oldest_id_tiebreaker_ascending(self, client):
         residences = [ResidenceFactory() for _ in range(5)]
         now = datetime.now(UTC)
-        pks = [r.pk for r in residences]
+        pks = [r.pk for r in residences]  # ty: ignore[unresolved-attribute]
         Residence.objects.filter(pk__in=pks).update(created_at=now)
         response = client.get(self.endpoint, {"sort": "oldest"})
         ids = [r["id"] for r in response.json()]
