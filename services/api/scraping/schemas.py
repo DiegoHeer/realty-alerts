@@ -114,6 +114,11 @@ class ResidencePage(Schema):
     has_more: bool
 
 
+class MetaOut(Schema):
+    current_api_version: int
+    min_supported_api_version: int
+
+
 class ListScrapeRunOut(Schema):
     id: int
     website: Website

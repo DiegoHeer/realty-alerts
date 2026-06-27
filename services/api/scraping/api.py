@@ -38,6 +38,7 @@ from scraping.schemas import (
     GeoNeighborhoodOut,
     ListingIn,
     ListScrapeRunOut,
+    MetaOut,
     NeighborhoodStatsOut,
     ResidenceFilters,
     ResidenceOut,
@@ -414,6 +415,14 @@ def submit_detail_result(request, listing_id: int, payload: DetailResultIn):
         logger.warning(f"Detail scrape failed for listing_id={listing_id} in {duration:.1f}s: {payload.error_message}")
 
     return run
+
+
+@v1_router.get("/meta", auth=None, response=MetaOut, tags=["meta"])
+def get_meta(request):
+    return {
+        "current_api_version": settings.API_CURRENT_VERSION,
+        "min_supported_api_version": settings.API_MIN_SUPPORTED_VERSION,
+    }
 
 
 @v1_router.get("/cities", response=list[CityOut], tags=["catalog"])
