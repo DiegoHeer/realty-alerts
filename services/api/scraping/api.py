@@ -118,6 +118,7 @@ def list_residences(
         qs = qs.filter(current_price_eur__lte=filters.max_price)
     if filters.status:
         qs = qs.filter(current_status=filters.status)
+    qs = qs.filter(deal_type=filters.deal_type)
 
     if _resolve_api_version(request, api_version) >= 2:
         total = qs.count()
