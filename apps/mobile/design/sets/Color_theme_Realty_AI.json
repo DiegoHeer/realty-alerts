@@ -1,0 +1,173 @@
+{
+  "accent": {
+    "100": {
+      "$value": "{color.gold.100}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 100"
+    },
+    "200": {
+      "$value": "{color.gold.200}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 200"
+    },
+    "300": {
+      "$value": "{color.gold.300}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 300"
+    },
+    "400": {
+      "$value": "{color.gold.400}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 400"
+    },
+    "500": {
+      "$value": "{color.gold.500}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 500"
+    },
+    "600": {
+      "$value": "{color.gold.600}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 600"
+    },
+    "700": {
+      "$value": "{color.gold.700}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 700"
+    },
+    "800": {
+      "$value": "{color.gold.800}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 800"
+    },
+    "900": {
+      "$value": "{color.gold.900}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 900"
+    },
+    "950": {
+      "$value": "{color.gold.950}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 950"
+    },
+    "050": {
+      "$value": "{color.gold.050}",
+      "$type": "color",
+      "$description": "Accent (gold) scale step 050"
+    }
+  },
+  "neutral": {
+    "100": {
+      "$value": "{color.neutral.100}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 100"
+    },
+    "200": {
+      "$value": "{color.neutral.200}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 200"
+    },
+    "300": {
+      "$value": "{color.neutral.300}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 300"
+    },
+    "400": {
+      "$value": "{color.neutral.400}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 400"
+    },
+    "500": {
+      "$value": "{color.neutral.500}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 500"
+    },
+    "600": {
+      "$value": "{color.neutral.600}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 600"
+    },
+    "700": {
+      "$value": "{color.neutral.700}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 700"
+    },
+    "800": {
+      "$value": "{color.neutral.800}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 800"
+    },
+    "900": {
+      "$value": "{color.neutral.900}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 900"
+    },
+    "950": {
+      "$value": "{color.neutral.950}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 950"
+    },
+    "050": {
+      "$value": "{color.neutral.050}",
+      "$type": "color",
+      "$description": "Neutral (warm gray) scale step 050"
+    }
+  },
+  "primary": {
+    "100": {
+      "$value": "{color.navy.100}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 100"
+    },
+    "200": {
+      "$value": "{color.navy.200}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 200"
+    },
+    "300": {
+      "$value": "{color.navy.300}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 300"
+    },
+    "400": {
+      "$value": "{color.navy.400}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 400"
+    },
+    "500": {
+      "$value": "{color.navy.500}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 500"
+    },
+    "600": {
+      "$value": "{color.navy.600}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 600"
+    },
+    "700": {
+      "$value": "{color.navy.700}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 700"
+    },
+    "800": {
+      "$value": "{color.navy.800}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 800"
+    },
+    "900": {
+      "$value": "{color.navy.900}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 900"
+    },
+    "950": {
+      "$value": "{color.navy.950}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 950"
+    },
+    "050": {
+      "$value": "{color.navy.050}",
+      "$type": "color",
+      "$description": "Primary (navy) scale step 050"
+    }
+  }
+}

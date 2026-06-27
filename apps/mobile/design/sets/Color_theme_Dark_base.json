@@ -1,0 +1,441 @@
+{
+  "layerBase": {
+    "background": {
+      "$value": "{primary.950}",
+      "$type": "color",
+      "$description": "Page background — deepest navy"
+    },
+    "text": {
+      "$value": "{primary.300}",
+      "$type": "color",
+      "$description": "Default body text on dark page"
+    },
+    "border": {
+      "$value": "{primary.700}",
+      "$type": "color",
+      "$description": "Subtle dividers on dark page"
+    },
+    "icon": {
+      "$value": "{layerBase.text}",
+      "$type": "color",
+      "$description": "Default icons on dark page"
+    },
+    "highlight": {
+      "$value": "{accent.400}",
+      "$type": "color",
+      "$description": "Highlight accent on dark page"
+    }
+  },
+  "layerOne": {
+    "background": {
+      "$value": "{primary.800}",
+      "$type": "color",
+      "$description": "Card surfaces — lifted navy"
+    },
+    "text": {
+      "$value": "{primary.200}",
+      "$type": "color",
+      "$description": "Text on dark card surfaces"
+    },
+    "border": {
+      "$value": "{primary.600}",
+      "$type": "color",
+      "$description": "Card borders on dark"
+    },
+    "icon": {
+      "$value": "{layerOne.text}",
+      "$type": "color",
+      "$description": "Icons on dark card surfaces"
+    }
+  },
+  "layerTwo": {
+    "background": {
+      "$value": "{primary.900}",
+      "$type": "color",
+      "$description": "Recessed surfaces on dark — subtle depth"
+    },
+    "text": {
+      "$value": "{primary.300}",
+      "$type": "color",
+      "$description": "Text on dark recessed surfaces"
+    },
+    "border": {
+      "$value": "{primary.700}",
+      "$type": "color",
+      "$description": "Borders on dark recessed surfaces"
+    },
+    "icon": {
+      "$value": "{layerTwo.text}",
+      "$type": "color",
+      "$description": "Icons on dark recessed surfaces"
+    }
+  },
+  "heading": {
+    "text": {
+      "$value": "{primary.050}",
+      "$type": "color",
+      "$description": "Heading text — near white for dark mode contrast"
+    }
+  },
+  "divider": {
+    "$value": "{layerBase.border}",
+    "$type": "color",
+    "$description": "Horizontal and vertical dividers on dark"
+  },
+  "link": {
+    "default": {
+      "$value": "{accent.300}",
+      "$type": "color",
+      "$description": "Link text — Resting"
+    },
+    "hovered": {
+      "$value": "{accent.200}",
+      "$type": "color",
+      "$description": "Link text — Pointer hover"
+    },
+    "focused": {
+      "$value": "{accent.200}",
+      "$type": "color",
+      "$description": "Link text — Keyboard focus"
+    },
+    "pressed": {
+      "$value": "{accent.400}",
+      "$type": "color",
+      "$description": "Link text — Active press"
+    }
+  },
+  "buttonPrimary": {
+    "background": {
+      "default": {
+        "$value": "{accent.400}",
+        "$type": "color",
+        "$description": "Gold CTA background — Resting"
+      },
+      "hovered": {
+        "$value": "{accent.300}",
+        "$type": "color",
+        "$description": "Gold CTA background — Pointer hover"
+      },
+      "focused": {
+        "$value": "{accent.300}",
+        "$type": "color",
+        "$description": "Gold CTA background — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{accent.500}",
+        "$type": "color",
+        "$description": "Gold CTA background — Active press"
+      },
+      "disabled": {
+        "$value": "{primary.700}",
+        "$type": "color",
+        "$description": "Gold CTA background — Unavailable"
+      }
+    },
+    "text": {
+      "default": {
+        "$value": "{accent.950}",
+        "$type": "color",
+        "$description": "Gold CTA text — Resting"
+      },
+      "hovered": {
+        "$value": "{accent.950}",
+        "$type": "color",
+        "$description": "Gold CTA text — Pointer hover"
+      },
+      "focused": {
+        "$value": "{accent.950}",
+        "$type": "color",
+        "$description": "Gold CTA text — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{accent.950}",
+        "$type": "color",
+        "$description": "Gold CTA text — Active press"
+      },
+      "disabled": {
+        "$value": "{primary.500}",
+        "$type": "color",
+        "$description": "Gold CTA text — Unavailable"
+      }
+    },
+    "border": {
+      "default": {
+        "$value": "transparent",
+        "$type": "color",
+        "$description": "Gold CTA border — Resting"
+      },
+      "hovered": {
+        "$value": "{buttonPrimary.border.default}",
+        "$type": "color",
+        "$description": "Gold CTA border — Pointer hover"
+      },
+      "focused": {
+        "$value": "{buttonPrimary.border.default}",
+        "$type": "color",
+        "$description": "Gold CTA border — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{buttonPrimary.border.default}",
+        "$type": "color",
+        "$description": "Gold CTA border — Active press"
+      },
+      "disabled": {
+        "$value": "{buttonPrimary.border.default}",
+        "$type": "color",
+        "$description": "Gold CTA border — Unavailable"
+      }
+    },
+    "icon": {
+      "default": {
+        "$value": "{buttonPrimary.text.default}",
+        "$type": "color",
+        "$description": "Gold CTA icon — Resting"
+      },
+      "hovered": {
+        "$value": "{buttonPrimary.text.hovered}",
+        "$type": "color",
+        "$description": "Gold CTA icon — Pointer hover"
+      },
+      "focused": {
+        "$value": "{buttonPrimary.text.focused}",
+        "$type": "color",
+        "$description": "Gold CTA icon — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{buttonPrimary.text.pressed}",
+        "$type": "color",
+        "$description": "Gold CTA icon — Active press"
+      },
+      "disabled": {
+        "$value": "{buttonPrimary.text.disabled}",
+        "$type": "color",
+        "$description": "Gold CTA icon — Unavailable"
+      }
+    }
+  },
+  "buttonSecondary": {
+    "background": {
+      "default": {
+        "$value": "{primary.800}",
+        "$type": "color",
+        "$description": "Navy button background — Resting"
+      },
+      "hovered": {
+        "$value": "{primary.700}",
+        "$type": "color",
+        "$description": "Navy button background — Pointer hover"
+      },
+      "focused": {
+        "$value": "{primary.700}",
+        "$type": "color",
+        "$description": "Navy button background — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{primary.900}",
+        "$type": "color",
+        "$description": "Navy button background — Active press"
+      },
+      "disabled": {
+        "$value": "{primary.800}",
+        "$type": "color",
+        "$description": "Navy button background — Unavailable"
+      }
+    },
+    "text": {
+      "default": {
+        "$value": "{accent.300}",
+        "$type": "color",
+        "$description": "Navy button text — Resting"
+      },
+      "hovered": {
+        "$value": "{accent.200}",
+        "$type": "color",
+        "$description": "Navy button text — Pointer hover"
+      },
+      "focused": {
+        "$value": "{accent.200}",
+        "$type": "color",
+        "$description": "Navy button text — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{accent.100}",
+        "$type": "color",
+        "$description": "Navy button text — Active press"
+      },
+      "disabled": {
+        "$value": "{primary.500}",
+        "$type": "color",
+        "$description": "Navy button text — Unavailable"
+      }
+    },
+    "border": {
+      "default": {
+        "$value": "{primary.600}",
+        "$type": "color",
+        "$description": "Navy button border — Resting"
+      },
+      "hovered": {
+        "$value": "{primary.500}",
+        "$type": "color",
+        "$description": "Navy button border — Pointer hover"
+      },
+      "focused": {
+        "$value": "{primary.500}",
+        "$type": "color",
+        "$description": "Navy button border — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{primary.700}",
+        "$type": "color",
+        "$description": "Navy button border — Active press"
+      },
+      "disabled": {
+        "$value": "{primary.700}",
+        "$type": "color",
+        "$description": "Navy button border — Unavailable"
+      }
+    },
+    "icon": {
+      "default": {
+        "$value": "{buttonSecondary.text.default}",
+        "$type": "color",
+        "$description": "Navy button icon — Resting"
+      },
+      "hovered": {
+        "$value": "{buttonSecondary.text.hovered}",
+        "$type": "color",
+        "$description": "Navy button icon — Pointer hover"
+      },
+      "focused": {
+        "$value": "{buttonSecondary.text.focused}",
+        "$type": "color",
+        "$description": "Navy button icon — Keyboard focus"
+      },
+      "pressed": {
+        "$value": "{buttonSecondary.text.pressed}",
+        "$type": "color",
+        "$description": "Navy button icon — Active press"
+      },
+      "disabled": {
+        "$value": "{buttonSecondary.text.disabled}",
+        "$type": "color",
+        "$description": "Navy button icon — Unavailable"
+      }
+    }
+  },
+  "input": {
+    "background": {
+      "$value": "{primary.900}",
+      "$type": "color",
+      "$description": "Input field background on dark"
+    },
+    "text": {
+      "$value": "{primary.200}",
+      "$type": "color",
+      "$description": "Input text color on dark"
+    },
+    "border": {
+      "$value": "{primary.600}",
+      "$type": "color",
+      "$description": "Input border on dark"
+    },
+    "icon": {
+      "$value": "{input.text}",
+      "$type": "color",
+      "$description": "Input trailing/leading icon on dark"
+    }
+  },
+  "feedback": {
+    "success": {
+      "background": {
+        "$value": "{color.green.900}",
+        "$type": "color",
+        "$description": "Success feedback banner background on dark"
+      },
+      "text": {
+        "$value": "{color.green.050}",
+        "$type": "color",
+        "$description": "Success feedback banner text on dark"
+      }
+    },
+    "error": {
+      "background": {
+        "$value": "{color.red.900}",
+        "$type": "color",
+        "$description": "Error feedback banner background on dark"
+      },
+      "text": {
+        "$value": "{color.red.050}",
+        "$type": "color",
+        "$description": "Error feedback banner text on dark"
+      }
+    },
+    "warning": {
+      "background": {
+        "$value": "{color.amber.900}",
+        "$type": "color",
+        "$description": "Warning feedback banner background on dark"
+      },
+      "text": {
+        "$value": "{color.amber.050}",
+        "$type": "color",
+        "$description": "Warning feedback banner text on dark"
+      }
+    },
+    "info": {
+      "background": {
+        "$value": "{color.blue.900}",
+        "$type": "color",
+        "$description": "Info feedback banner background on dark"
+      },
+      "text": {
+        "$value": "{color.blue.050}",
+        "$type": "color",
+        "$description": "Info feedback banner text on dark"
+      }
+    }
+  },
+  "accessible": {
+    "text-on-accent": {
+      "$value": "{accent.950}",
+      "$type": "color",
+      "$description": "WCAG AA safe text on gold accent backgrounds (contrast >= 4.5:1)"
+    },
+    "text-on-primary": {
+      "$value": "{primary.050}",
+      "$type": "color",
+      "$description": "WCAG AA safe text on navy primary backgrounds (contrast >= 4.5:1)"
+    },
+    "text-on-surface": {
+      "$value": "{primary.050}",
+      "$type": "color",
+      "$description": "WCAG AA safe text on dark surfaces (contrast >= 4.5:1)"
+    },
+    "text-on-surface-secondary": {
+      "$value": "{primary.200}",
+      "$type": "color",
+      "$description": "WCAG AA safe secondary text on dark surfaces (contrast >= 4.5:1)"
+    },
+    "text-on-success": {
+      "$value": "{color.green.050}",
+      "$type": "color",
+      "$description": "WCAG AA safe text on dark success background"
+    },
+    "text-on-error": {
+      "$value": "{color.red.050}",
+      "$type": "color",
+      "$description": "WCAG AA safe text on dark error background"
+    },
+    "text-on-warning": {
+      "$value": "{color.amber.050}",
+      "$type": "color",
+      "$description": "WCAG AA safe text on dark warning background"
+    },
+    "text-on-info": {
+      "$value": "{color.blue.050}",
+      "$type": "color",
+      "$description": "WCAG AA safe text on dark info background"
+    }
+  }
+}

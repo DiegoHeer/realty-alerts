@@ -1,0 +1,10 @@
+{
+  "Foundations": "Foundations.json",
+  "Color theme/Realty AI": "Color_theme_Realty_AI.json",
+  "Color theme/Light base": "Color_theme_Light_base.json",
+  "Color theme/Dark base": "Color_theme_Dark_base.json",
+  "Scale": "Scale.json",
+  "Typography": "Typography.json",
+  "Shadows": "Shadows.json",
+  "Motion": "Motion.json"
+}

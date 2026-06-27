@@ -1,0 +1,202 @@
+{
+  "font-family": {
+    "default": {
+      "$value": [
+        "Plus Jakarta Sans"
+      ],
+      "$type": "fontFamilies",
+      "$description": "Primary typeface"
+    },
+    "mono": {
+      "$value": [
+        "JetBrains Mono"
+      ],
+      "$type": "fontFamilies",
+      "$description": "Monospace for data/codes"
+    }
+  },
+  "font-weight": {
+    "regular": {
+      "$value": "400",
+      "$type": "fontWeights",
+      "$description": "400 — body text"
+    },
+    "medium": {
+      "$value": "500",
+      "$type": "fontWeights",
+      "$description": "500 — labels, emphasis"
+    },
+    "semibold": {
+      "$value": "600",
+      "$type": "fontWeights",
+      "$description": "600 — headings"
+    },
+    "bold": {
+      "$value": "700",
+      "$type": "fontWeights",
+      "$description": "700 — display, strong headings"
+    }
+  },
+  "font-size": {
+    "2xs": {
+      "$value": "10",
+      "$type": "fontSizes",
+      "$description": "Caption small"
+    },
+    "xs": {
+      "$value": "12",
+      "$type": "fontSizes",
+      "$description": "Caption"
+    },
+    "sm": {
+      "$value": "14",
+      "$type": "fontSizes",
+      "$description": "Secondary text"
+    },
+    "md": {
+      "$value": "16",
+      "$type": "fontSizes",
+      "$description": "Body text"
+    },
+    "lg": {
+      "$value": "18",
+      "$type": "fontSizes",
+      "$description": "Large body"
+    },
+    "xl": {
+      "$value": "20",
+      "$type": "fontSizes",
+      "$description": "Heading 3"
+    },
+    "2xl": {
+      "$value": "24",
+      "$type": "fontSizes",
+      "$description": "Heading 2"
+    },
+    "3xl": {
+      "$value": "30",
+      "$type": "fontSizes",
+      "$description": "Heading 1"
+    },
+    "4xl": {
+      "$value": "36",
+      "$type": "fontSizes",
+      "$description": "Display"
+    }
+  },
+  "line-height": {
+    "tight": {
+      "$value": "1.2",
+      "$type": "number",
+      "$description": "Headings"
+    },
+    "normal": {
+      "$value": "1.5",
+      "$type": "number",
+      "$description": "Body text"
+    },
+    "relaxed": {
+      "$value": "1.75",
+      "$type": "number",
+      "$description": "Long-form reading"
+    }
+  },
+  "type": {
+    "display": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.bold}",
+        "fontSizes": "{font-size.4xl}",
+        "lineHeights": "{line-height.tight}"
+      },
+      "$type": "typography",
+      "$description": "Large display text"
+    },
+    "heading-one": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.semibold}",
+        "fontSizes": "{font-size.3xl}",
+        "lineHeights": "{line-height.tight}"
+      },
+      "$type": "typography",
+      "$description": "Page title"
+    },
+    "heading-two": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.semibold}",
+        "fontSizes": "{font-size.2xl}",
+        "lineHeights": "{line-height.tight}"
+      },
+      "$type": "typography",
+      "$description": "Section title"
+    },
+    "heading-three": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.semibold}",
+        "fontSizes": "{font-size.xl}",
+        "lineHeights": "{line-height.tight}"
+      },
+      "$type": "typography",
+      "$description": "Subsection title"
+    },
+    "body": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.regular}",
+        "fontSizes": "{font-size.md}",
+        "lineHeights": "{line-height.normal}"
+      },
+      "$type": "typography",
+      "$description": "Default body text"
+    },
+    "body-small": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.regular}",
+        "fontSizes": "{font-size.sm}",
+        "lineHeights": "{line-height.normal}"
+      },
+      "$type": "typography",
+      "$description": "Secondary body text, metadata"
+    },
+    "label": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.medium}",
+        "fontSizes": "{font-size.sm}",
+        "lineHeights": "{line-height.tight}"
+      },
+      "$type": "typography",
+      "$description": "Form labels, button text"
+    },
+    "caption": {
+      "$value": {
+        "fontFamilies": [
+          "{font-family.default}"
+        ],
+        "fontWeights": "{font-weight.regular}",
+        "fontSizes": "{font-size.xs}",
+        "lineHeights": "{line-height.normal}"
+      },
+      "$type": "typography",
+      "$description": "Small captions, metadata"
+    }
+  }
+}
