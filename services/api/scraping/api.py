@@ -1,11 +1,10 @@
 import hmac
 from datetime import UTC, datetime
-from typing import Annotated
 
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from loguru import logger
-from ninja import NinjaAPI, Query, Router, Schema
+from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
 from ninja.errors import HttpError
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
@@ -168,11 +167,11 @@ def _apply_residence_filters(
 def list_residences(
     request,
     filters: Query[ResidenceFilters],
-    api_version: Annotated[int | None, Query(ge=1)] = None,  # ty: ignore[call-non-callable]
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,  # ty: ignore[call-non-callable]
-    offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
-    building_type: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
-    energy_label: Annotated[list[str] | None, Query()] = None,  # ty: ignore[call-non-callable]
+    api_version: QueryEx[int | None, P(ge=1)] = None,
+    limit: QueryEx[int, P(ge=1, le=100)] = 20,
+    offset: QueryEx[int, P(ge=0)] = 0,
+    building_type: QueryEx[list[str] | None, P()] = None,
+    energy_label: QueryEx[list[str] | None, P()] = None,
     bbox: str | None = None,
 ):
     qs = Residence.objects.prefetch_related("listings").order_by("-created_at", "-id")
