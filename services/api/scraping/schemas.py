@@ -26,6 +26,11 @@ class DetailResultStatus(StrEnum):
     FAILED = "failed"
 
 
+class SortOption(StrEnum):
+    NEWEST = "newest"
+    OLDEST = "oldest"
+
+
 # Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
 # (e.g. data: URIs from scraper bugs) at the schema layer so the failure is a
 # 422 from Ninja rather than a Postgres DataError surfacing as a 500. The 2000

@@ -42,6 +42,7 @@ from scraping.schemas import (
     ResidenceOut,
     ResidencePage,
     ScrapeResultsIn,
+    SortOption,
 )
 from scraping.reconciliation import reconcile_residence
 from scraping.tasks import resolve_bag
@@ -163,6 +164,12 @@ def _apply_residence_filters(
     return qs
 
 
+_SORT_ORDER = {
+    SortOption.NEWEST: ("-created_at", "-id"),
+    SortOption.OLDEST: ("created_at", "id"),
+}
+
+
 @v1_router.get("/residences", response=list[ResidenceOut] | ResidencePage, tags=["catalog"])
 def list_residences(
     request,
@@ -173,8 +180,9 @@ def list_residences(
     building_type: QueryEx[list[str] | None, P()] = None,
     energy_label: QueryEx[list[str] | None, P()] = None,
     bbox: str | None = None,
+    sort: SortOption = SortOption.NEWEST,
 ):
-    qs = Residence.objects.prefetch_related("listings").order_by("-created_at", "-id")
+    qs = Residence.objects.prefetch_related("listings").order_by(*_SORT_ORDER[sort])
     qs = _apply_residence_filters(qs, filters, building_type, energy_label)
     if bbox:
         min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)
