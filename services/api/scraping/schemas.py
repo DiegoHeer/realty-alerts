@@ -29,6 +29,11 @@ class DetailResultStatus(StrEnum):
 class SortOption(StrEnum):
     NEWEST = "newest"
     OLDEST = "oldest"
+    PRICE_ASC = "price_asc"
+    PRICE_DESC = "price_desc"
+    AREA_ASC = "area_asc"
+    AREA_DESC = "area_desc"
+    PRICE_PER_M2_ASC = "price_per_m2_asc"
 
 
 # Mirrors Listing.image_url = URLField(max_length=2000). Reject non-http(s) values
