@@ -37,6 +37,7 @@ from scraping.schemas import (
     ListScrapeRunOut,
     NeighborhoodStatsOut,
     ResidenceFilters,
+    ResidencePage,
     ResidenceOut,
     ScrapeResultsIn,
 )
@@ -77,10 +78,25 @@ def readyz(request):
 v1_router = Router()
 
 
-@v1_router.get("/residences", response=list[ResidenceOut], tags=["catalog"])
+def _resolve_api_version(request, api_version: int | None) -> int:
+    """Resolve the response-contract version: explicit query param wins, then
+    the `X-API-Version` header, else legacy 1. A non-integer header is ignored."""
+    if api_version is not None:
+        return api_version
+    header = request.headers.get("X-API-Version")
+    if header is not None:
+        try:
+            return int(header)
+        except ValueError:
+            return 1
+    return 1
+
+
+@v1_router.get("/residences", response=list[ResidenceOut] | ResidencePage, tags=["catalog"])
 def list_residences(
     request,
     filters: Query[ResidenceFilters],
+    api_version: int | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,  # ty: ignore[call-non-callable]
     offset: Annotated[int, Query(ge=0)] = 0,  # ty: ignore[call-non-callable]
 ):
@@ -102,6 +118,17 @@ def list_residences(
         qs = qs.filter(current_price_eur__lte=filters.max_price)
     if filters.status:
         qs = qs.filter(current_status=filters.status)
+
+    if _resolve_api_version(request, api_version) >= 2:
+        total = qs.count()
+        items = list(qs[offset : offset + limit])
+        return {
+            "items": items,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(items) < total,
+        }
 
     return list(qs[offset : offset + limit])
 

@@ -95,6 +95,14 @@ class ResidenceOut(Schema):
     listings: list[ListingOut]
 
 
+class ResidencePage(Schema):
+    items: list[ResidenceOut]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool
+
+
 class ListScrapeRunOut(Schema):
     id: int
     website: Website
