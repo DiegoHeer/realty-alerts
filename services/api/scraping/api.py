@@ -134,8 +134,8 @@ def _parse_bbox(raw: str) -> tuple[float, float, float, float]:
         raise HttpError(422, "bbox must be 'minLon,minLat,maxLon,maxLat'")
     try:
         min_lon, min_lat, max_lon, max_lat = (float(p) for p in parts)
-    except ValueError:
-        raise HttpError(422, "bbox values must be numeric")
+    except ValueError as exc:
+        raise HttpError(422, "bbox values must be numbers") from exc
     if not (-180 <= min_lon <= 180 and -180 <= max_lon <= 180):
         raise HttpError(422, "bbox longitude out of range")
     if not (-90 <= min_lat <= 90 and -90 <= max_lat <= 90):
