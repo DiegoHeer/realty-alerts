@@ -6,10 +6,9 @@ from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from loguru import logger
 from ninja import NinjaAPI, Query, Router, Schema
+from ninja.errors import HttpError
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
-
-from ninja.errors import HttpError
 
 from scraping.models import (
     BagStatus,
@@ -41,8 +40,8 @@ from scraping.schemas import (
     ListScrapeRunOut,
     NeighborhoodStatsOut,
     ResidenceFilters,
-    ResidencePage,
     ResidenceOut,
+    ResidencePage,
     ScrapeResultsIn,
 )
 from scraping.reconciliation import reconcile_residence
