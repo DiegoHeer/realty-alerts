@@ -218,11 +218,12 @@ def list_residences(
     offset: QueryEx[int, P(ge=0)] = 0,
     building_type: QueryEx[list[str] | None, P()] = None,
     energy_label: QueryEx[list[str] | None, P()] = None,
+    neighbourhood_code: QueryEx[list[str] | None, P()] = None,
     bbox: str | None = None,
     sort: SortOption = SortOption.NEWEST,
 ):
     qs = Residence.objects.prefetch_related("listings").order_by(*_SORT_ORDER[sort])
-    qs = _apply_residence_filters(qs, filters, building_type, energy_label, None)
+    qs = _apply_residence_filters(qs, filters, building_type, energy_label, neighbourhood_code)
     if bbox:
         min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)
         qs = qs.filter(
