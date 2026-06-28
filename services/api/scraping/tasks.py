@@ -239,6 +239,9 @@ def _enrich_location(residence: Residence) -> None:
         residence.neighbourhood = result.neighbourhood
         residence.district = result.district
         update_fields += ["neighbourhood", "district"]
+    if residence.neighbourhood_code is None and result.neighbourhood_code is not None:
+        residence.neighbourhood_code = result.neighbourhood_code
+        update_fields += ["neighbourhood_code"]
     if update_fields:
         residence.save(update_fields=update_fields)
 
@@ -414,7 +417,8 @@ def enrich_location(residence_id: int) -> None:
     residence.longitude = result.longitude
     residence.neighbourhood = result.neighbourhood
     residence.district = result.district
-    residence.save(update_fields=["latitude", "longitude", "neighbourhood", "district"])
+    residence.neighbourhood_code = result.neighbourhood_code
+    residence.save(update_fields=["latitude", "longitude", "neighbourhood", "district", "neighbourhood_code"])
     logger.info(
         "PDOK enrichment for residence {}: lat={}, lon={}, neighbourhood={}",
         residence.pk,
