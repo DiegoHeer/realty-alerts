@@ -1,11 +1,16 @@
-import { View, Text, Image, Pressable, ScrollView, Linking, ActivityIndicator } from "react-native";
+import { View, Image, ScrollView, Linking, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getResidence } from "@/api/residences";
+import { Text } from "@/components/ui/Text";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { useTheme } from "@/theme/useTheme";
 
 export default function ResidenceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const residenceId = parseInt(id);
+  const theme = useTheme();
 
   const { data: residence, isLoading } = useQuery({
     queryKey: ["residence", residenceId],
@@ -15,23 +20,34 @@ export default function ResidenceDetailScreen() {
 
   if (isLoading || !residence) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.layerBase.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.link.default} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+    <ScrollView style={{ flex: 1, backgroundColor: theme.layerBase.background }}>
       {residence.image_url && (
         <Image source={{ uri: residence.image_url }} style={{ width: "100%", height: 250 }} resizeMode="cover" />
       )}
 
-      <View style={{ padding: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 8 }}>{residence.title}</Text>
-        <Text style={{ fontSize: 24, fontWeight: "700", color: "#2563eb", marginBottom: 16 }}>{residence.price}</Text>
+      <View style={{ padding: theme.space["200"] }}>
+        <Text variant="heading-two" style={{ marginBottom: theme.space["100"] }}>
+          {residence.title}
+        </Text>
+        <Text variant="heading-two" color={theme.link.default} style={{ marginBottom: theme.space["200"] }}>
+          {residence.price}
+        </Text>
 
-        <View style={{ backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <Card style={{ marginBottom: theme.space["200"] }}>
           {[
             { label: "City", value: residence.city },
             { label: "Type", value: residence.property_type },
@@ -41,25 +57,24 @@ export default function ResidenceDetailScreen() {
           ].map(
             (d) =>
               d.value && (
-                <View key={d.label} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 8 }}>
-                  <Text style={{ color: "#6b7280" }}>{d.label}</Text>
-                  <Text style={{ fontWeight: "500" }}>{d.value}</Text>
+                <View
+                  key={d.label}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    paddingVertical: theme.space["100"],
+                  }}
+                >
+                  <Text color={theme.text.secondary}>{d.label}</Text>
+                  <Text variant="label">{d.value}</Text>
                 </View>
               ),
           )}
-        </View>
+        </Card>
 
-        <Pressable
-          onPress={() => Linking.openURL(residence.detail_url)}
-          style={{
-            backgroundColor: "#2563eb",
-            padding: 16,
-            borderRadius: 8,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>View on website</Text>
-        </Pressable>
+        <Button variant="primary" onPress={() => Linking.openURL(residence.detail_url)}>
+          View on website
+        </Button>
       </View>
     </ScrollView>
   );

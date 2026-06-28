@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useCreateFilter } from "@/hooks/useFilters";
+import { Text } from "@/components/ui/Text";
+import { Input } from "@/components/ui/Input";
+import { useTheme } from "@/theme/useTheme";
 
 export default function CreateFilterScreen() {
   const router = useRouter();
   const createFilter = useCreateFilter();
+  const theme = useTheme();
 
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -35,86 +39,70 @@ export default function CreateFilterScreen() {
     }
   };
 
+  const labelStyle = {
+    marginBottom: theme.space["050"],
+    marginTop: theme.space["150"],
+  };
+
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: "#f9fafb" }}
-      contentContainerStyle={{ padding: 16 }}
+      style={{ flex: 1, backgroundColor: theme.layerBase.background }}
+      contentContainerStyle={{ padding: theme.space["200"] }}
     >
-      <Text style={labelStyle}>Name *</Text>
-      <TextInput style={inputStyle} value={name} onChangeText={setName} placeholder="e.g. Amsterdam apartments" />
+      <Text variant="label" color={theme.layerOne.text} style={labelStyle}>
+        Name *
+      </Text>
+      <Input value={name} onChangeText={setName} placeholder="e.g. Amsterdam apartments" />
 
-      <Text style={labelStyle}>City</Text>
-      <TextInput style={inputStyle} value={city} onChangeText={setCity} placeholder="e.g. Amsterdam" />
+      <Text variant="label" color={theme.layerOne.text} style={labelStyle}>
+        City
+      </Text>
+      <Input value={city} onChangeText={setCity} placeholder="e.g. Amsterdam" />
 
-      <View style={{ flexDirection: "row", gap: 12 }}>
+      <View style={{ flexDirection: "row", gap: theme.space["150"] }}>
         <View style={{ flex: 1 }}>
-          <Text style={labelStyle}>Min price</Text>
-          <TextInput
-            style={inputStyle}
-            value={minPrice}
-            onChangeText={setMinPrice}
-            keyboardType="numeric"
-            placeholder="200000"
-          />
+          <Text variant="label" color={theme.layerOne.text} style={labelStyle}>
+            Min price
+          </Text>
+          <Input value={minPrice} onChangeText={setMinPrice} keyboardType="numeric" placeholder="200000" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={labelStyle}>Max price</Text>
-          <TextInput
-            style={inputStyle}
-            value={maxPrice}
-            onChangeText={setMaxPrice}
-            keyboardType="numeric"
-            placeholder="500000"
-          />
+          <Text variant="label" color={theme.layerOne.text} style={labelStyle}>
+            Max price
+          </Text>
+          <Input value={maxPrice} onChangeText={setMaxPrice} keyboardType="numeric" placeholder="500000" />
         </View>
       </View>
 
-      <Text style={labelStyle}>Property type</Text>
-      <TextInput style={inputStyle} value={propertyType} onChangeText={setPropertyType} placeholder="apartment, house" />
+      <Text variant="label" color={theme.layerOne.text} style={labelStyle}>
+        Property type
+      </Text>
+      <Input value={propertyType} onChangeText={setPropertyType} placeholder="apartment, house" />
 
-      <Text style={labelStyle}>Min bedrooms</Text>
-      <TextInput
-        style={inputStyle}
-        value={minBedrooms}
-        onChangeText={setMinBedrooms}
-        keyboardType="numeric"
-        placeholder="2"
-      />
+      <Text variant="label" color={theme.layerOne.text} style={labelStyle}>
+        Min bedrooms
+      </Text>
+      <Input value={minBedrooms} onChangeText={setMinBedrooms} keyboardType="numeric" placeholder="2" />
 
       <Pressable
         onPress={handleSubmit}
         disabled={createFilter.isPending}
         style={{
-          backgroundColor: "#2563eb",
-          padding: 16,
-          borderRadius: 8,
+          backgroundColor: theme.buttonPrimary.background.default,
+          padding: theme.space["200"],
+          borderRadius: theme.radius.full,
           alignItems: "center",
-          marginTop: 16,
+          marginTop: theme.space["200"],
         }}
       >
         {createFilter.isPending ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={theme.buttonPrimary.text.default} />
         ) : (
-          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>Create filter</Text>
+          <Text variant="label" color={theme.buttonPrimary.text.default}>
+            Create filter
+          </Text>
         )}
       </Pressable>
     </ScrollView>
   );
 }
-
-const labelStyle = {
-  fontSize: 14,
-  fontWeight: "600" as const,
-  color: "#374151",
-  marginBottom: 4,
-  marginTop: 12,
-};
-
-const inputStyle = {
-  backgroundColor: "#fff",
-  borderWidth: 1,
-  borderColor: "#d1d5db",
-  borderRadius: 8,
-  padding: 14,
-  fontSize: 16,
-};

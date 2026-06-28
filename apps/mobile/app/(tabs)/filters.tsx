@@ -1,23 +1,33 @@
-import { FlatList, View, Text, Pressable, RefreshControl, ActivityIndicator } from "react-native";
+import { FlatList, View, Pressable, RefreshControl, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useFilters, useToggleFilter } from "@/hooks/useFilters";
 import { FilterCard } from "@/components/FilterCard";
+import { Text } from "@/components/ui/Text";
+import { useTheme } from "@/theme/useTheme";
 
 export default function FiltersScreen() {
   const { data: filters, isLoading, refetch, isRefetching } = useFilters();
   const toggleMutation = useToggleFilter();
   const router = useRouter();
+  const theme = useTheme();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.layerBase.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.link.default} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.layerBase.background }}>
       <FlatList
         data={filters}
         keyExtractor={(item) => String(item.id)}
@@ -28,12 +38,19 @@ export default function FiltersScreen() {
             onPress={(id) => router.push(`/filter/${id}`)}
           />
         )}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+        contentContainerStyle={{ padding: theme.space["200"] }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={theme.link.default}
+            colors={[theme.link.default]}
+          />
+        }
         ListEmptyComponent={
           <View style={{ alignItems: "center", paddingTop: 60 }}>
-            <Text style={{ fontSize: 16, color: "#6b7280" }}>No filters yet.</Text>
-            <Text style={{ fontSize: 14, color: "#9ca3af", marginTop: 4 }}>
+            <Text color={theme.text.secondary}>No filters yet.</Text>
+            <Text variant="body-small" color={theme.text.tertiary} style={{ marginTop: theme.space["050"] }}>
               Create a filter to get notified about new listings.
             </Text>
           </View>
@@ -44,22 +61,20 @@ export default function FiltersScreen() {
         onPress={() => router.push("/filter/create")}
         style={{
           position: "absolute",
-          bottom: 24,
-          right: 24,
-          backgroundColor: "#2563eb",
+          bottom: theme.space["300"],
+          right: theme.space["300"],
+          backgroundColor: theme.buttonPrimary.background.default,
           width: 56,
           height: 56,
-          borderRadius: 28,
+          borderRadius: theme.radius.full,
           alignItems: "center",
           justifyContent: "center",
-          elevation: 4,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 4,
+          ...theme.shadow.outer.soft.md,
         }}
       >
-        <Text style={{ color: "#fff", fontSize: 28, lineHeight: 30 }}>+</Text>
+        <Text color={theme.buttonPrimary.text.default} style={{ fontSize: 28, lineHeight: 30 }}>
+          +
+        </Text>
       </Pressable>
     </View>
   );
