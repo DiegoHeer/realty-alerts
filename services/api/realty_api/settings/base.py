@@ -23,6 +23,9 @@ DSO_API_KEY = SETTINGS.dso_api_key
 # API contract versioning (see scraping/middleware.py and GET /v1/meta).
 API_CURRENT_VERSION = 2
 API_MIN_SUPPORTED_VERSION = 1
+# Maps an api_version integer to its RFC 8594 lifecycle headers. Empty until a
+# contract is actually deprecated; the middleware emits no headers when absent.
+API_VERSION_LIFECYCLE: dict[int, dict[str, str]] = {}
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -46,6 +49,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "scraping.middleware.ApiVersioningMiddleware",
 ]
 
 ROOT_URLCONF = "realty_api.urls"
