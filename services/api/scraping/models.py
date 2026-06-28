@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.functions import Cast, NullIf
 
 
 class Website(models.TextChoices):
@@ -112,6 +113,12 @@ class Residence(models.Model):
     bathroom_count = models.PositiveSmallIntegerField(null=True, blank=True)
     surface_area_m2 = models.PositiveIntegerField(null=True, blank=True)
     build_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    price_per_m2 = models.GeneratedField(
+        expression=Cast("current_price_eur", output_field=models.FloatField())
+        / NullIf("surface_area_m2", models.Value(0)),
+        output_field=models.FloatField(),
+        db_persist=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -127,6 +134,7 @@ class Residence(models.Model):
             models.Index(fields=["bathroom_count"], name="idx_res_bathroom_count"),
             models.Index(fields=["surface_area_m2"], name="idx_res_surface_area"),
             models.Index(fields=["build_year"], name="idx_res_build_year"),
+            models.Index(fields=["price_per_m2"], name="idx_res_price_per_m2"),
         ]
 
     def __str__(self) -> str:

@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
+from django.db.models import F
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
 from ninja.errors import HttpError
@@ -181,8 +182,13 @@ def _apply_residence_filters(
 
 
 _SORT_ORDER = {
-    SortOption.NEWEST: ("-created_at", "-id"),
-    SortOption.OLDEST: ("created_at", "id"),
+    SortOption.NEWEST: (F("created_at").desc(nulls_last=True), F("id").desc()),
+    SortOption.OLDEST: (F("created_at").asc(nulls_last=True), F("id").asc()),
+    SortOption.PRICE_ASC: (F("current_price_eur").asc(nulls_last=True), F("id").asc()),
+    SortOption.PRICE_DESC: (F("current_price_eur").desc(nulls_last=True), F("id").desc()),
+    SortOption.AREA_ASC: (F("surface_area_m2").asc(nulls_last=True), F("id").asc()),
+    SortOption.AREA_DESC: (F("surface_area_m2").desc(nulls_last=True), F("id").desc()),
+    SortOption.PRICE_PER_M2_ASC: (F("price_per_m2").asc(nulls_last=True), F("id").asc()),
 }
 
 
