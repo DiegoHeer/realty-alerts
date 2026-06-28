@@ -204,3 +204,20 @@ class TestEnrichActions:
         assert mock_delay.call_count == 2
         mock_delay.assert_any_call(r1.pk)
         mock_delay.assert_any_call(r2.pk)
+
+
+@pytest.mark.django_db
+def test_backfill_neighbourhood_code_enqueues_only_missing():
+    from unittest.mock import Mock, patch
+
+    from scraping.admin import backfill_neighbourhood_code_action
+    from scraping.models import Residence
+    from tests.factories import ResidenceFactory
+
+    ResidenceFactory(neighbourhood_code="BU03630000")
+    missing = cast(Residence, ResidenceFactory(neighbourhood_code=None))
+
+    with patch("scraping.admin.enrich_location.delay") as delay:
+        backfill_neighbourhood_code_action(Mock(), Mock(), Residence.objects.all())
+
+    delay.assert_called_once_with(missing.pk)
