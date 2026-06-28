@@ -97,19 +97,26 @@ def _resolve_api_version(request, api_version: int | None) -> int:
     return 1
 
 
-def _parse_enum_multi(raw: list[str] | None, enum_cls) -> list[str] | None:
-    """Flatten repeatable + CSV query values into a validated list of enum
-    values. Unknown values raise 422. Returns None when nothing was supplied."""
+def _flatten_multi(raw: list[str] | None) -> list[str] | None:
+    """Flatten repeatable + CSV query values into a list. None when nothing supplied."""
     if not raw:
         return None
     values: list[str] = []
     for item in raw:
         values.extend(part.strip() for part in item.split(",") if part.strip())
+    return values or None
+
+
+def _parse_enum_multi(raw: list[str] | None, enum_cls) -> list[str] | None:
+    """Flatten then validate against an enum. Unknown values raise 422."""
+    values = _flatten_multi(raw)
+    if values is None:
+        return None
     valid = set(enum_cls.values)
     for value in values:
         if value not in valid:
             raise HttpError(422, f"invalid value '{value}' for {enum_cls.__name__}")
-    return values or None
+    return values
 
 
 def _apply_text_filters(qs, filters: ResidenceFilters):
@@ -159,11 +166,23 @@ def _apply_listing_filters(qs, filters: ResidenceFilters):
     return qs
 
 
+def _apply_multi_value_filters(qs, building_type, energy_label, neighbourhood_code):
+    """Apply repeatable/OR-combine filters (building_type, energy_label, neighbourhood_code)."""
+    if building_types := _parse_enum_multi(building_type, BuildingType):
+        qs = qs.filter(building_type__in=building_types)
+    if energy_labels := _parse_enum_multi(energy_label, EnergyLabel):
+        qs = qs.filter(energy_label__in=energy_labels)
+    if codes := _flatten_multi(neighbourhood_code):
+        qs = qs.filter(neighbourhood_code__in=codes)
+    return qs
+
+
 def _apply_residence_filters(
     qs,
     filters: ResidenceFilters,
     building_type: list[str] | None,
     energy_label: list[str] | None,
+    neighbourhood_code: list[str] | None,
 ):
     """Apply all optional filter predicates to a Residence queryset."""
     qs = _apply_text_filters(qs, filters)
@@ -174,10 +193,7 @@ def _apply_residence_filters(
     if filters.status:
         qs = qs.filter(current_status=filters.status)
     qs = qs.filter(deal_type=filters.deal_type)
-    if building_types := _parse_enum_multi(building_type, BuildingType):
-        qs = qs.filter(building_type__in=building_types)
-    if energy_labels := _parse_enum_multi(energy_label, EnergyLabel):
-        qs = qs.filter(energy_label__in=energy_labels)
+    qs = _apply_multi_value_filters(qs, building_type, energy_label, neighbourhood_code)
     qs = _apply_listing_filters(qs, filters)
     return qs
 
@@ -206,7 +222,7 @@ def list_residences(
     sort: SortOption = SortOption.NEWEST,
 ):
     qs = Residence.objects.prefetch_related("listings").order_by(*_SORT_ORDER[sort])
-    qs = _apply_residence_filters(qs, filters, building_type, energy_label)
+    qs = _apply_residence_filters(qs, filters, building_type, energy_label, None)
     if bbox:
         min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)
         qs = qs.filter(
