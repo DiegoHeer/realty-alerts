@@ -1,4 +1,7 @@
-import { View, Text, Switch, Pressable } from "react-native";
+import { View, Switch, Pressable } from "react-native";
+import { Card } from "./ui/Card";
+import { Text } from "./ui/Text";
+import { useTheme } from "@/theme/useTheme";
 import type { Filter } from "@/types";
 
 interface Props {
@@ -8,6 +11,7 @@ interface Props {
 }
 
 export function FilterCard({ filter, onToggle, onPress }: Props) {
+  const theme = useTheme();
   const details = [
     filter.city,
     filter.property_type,
@@ -19,35 +23,18 @@ export function FilterCard({ filter, onToggle, onPress }: Props) {
     .join(" · ");
 
   return (
-    <Pressable
-      onPress={() => onPress(filter.id)}
-      style={{
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-      }}
-    >
-      <View style={{ flex: 1, marginRight: 12 }}>
-        <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 4 }}>
-          {filter.name}
-        </Text>
-        {details ? (
-          <Text style={{ color: "#6b7280", fontSize: 13 }}>{details}</Text>
-        ) : null}
-      </View>
-      <Switch
-        value={filter.is_active}
-        onValueChange={() => onToggle(filter.id)}
-      />
+    <Pressable onPress={() => onPress(filter.id)} style={{ marginBottom: theme.space["150"] }}>
+      <Card style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ flex: 1, marginRight: theme.space["150"] }}>
+          <Text variant="heading-three">{filter.name}</Text>
+          {details ? (
+            <Text variant="body-small" color={theme.text.secondary} style={{ marginTop: theme.space["050"] }}>
+              {details}
+            </Text>
+          ) : null}
+        </View>
+        <Switch value={filter.is_active} onValueChange={() => onToggle(filter.id)} />
+      </Card>
     </Pressable>
   );
 }

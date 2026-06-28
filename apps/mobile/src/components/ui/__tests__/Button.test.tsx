@@ -43,4 +43,27 @@ describe("Button", () => {
     fireEvent.press(getByTestId("btn"));
     expect(onPress).not.toHaveBeenCalled();
   });
+
+  it("renders the destructive variant with feedback.error colours", async () => {
+    const { getByText, getByTestId } = await renderWithTheme(
+      <Button testID="btn" variant="destructive" onPress={() => {}}>
+        Delete
+      </Button>,
+    );
+    const root = StyleSheet.flatten(getByTestId("btn").props.style);
+    expect(root.backgroundColor).toBe(lightTheme.feedback.error.background);
+    const label = StyleSheet.flatten(getByText("Delete").props.style);
+    expect(label.color).toBe(lightTheme.feedback.error.text);
+  });
+
+  it("blocks onPress when a destructive button is disabled", async () => {
+    const onPress = jest.fn();
+    const { getByTestId } = await renderWithTheme(
+      <Button testID="btn" variant="destructive" disabled onPress={onPress}>
+        Delete
+      </Button>,
+    );
+    fireEvent.press(getByTestId("btn"));
+    expect(onPress).not.toHaveBeenCalled();
+  });
 });
