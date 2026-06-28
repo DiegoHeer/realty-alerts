@@ -20,6 +20,10 @@ BAG_API_KEY = SETTINGS.bag_api_key
 EP_ONLINE_API_KEY = SETTINGS.ep_online_api_key
 DSO_API_KEY = SETTINGS.dso_api_key
 
+# API contract versioning (see scraping/middleware.py and GET /v1/meta).
+API_CURRENT_VERSION = 2
+API_MIN_SUPPORTED_VERSION = 1
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
