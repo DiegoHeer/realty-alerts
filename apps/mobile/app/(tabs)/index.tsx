@@ -1,29 +1,47 @@
-import { FlatList, View, Text, RefreshControl, ActivityIndicator } from "react-native";
+import { FlatList, View, RefreshControl, ActivityIndicator } from "react-native";
 import { useResidences } from "@/hooks/useResidences";
 import { ResidenceCard } from "@/components/ResidenceCard";
+import { Text } from "@/components/ui/Text";
+import { useTheme } from "@/theme/useTheme";
 
 export default function HomeScreen() {
   const { data: residences, isLoading, refetch, isRefetching } = useResidences();
+  const theme = useTheme();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.layerBase.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.link.default} />
       </View>
     );
   }
 
   return (
     <FlatList
+      style={{ backgroundColor: theme.layerBase.background }}
       data={residences}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <ResidenceCard residence={item} />}
-      contentContainerStyle={{ padding: 16 }}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+      contentContainerStyle={{ padding: theme.space["200"] }}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          tintColor={theme.link.default}
+          colors={[theme.link.default]}
+        />
+      }
       ListEmptyComponent={
         <View style={{ alignItems: "center", paddingTop: 60 }}>
-          <Text style={{ fontSize: 16, color: "#6b7280" }}>No listings yet.</Text>
-          <Text style={{ fontSize: 14, color: "#9ca3af", marginTop: 4 }}>
+          <Text color={theme.text.secondary}>No listings yet.</Text>
+          <Text variant="body-small" color={theme.text.tertiary} style={{ marginTop: theme.space["050"] }}>
             Listings will appear once the scraper runs.
           </Text>
         </View>
