@@ -1,8 +1,12 @@
-import { View, Text, Pressable, Alert, ScrollView, ActivityIndicator } from "react-native";
+import { View, Pressable, Alert, ScrollView, ActivityIndicator } from "react-native";
 import { useAuthStore } from "@/stores/authStore";
 import { useScrapeRuns } from "@/hooks/useScrapeRuns";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useThemeMode } from "@/theme/useThemeMode";
+import { useTheme } from "@/theme/useTheme";
+import { Text } from "@/components/ui/Text";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import type { ThemeMode } from "@/theme/types";
 
 const MODES: { label: string; value: ThemeMode }[] = [
@@ -13,22 +17,23 @@ const MODES: { label: string; value: ThemeMode }[] = [
 
 export function ThemeModeSelector() {
   const { mode, setMode } = useThemeMode();
+  const theme = useTheme();
   return (
-    <View style={{ flexDirection: "row", gap: 8 }}>
+    <View style={{ flexDirection: "row", gap: theme.space["100"] }}>
       {MODES.map(({ label, value }) => (
         <Pressable
           key={value}
           onPress={() => setMode(value)}
           style={{
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 8,
-            backgroundColor: mode === value ? "#e5e7eb" : "transparent",
+            paddingHorizontal: theme.space["150"],
+            paddingVertical: theme.space["100"],
+            borderRadius: theme.radius["100"],
+            backgroundColor: mode === value ? theme.layerTwo.background : "transparent",
             borderWidth: 1,
-            borderColor: "#d1d5db",
+            borderColor: theme.layerBase.border,
           }}
         >
-          <Text>{label}</Text>
+          <Text variant="label">{label}</Text>
         </Pressable>
       ))}
     </View>
@@ -38,6 +43,7 @@ export function ThemeModeSelector() {
 export default function SettingsScreen() {
   const { user, signOut } = useAuthStore();
   const { data: scrapeRuns, isLoading } = useScrapeRuns();
+  const theme = useTheme();
 
   const handleSignOut = () => {
     Alert.alert("Sign out", "Are you sure?", [
@@ -61,34 +67,34 @@ export default function SettingsScreen() {
       )
     : [];
 
+  const sectionLabelStyle = {
+    marginBottom: theme.space["100"],
+    marginTop: theme.space["300"],
+    textTransform: "uppercase" as const,
+  };
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#f9fafb" }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.layerBase.background }}
+      contentContainerStyle={{ padding: theme.space["200"] }}
+    >
       {/* Account */}
-      <Text style={{ fontSize: 13, fontWeight: "600", color: "#6b7280", marginBottom: 8, textTransform: "uppercase" }}>
+      <Text variant="label" color={theme.text.secondary} style={{ marginBottom: theme.space["100"], textTransform: "uppercase" }}>
         Account
       </Text>
-      <View style={sectionStyle}>
-        <Text style={{ fontSize: 16 }}>{user?.email ?? "No email"}</Text>
-      </View>
+      <Card>
+        <Text variant="body">{user?.email ?? "No email"}</Text>
+      </Card>
 
       {/* Scrape Status */}
-      <Text
-        style={{
-          fontSize: 13,
-          fontWeight: "600",
-          color: "#6b7280",
-          marginBottom: 8,
-          marginTop: 24,
-          textTransform: "uppercase",
-        }}
-      >
+      <Text variant="label" color={theme.text.secondary} style={sectionLabelStyle}>
         Scraper Status
       </Text>
-      <View style={sectionStyle}>
+      <Card>
         {isLoading ? (
-          <ActivityIndicator />
+          <ActivityIndicator color={theme.link.default} />
         ) : latestRuns.length === 0 ? (
-          <Text style={{ color: "#9ca3af" }}>No scrape runs yet</Text>
+          <Text color={theme.text.tertiary}>No scrape runs yet</Text>
         ) : (
           latestRuns.map((run) => (
             <View
@@ -97,14 +103,14 @@ export default function SettingsScreen() {
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                paddingVertical: 8,
+                paddingVertical: theme.space["100"],
               }}
             >
-              <Text style={{ fontSize: 15, fontWeight: "500", textTransform: "capitalize" }}>
+              <Text variant="label" style={{ textTransform: "capitalize" }}>
                 {run.website.replace("_", " ")}
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={{ color: "#6b7280", fontSize: 13 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.space["100"] }}>
+                <Text variant="body-small" color={theme.text.secondary}>
                   {run.new_listings_count} new
                 </Text>
                 <StatusBadge status={run.status} />
@@ -112,49 +118,20 @@ export default function SettingsScreen() {
             </View>
           ))
         )}
-      </View>
+      </Card>
 
       {/* Appearance */}
-      <Text
-        style={{
-          fontSize: 13,
-          fontWeight: "600",
-          color: "#6b7280",
-          marginBottom: 8,
-          marginTop: 24,
-          textTransform: "uppercase",
-        }}
-      >
+      <Text variant="label" color={theme.text.secondary} style={sectionLabelStyle}>
         Appearance
       </Text>
-      <View style={sectionStyle}>
+      <Card>
         <ThemeModeSelector />
-      </View>
+      </Card>
 
       {/* Sign Out */}
-      <Pressable
-        onPress={handleSignOut}
-        style={{
-          backgroundColor: "#fee2e2",
-          padding: 16,
-          borderRadius: 12,
-          alignItems: "center",
-          marginTop: 32,
-        }}
-      >
-        <Text style={{ color: "#991b1b", fontWeight: "600", fontSize: 16 }}>Sign out</Text>
-      </Pressable>
+      <Button variant="destructive" onPress={handleSignOut} style={{ marginTop: theme.space["400"] }}>
+        Sign out
+      </Button>
     </ScrollView>
   );
 }
-
-const sectionStyle = {
-  backgroundColor: "#fff",
-  borderRadius: 12,
-  padding: 16,
-  elevation: 1,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.05,
-  shadowRadius: 2,
-};
