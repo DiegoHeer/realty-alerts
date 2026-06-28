@@ -350,6 +350,36 @@ def test_resolve_bag_falls_back_to_street_city_when_postcode_wrong():
     assert call_count == 2  # postcode attempt + street+city fallback
 
 
+@respx.mock
+@pytest.mark.django_db
+def test_enrich_location_persists_neighbourhood_code():
+    from scraping.tasks import enrich_location
+
+    respx.get(_PDOK_FREE_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "response": {
+                    "docs": [
+                        {
+                            "centroide_ll": "POINT(4.9 52.37)",
+                            "buurtnaam": "Centrum",
+                            "wijknaam": "Centrum",
+                            "buurtcode": "BU03630000",
+                        }
+                    ]
+                }
+            },
+        )
+    )
+    residence = cast(
+        Residence, ResidenceFactory(latitude=None, longitude=None, neighbourhood=None, neighbourhood_code=None)
+    )
+    enrich_location(residence.pk)
+    residence.refresh_from_db()
+    assert residence.neighbourhood_code == "BU03630000"
+
+
 @pytest.mark.django_db
 @respx.mock
 def test_resolve_bag_falls_back_to_pdok_when_both_kadaster_paths_empty():

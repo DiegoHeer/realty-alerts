@@ -6,7 +6,7 @@ from loguru import logger
 
 _PDOK_BASE_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1"
 _WKT_POINT_RE = re.compile(r"^POINT\(([^ ]+) ([^ ]+)\)$")
-_LOCATION_FIELDS = "centroide_ll,buurtnaam,wijknaam"
+_LOCATION_FIELDS = "centroide_ll,buurtnaam,wijknaam,buurtcode"
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +15,7 @@ class PdokLocationResult:
     longitude: float
     neighbourhood: str | None = None
     district: str | None = None
+    neighbourhood_code: str | None = None
 
 
 class PdokLocationLookup:
@@ -61,4 +62,5 @@ class PdokLocationLookup:
             longitude=lon,
             neighbourhood=doc.get("buurtnaam"),
             district=doc.get("wijknaam"),
+            neighbourhood_code=doc.get("buurtcode"),
         )

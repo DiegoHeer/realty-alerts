@@ -86,6 +86,7 @@ class Residence(models.Model):
     longitude = models.FloatField(null=True, blank=True)
     neighbourhood = models.CharField(max_length=100, null=True, blank=True)
     district = models.CharField(max_length=100, null=True, blank=True)
+    neighbourhood_code = models.CharField(max_length=12, null=True, blank=True)
     building_type = models.CharField(max_length=20, choices=BuildingType.choices, null=True, blank=True)
     energy_label = models.CharField(max_length=10, choices=EnergyLabel.choices, null=True, blank=True)
     energy_label_valid_until = models.DateField(null=True, blank=True)
@@ -135,6 +136,7 @@ class Residence(models.Model):
             models.Index(fields=["surface_area_m2"], name="idx_res_surface_area"),
             models.Index(fields=["build_year"], name="idx_res_build_year"),
             models.Index(fields=["price_per_m2"], name="idx_res_price_per_m2"),
+            models.Index(fields=["neighbourhood_code"], name="idx_res_neighbourhood_code"),
         ]
 
     def __str__(self) -> str:

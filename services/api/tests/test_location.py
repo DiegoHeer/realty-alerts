@@ -42,10 +42,12 @@ def _pdok_response(
     lat: float = 52.37588008,
     buurtnaam: str = "Centrum",
     wijknaam: str = "Centrum",
+    buurtcode: str | None = "BU03630000",
 ) -> dict:
-    return {
-        "response": {"docs": [{"centroide_ll": f"POINT({lon} {lat})", "buurtnaam": buurtnaam, "wijknaam": wijknaam}]}
-    }
+    doc = {"centroide_ll": f"POINT({lon} {lat})", "buurtnaam": buurtnaam, "wijknaam": wijknaam}
+    if buurtcode is not None:
+        doc["buurtcode"] = buurtcode
+    return {"response": {"docs": [doc]}}
 
 
 def _pdok_empty_response() -> dict:
@@ -67,6 +69,7 @@ def test_lookup_returns_location_result_on_success():
     assert result.longitude == pytest.approx(4.893)
     assert result.neighbourhood == "Jordaan"
     assert result.district == "Centrum"
+    assert result.neighbourhood_code == "BU03630000"
 
 
 @respx.mock
@@ -110,7 +113,7 @@ def test_lookup_sends_correct_query_params():
         lookup.lookup("0363200000218780")
     params = route.calls.last.request.url.params
     assert params["q"] == "nummeraanduiding_id:0363200000218780"
-    assert params["fl"] == "centroide_ll,buurtnaam,wijknaam"
+    assert params["fl"] == "centroide_ll,buurtnaam,wijknaam,buurtcode"
     assert params["rows"] == "1"
 
 
@@ -234,6 +237,24 @@ def test_lookup_returns_none_neighbourhood_when_fields_missing():
     assert result.longitude == pytest.approx(4.893)
     assert result.neighbourhood is None
     assert result.district is None
+
+
+@respx.mock
+def test_lookup_captures_buurtcode():
+    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(buurtcode="BU03630000")))
+    with PdokLocationLookup() as lookup:
+        result = lookup.lookup("0363200000218780")
+    assert result is not None
+    assert result.neighbourhood_code == "BU03630000"
+
+
+@respx.mock
+def test_lookup_buurtcode_none_when_absent():
+    respx.get(_PDOK_FREE_URL).mock(return_value=httpx.Response(200, json=_pdok_response(buurtcode=None)))
+    with PdokLocationLookup() as lookup:
+        result = lookup.lookup("0363200000218780")
+    assert result is not None
+    assert result.neighbourhood_code is None
 
 
 # --- resolve_bag neighbourhood integration tests ---
