@@ -1,4 +1,5 @@
 import json
+import re
 
 import pytest
 from django.core import mail
@@ -9,6 +10,8 @@ from django.test import override_settings
 SIGNUP_URL = "/_allauth/app/v1/auth/signup"
 LOGIN_URL = "/_allauth/app/v1/auth/login"
 SESSION_URL = "/_allauth/app/v1/auth/session"
+PASSWORD_REQUEST_URL = "/_allauth/app/v1/auth/password/request"
+PASSWORD_RESET_URL = "/_allauth/app/v1/auth/password/reset"
 
 
 def _post(client: DjangoTestClient, url: str, payload: dict) -> HttpResponse:
@@ -120,3 +123,42 @@ class TestUserObjectName:
 
         assert response.status_code == 200
         assert _body(response)["data"]["user"]["name"] == "Grace Hopper"
+
+
+@pytest.mark.django_db
+class TestPasswordResetByCode:
+    """Reset must work by code; the link flow 500s without HEADLESS_FRONTEND_URLS."""
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_reset_request_sends_email_not_500(self, headless_client, verified_user):
+        response = _post(headless_client, PASSWORD_REQUEST_URL, {"email": verified_user.email})
+
+        # By-code request returns an unauthenticated AuthenticationResponse (401) with a
+        # pending flow + session token — the regression was a 500 here. Email must be sent.
+        assert response.status_code == 401
+        assert _body(response)["meta"]["session_token"]
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == [verified_user.email]
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_full_reset_by_code_flow(self, headless_client, verified_user):
+        request = _post(headless_client, PASSWORD_REQUEST_URL, {"email": verified_user.email})
+        session_token = _body(request)["meta"]["session_token"]
+
+        match = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", mail.outbox[0].body)
+        assert match, f"no reset code found in email body:\n{mail.outbox[0].body}"
+        code = match.group(0)
+
+        reset = headless_client.post(
+            PASSWORD_RESET_URL,
+            data=json.dumps({"key": code, "password": "Rel0cated!pw"}),
+            content_type="application/json",
+            headers={"X-Session-Token": session_token},
+        )
+        assert reset.status_code != 400  # code accepted (not an invalid-key error)
+
+        # The real proof the reset took effect: old password rejected, new password accepted.
+        old = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "testpass123!"})
+        new = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "Rel0cated!pw"})
+        assert old.status_code != 200
+        assert new.status_code == 200
