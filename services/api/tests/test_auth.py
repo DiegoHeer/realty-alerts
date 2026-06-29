@@ -38,3 +38,23 @@ class TestJWTTokenAuth:
 
         assert response.status_code == 200
         assert response.json()["user_id"] == test_user.pk
+
+
+@pytest.mark.django_db
+class TestAdminLogin:
+    """ModelBackend must stay registered so the Django admin keeps accepting
+    username/password — allauth's email-only backend cannot serve admin login.
+    """
+
+    def test_superuser_can_log_into_admin(self):
+        from django.contrib.auth.models import User
+        from django.test import Client as DjangoTestClient
+
+        User.objects.create_superuser("admin", "admin@example.com", "testpass123!")
+        tc = DjangoTestClient()
+
+        logged_in = tc.login(username="admin", password="testpass123!")
+
+        assert logged_in
+        response = tc.get("/admin/")
+        assert response.status_code == 200
