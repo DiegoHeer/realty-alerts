@@ -129,6 +129,7 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
+ACCOUNT_PASSWORD_RESET_BY_CODE_ENABLED = True
 
 # Collect a required display name at signup, persisted to User.first_name.
 ACCOUNT_SIGNUP_FORM_CLASS = "scraping.forms.SignupForm"
