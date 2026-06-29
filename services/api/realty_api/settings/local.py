@@ -21,7 +21,9 @@ SECRET_KEY = secret_key_generator.generate()
 _dev_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 HEADLESS_JWT_PRIVATE_KEY = _dev_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode()
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# EMAIL_BACKEND comes from base.py (SETTINGS.email_backend) and defaults to the
+# console backend. To exercise real SMTP delivery locally, set EMAIL_BACKEND and
+# the EMAIL_* vars in .env (e.g. django.core.mail.backends.smtp.EmailBackend).
 
 # Use DATABASE_URL when running inside Docker; fall back to SQLite for plain `manage.py runserver`.
 if _db_url := os.environ.get("DATABASE_URL"):

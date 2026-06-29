@@ -52,3 +52,12 @@ if not SETTINGS.headless_jwt_private_key:
     raise ImproperlyConfigured("HEADLESS_JWT_PRIVATE_KEY must be set in production (PEM-encoded RSA private key).")
 
 HEADLESS_JWT_PRIVATE_KEY = SETTINGS.headless_jwt_private_key
+
+# Email (SMTP) — transactional auth mail: verification codes, password reset.
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+if not SETTINGS.email_host or SETTINGS.email_host == "localhost":
+    raise ImproperlyConfigured("EMAIL_HOST must be set to a real SMTP host in production.")
+if not SETTINGS.email_host_user or not SETTINGS.email_host_password:
+    raise ImproperlyConfigured(
+        "EMAIL_HOST_USER and EMAIL_HOST_PASSWORD must be set in production for transactional email.",
+    )
