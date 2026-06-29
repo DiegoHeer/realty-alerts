@@ -19,6 +19,17 @@ class Settings(BaseSettings):
     dso_api_key: str | None = None
     headless_jwt_private_key: str | None = None
 
+    # Email / SMTP. Defaults suit local dev (console backend); prod.py switches
+    # to SMTP and validates the host/credentials are real.
+    email_backend: str = "django.core.mail.backends.console.EmailBackend"
+    email_host: str = "localhost"
+    email_port: int = 25
+    email_host_user: str = ""
+    email_host_password: str = ""
+    email_use_tls: bool = False
+    email_use_ssl: bool = False
+    default_from_email: str = "Realty Alerts <noreply@realty-alerts.app>"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 

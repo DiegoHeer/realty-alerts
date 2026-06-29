@@ -139,3 +139,16 @@ HEADLESS_TOKEN_STRATEGY = "allauth.headless.tokens.strategies.jwt.JWTTokenStrate
 HEADLESS_JWT_ACCESS_TOKEN_EXPIRES_IN = 1800  # 30 minutes
 HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 604_800  # 7 days
 HEADLESS_JWT_ROTATE_REFRESH_TOKEN = True
+
+# --- Email ---
+# Backend defaults to console (dev/test). prod.py forces the SMTP backend and
+# validates the host/credentials; local dev can opt into SMTP by setting
+# EMAIL_BACKEND + the EMAIL_* vars in .env. All values come from the environment.
+EMAIL_BACKEND = SETTINGS.email_backend
+EMAIL_HOST = SETTINGS.email_host
+EMAIL_PORT = SETTINGS.email_port
+EMAIL_HOST_USER = SETTINGS.email_host_user
+EMAIL_HOST_PASSWORD = SETTINGS.email_host_password
+EMAIL_USE_TLS = SETTINGS.email_use_tls
+EMAIL_USE_SSL = SETTINGS.email_use_ssl
+DEFAULT_FROM_EMAIL = SETTINGS.default_from_email
