@@ -162,19 +162,6 @@ def enrich_location_action(modeladmin, request, queryset):
     )
 
 
-@admin.action(description="Backfill missing buurt code (PDOK)")
-def backfill_neighbourhood_code_action(modeladmin, request, queryset):
-    count = 0
-    for residence in queryset.filter(neighbourhood_code__isnull=True):
-        enrich_location.delay(residence.pk)
-        count += 1
-    modeladmin.message_user(
-        request,
-        f"Dispatched buurt-code backfill for {count} residence(s).",
-        messages.SUCCESS,
-    )
-
-
 @admin.action(description="Enrich building details (EP-Online)")
 def enrich_building_details_action(modeladmin, request, queryset):
     count = 0
@@ -369,7 +356,6 @@ class ResidenceAdmin(admin.ModelAdmin):
     actions = [
         scrape_residence_details,
         enrich_location_action,
-        backfill_neighbourhood_code_action,
         enrich_building_details_action,
         enrich_zoning_action,
         enrich_soil_status_action,
