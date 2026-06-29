@@ -1,8 +1,10 @@
 import json
 
 import pytest
+from django.core import mail
 from django.http import HttpResponse
 from django.test import Client as DjangoTestClient
+from django.test import override_settings
 
 SIGNUP_URL = "/_allauth/app/v1/auth/signup"
 LOGIN_URL = "/_allauth/app/v1/auth/login"
@@ -78,6 +80,20 @@ class TestSignupName:
         )
 
         assert response.status_code == 400
+
+
+@pytest.mark.django_db
+class TestVerificationEmail:
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_signup_sends_verification_email(self, headless_client):
+        _post(
+            headless_client,
+            SIGNUP_URL,
+            {"email": "verify@example.com", "name": "Ada Lovelace", "password": "sup3rs3cret!"},
+        )
+
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == ["verify@example.com"]
 
 
 @pytest.mark.django_db
