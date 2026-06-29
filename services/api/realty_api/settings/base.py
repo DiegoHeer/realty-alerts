@@ -121,6 +121,7 @@ HEADLESS_ONLY = True
 HEADLESS_CLIENTS = ("app",)
 
 AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
