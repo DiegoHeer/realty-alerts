@@ -121,6 +121,9 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
 
+# Collect a required display name at signup, persisted to User.first_name.
+ACCOUNT_SIGNUP_FORM_CLASS = "scraping.forms.SignupForm"
+
 HEADLESS_TOKEN_STRATEGY = "allauth.headless.tokens.strategies.jwt.JWTTokenStrategy"
 HEADLESS_JWT_ACCESS_TOKEN_EXPIRES_IN = 1800  # 30 minutes
 HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 604_800  # 7 days
