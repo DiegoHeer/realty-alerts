@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     celery_task_always_eager: bool = False
     argo_events_webhook_url: str | None = None
     dso_api_key: str | None = None
+    headless_jwt_private_key: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

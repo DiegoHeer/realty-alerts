@@ -7,6 +7,8 @@ os.environ.setdefault("BAG_API_KEY", "dev-bag-api-key")
 os.environ.setdefault("EP_ONLINE_API_KEY", "dev-ep-online-api-key")
 os.environ.setdefault("DSO_API_KEY", "dev-dso-api-key")
 
+from cryptography.hazmat.primitives.asymmetric import rsa  # noqa: E402
+from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat  # noqa: E402
 from secret_key_generator import secret_key_generator  # noqa: E402
 
 from realty_api.settings.base import *  # noqa: E402, F403, F401
@@ -15,6 +17,11 @@ DEBUG = True
 
 # Single-process runserver; per-boot regeneration is harmless and avoids requiring an env var locally.
 SECRET_KEY = secret_key_generator.generate()
+
+_dev_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+HEADLESS_JWT_PRIVATE_KEY = _dev_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode()
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Use DATABASE_URL when running inside Docker; fall back to SQLite for plain `manage.py runserver`.
 if _db_url := os.environ.get("DATABASE_URL"):
