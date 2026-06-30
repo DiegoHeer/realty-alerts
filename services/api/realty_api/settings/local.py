@@ -34,6 +34,10 @@ if _db_url := os.environ.get("DATABASE_URL"):
 # collectstatic needs a writable target even in dev-container mode.
 STATIC_ROOT = "/tmp/staticfiles"
 
+# Single-process dev (runserver) doesn't need a shared cache for rate-limit
+# counters; use LocMemCache so plain `runserver` has no hard Redis dependency.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
 # CORS: wide open in local dev so any browser origin (web build on any port,
 # LAN device, tunnel) just works without configuring CORS_ALLOWED_ORIGINS.
 # Safe because credentials are off (JWT travels in the Authorization header,

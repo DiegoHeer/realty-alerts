@@ -115,6 +115,23 @@ CELERY_TASK_ALWAYS_EAGER = SETTINGS.celery_task_always_eager
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+
+# --- Cache ---
+# allauth's rate limiter keys on CACHES["default"]; it must be a shared backend
+# (Redis) or per-process LocMemCache lets limits multiply by worker/pod count.
+# The Redis URL is derived from the Celery broker (DB 1); when the broker isn't
+# Redis (preview namespaces use memory://) we fall back to LocMemCache. local.py
+# and ci.py override this to LocMemCache (no Redis dependency, single process).
+def _cache_config(cache_url: str | None) -> dict:
+    if cache_url:
+        backend = {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": cache_url}
+    else:
+        backend = {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    return {"default": backend}
+
+
+CACHES = _cache_config(SETTINGS.cache_url)
+
 # --- Argo Events bridge ---
 # The webhook URL the `scraping.dispatch_list_scrape` Celery task POSTs to
 # in order to spawn a scrape Job via Argo Events. Empty/None lets the
