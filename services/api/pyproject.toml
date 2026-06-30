@@ -10,6 +10,7 @@ dependencies = [
     "django-allauth[headless]>=65.18",
     "django-celery-beat>=2.7",
     "django-celery-results>=2.5",
+    "django-cors-headers>=4.9",
     "django-ninja>=1.6",
     "gunicorn>=23",
     "httpx>=0.28",
