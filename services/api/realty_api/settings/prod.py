@@ -38,6 +38,13 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
+# Client IP for allauth rate limiting. The request path is
+# Cloudflare -> cloudflared -> Traefik -> pod, and Traefik rewrites
+# X-Forwarded-For / X-Real-IP to the in-cluster peer. The only trustworthy
+# client IP is Cloudflare's CF-Connecting-IP, set at the edge and not
+# spoofable by clients. allauth distrusts X-Forwarded-For by default.
+ALLAUTH_TRUSTED_CLIENT_IP_HEADER = "CF-Connecting-IP"
+
 # Static files
 STATIC_ROOT = "/tmp/staticfiles"
 STORAGES = {
