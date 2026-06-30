@@ -138,7 +138,7 @@ HEADLESS_ADAPTER = "scraping.adapters.HeadlessAdapter"
 
 HEADLESS_TOKEN_STRATEGY = "allauth.headless.tokens.strategies.jwt.JWTTokenStrategy"
 HEADLESS_JWT_ACCESS_TOKEN_EXPIRES_IN = 1800  # 30 minutes
-HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 604_800  # 7 days
+HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 31_536_000  # 365 days (inactivity window; rotation is on)
 HEADLESS_JWT_ROTATE_REFRESH_TOKEN = True
 
 # --- Email ---
