@@ -22,6 +22,9 @@ HEADLESS_JWT_PRIVATE_KEY = _ci_key.private_bytes(Encoding.PEM, PrivateFormat.PKC
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Tests run single-process with no Redis; allauth rate limiting uses LocMemCache.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
 # CI serves no browsers; don't police CORS here. Tests that exercise the
 # controlled prod policy pin it explicitly via override_settings.
 CORS_ALLOW_ALL_ORIGINS = True
