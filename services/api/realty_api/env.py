@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     django_secret_key: str | None = None
     allowed_hosts: str = ""
     csrf_trusted_origins: str = ""
+    cors_allowed_origins: str = ""
     log_level: str = "INFO"
     timezone: str = "Europe/Amsterdam"
     celery_broker_url: str = "redis://localhost:6379/0"
