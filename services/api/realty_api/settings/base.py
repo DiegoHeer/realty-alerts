@@ -7,6 +7,8 @@ Shared between local and prod. Per-environment overrides live in
 
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
+
 from realty_api.env import SETTINGS
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -35,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
+    "corsheaders",
     "allauth",
     "allauth.account",
     "allauth.headless",
@@ -44,6 +47,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # CorsMiddleware must sit above anything that can generate a response
+    # (WhiteNoise, CommonMiddleware) so preflight replies carry CORS headers.
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -140,6 +146,19 @@ HEADLESS_TOKEN_STRATEGY = "allauth.headless.tokens.strategies.jwt.JWTTokenStrate
 HEADLESS_JWT_ACCESS_TOKEN_EXPIRES_IN = 1800  # 30 minutes
 HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 31_536_000  # 365 days (inactivity window; rotation is on)
 HEADLESS_JWT_ROTATE_REFRESH_TOKEN = True
+
+# --- CORS (django-cors-headers) ---
+# Browser clients on a different origin (the web build, local dev) need CORS
+# headers; native mobile builds don't enforce CORS. allauth headless carries
+# JWTs in the Authorization header (not cookies), so credentials stay OFF.
+# Real deployed web origins come from the env (comma-separated, scheme included);
+# any localhost/127.0.0.1 port is allowed so local web dev "just works".
+CORS_ALLOWED_ORIGINS = [o.strip() for o in SETTINGS.cors_allowed_origins.split(",") if o.strip()]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost(:\d+)?$",
+    r"^http://127\.0\.0\.1(:\d+)?$",
+]
+CORS_ALLOW_HEADERS = (*default_headers, "x-session-token")
 
 # --- Email ---
 # Backend defaults to console (dev/test). prod.py forces the SMTP backend and
