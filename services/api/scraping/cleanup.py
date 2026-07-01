@@ -6,7 +6,7 @@ from loguru import logger
 
 from scraping.models import ListingStatus, Residence
 
-RESIDENCE_TERMINAL_TTL_DAYS = 30
+RESIDENCE_TERMINAL_TTL_DAYS = 365
 TERMINAL_STATUSES = (ListingStatus.SOLD, ListingStatus.SALE_PENDING)
 
 UNVERIFIED_ACCOUNT_TTL_DAYS = 7
