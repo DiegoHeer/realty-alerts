@@ -162,3 +162,44 @@ class TestPasswordResetByCode:
         new = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "Rel0cated!pw"})
         assert old.status_code != 200
         assert new.status_code == 200
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_reset_code_survives_realistic_email_delay(self, headless_client, verified_user, monkeypatch):
+        """A code entered minutes after the email arrives must still be accepted.
+
+        allauth's default PASSWORD_RESET_BY_CODE_TIMEOUT is 3 minutes — shorter than a
+        real SMTP round-trip plus the user switching apps to read the code, so every
+        reset failed with "invalid or expired". This guards the configured window by
+        advancing allauth's clock 5 minutes between request and submit (past the old
+        3-minute default, within the configured one).
+        """
+        from allauth.account.internal.flows import code_verification
+
+        clock = {"now": 1_000_000.0}
+
+        class _FakeClock:
+            def time(self) -> float:
+                return clock["now"]
+
+        # code_verification stamps the code's "at" and checks its age via this module's
+        # `time`; swapping it lets us control the elapsed time deterministically.
+        monkeypatch.setattr(code_verification, "time", _FakeClock())
+
+        request = _post(headless_client, PASSWORD_REQUEST_URL, {"email": verified_user.email})
+        session_token = _body(request)["meta"]["session_token"]
+
+        match = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", mail.outbox[0].body)
+        assert match, f"no reset code found in email body:\n{mail.outbox[0].body}"
+        code = match.group(0)
+
+        clock["now"] += 5 * 60  # 5 minutes pass before the user submits the code
+
+        reset = headless_client.post(
+            PASSWORD_RESET_URL,
+            data=json.dumps({"key": code, "password": "Rel0cated!pw"}),
+            content_type="application/json",
+            headers={"X-Session-Token": session_token},
+        )
+
+        new = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "Rel0cated!pw"})
+        assert new.status_code == 200, f"reset rejected after 5 min: {reset.status_code} {reset.content!r}"
