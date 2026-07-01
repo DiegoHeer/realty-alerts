@@ -7,7 +7,7 @@ from django.db.models import F
 from django.utils import timezone
 from loguru import logger
 
-from scraping.cleanup import delete_expired_terminal_residences
+from scraping.cleanup import delete_expired_terminal_residences, delete_unverified_accounts
 from scraping.models import (
     BagStatus,
     City,
@@ -157,6 +157,13 @@ def cleanup_expired_residences() -> int:
     """Hard-delete residences that have been in a terminal status (sold or
     sale_pending) past the TTL. Schedule via a PeriodicTask in Django admin."""
     return delete_expired_terminal_residences(now=timezone.now())
+
+
+@shared_task(name="scraping.cleanup_unverified_accounts")
+def cleanup_unverified_accounts() -> int:
+    """Hard-delete accounts that never verified their email past the TTL.
+    Schedule via a PeriodicTask in Django admin."""
+    return delete_unverified_accounts(now=timezone.now())
 
 
 @shared_task(
