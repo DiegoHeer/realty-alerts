@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     dso_api_key: str | None = None
     headless_jwt_private_key: str | None = None
 
+    # Google OAuth (Web client credentials). The Web client id is the id_token
+    # audience: it is used both as the allauth provider client_id and as the
+    # mobile app's webClientId. Empty in local/CI (feature inert); required in prod.
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+
     # Email / SMTP. Defaults suit local dev (console backend); prod.py switches
     # to SMTP and validates the host/credentials are real.
     email_backend: str = "django.core.mail.backends.console.EmailBackend"
