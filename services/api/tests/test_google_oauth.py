@@ -103,6 +103,25 @@ class TestProviderTokenLogin:
         # email/password path (which stores the full name in first_name).
         assert _body(response)["data"]["user"]["name"] == "Ada Lovelace"
 
+    def test_links_existing_verified_email_user_without_duplicate(self, headless_client):
+        from allauth.account.models import EmailAddress
+        from allauth.socialaccount.models import SocialAccount
+        from django.contrib.auth.models import User
+
+        existing = User.objects.create_user(
+            email="ada@gmail.com",
+            username="ada@gmail.com",
+            password="testpass123!",
+            first_name="Ada Lovelace",
+        )
+        EmailAddress.objects.create(user=existing, email=existing.email, verified=True, primary=True)
+
+        response = _post_google_token(headless_client, _google_identity(email="ada@gmail.com"))
+
+        assert response.status_code == 200, response.content
+        assert User.objects.filter(email="ada@gmail.com").count() == 1
+        assert SocialAccount.objects.filter(user=existing, provider="google").exists()
+
     def test_invalid_token_is_rejected(self, headless_client):
         from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 

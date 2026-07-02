@@ -190,6 +190,12 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 # Promote the provider's full display name onto User.first_name (see adapter).
 SOCIALACCOUNT_ADAPTER = "scraping.adapters.SocialAccountAdapter"
+# Log the user into the existing account (and persist the link) when the verified
+# provider email matches an existing verified account, instead of erroring on a
+# duplicate address. Safe here: allauth email verification is mandatory and Google
+# emails carry email_verified.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 # --- CORS (django-cors-headers) ---
 # Browser clients on a different origin (the web build, local dev) need CORS
