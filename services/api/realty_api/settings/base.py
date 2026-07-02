@@ -188,6 +188,8 @@ SOCIALACCOUNT_PROVIDERS = {
         "VERIFIED_EMAIL": True,
     }
 }
+# Promote the provider's full display name onto User.first_name (see adapter).
+SOCIALACCOUNT_ADAPTER = "scraping.adapters.SocialAccountAdapter"
 
 # --- CORS (django-cors-headers) ---
 # Browser clients on a different origin (the web build, local dev) need CORS

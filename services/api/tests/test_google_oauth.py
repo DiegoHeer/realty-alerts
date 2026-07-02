@@ -92,6 +92,17 @@ class TestProviderTokenLogin:
         assert response.status_code == 200, response.content
         assert EmailAddress.objects.filter(email="ada@gmail.com", verified=True).exists()
 
+    def test_user_object_includes_full_display_name(self, headless_client):
+        response = _post_google_token(
+            headless_client, _google_identity(name="Ada Lovelace", given="Ada", family="Lovelace")
+        )
+
+        assert response.status_code == 200, response.content
+        # Google's extract_common_fields sets first_name=given_name ("Ada") only;
+        # the adapter must promote the full display name so `name` matches the
+        # email/password path (which stores the full name in first_name).
+        assert _body(response)["data"]["user"]["name"] == "Ada Lovelace"
+
     def test_invalid_token_is_rejected(self, headless_client):
         from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 
