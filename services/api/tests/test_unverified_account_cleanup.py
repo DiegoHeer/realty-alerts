@@ -3,7 +3,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from allauth.account.models import EmailAddress
 from django.contrib.auth.models import User
-from django.core.management import call_command
+from django.test import Client
+from django.urls import reverse
 from django.utils import timezone
 
 from scraping.cleanup import UNVERIFIED_ACCOUNT_TTL_DAYS, delete_unverified_accounts
@@ -111,16 +112,6 @@ def test_keeps_account_without_any_email_record():
 
 
 @pytest.mark.django_db
-def test_dry_run_reports_without_deleting():
-    _account("stale@example.com", joined=PAST_TTL, verified=False)
-
-    would_delete = delete_unverified_accounts(now=NOW, dry_run=True)
-
-    assert would_delete == 1
-    assert User.objects.filter(email="stale@example.com").exists()
-
-
-@pytest.mark.django_db
 def test_mixed_batch_deletes_only_eligible():
     _account("stale@example.com", joined=PAST_TTL, verified=False)
     _account("fresh@example.com", joined=WITHIN_TTL, verified=False)
@@ -141,21 +132,80 @@ def test_returns_zero_when_nothing_to_delete():
     assert delete_unverified_accounts(now=NOW) == 0
 
 
+def _cleanup_url() -> str:
+    return reverse("admin:auth_user_cleanup_unverified")
+
+
 @pytest.mark.django_db
-def test_management_command_deletes_stale_accounts():
+def test_confirm_page_lists_only_eligible_accounts(admin_client):
+    old = timezone.now() - timedelta(days=UNVERIFIED_ACCOUNT_TTL_DAYS + 1)
+    fresh = timezone.now() - timedelta(days=UNVERIFIED_ACCOUNT_TTL_DAYS - 1)
+    _account("stale@example.com", joined=old, verified=False)
+    _account("fresh@example.com", joined=fresh, verified=False)
+    _account("confirmed@example.com", joined=old, verified=True)
+
+    response = admin_client.get(_cleanup_url())
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "stale@example.com" in content
+    assert "fresh@example.com" not in content
+    assert "confirmed@example.com" not in content
+
+
+@pytest.mark.django_db
+def test_confirm_page_shows_empty_state(admin_client):
+    response = admin_client.get(_cleanup_url())
+
+    assert response.status_code == 200
+    assert "No stale unverified accounts" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_get_does_not_delete(admin_client):
     old = timezone.now() - timedelta(days=UNVERIFIED_ACCOUNT_TTL_DAYS + 1)
     _account("stale@example.com", joined=old, verified=False)
 
-    call_command("cleanup_unverified_accounts")
+    admin_client.get(_cleanup_url())
 
+    assert User.objects.filter(email="stale@example.com").exists()
+
+
+@pytest.mark.django_db
+def test_post_deletes_and_redirects(admin_client):
+    old = timezone.now() - timedelta(days=UNVERIFIED_ACCOUNT_TTL_DAYS + 1)
+    _account("stale@example.com", joined=old, verified=False)
+
+    response = admin_client.post(_cleanup_url())
+
+    assert response.status_code == 302
+    assert response.url == reverse("admin:auth_user_changelist")
     assert not User.objects.filter(email="stale@example.com").exists()
 
 
 @pytest.mark.django_db
-def test_management_command_dry_run_keeps_accounts():
+def test_staff_without_delete_permission_forbidden():
+    staff = User.objects.create_user(username="viewer", password="testpass123!", is_staff=True)
+    django_client = Client()
+    django_client.force_login(staff)
+
+    assert django_client.get(_cleanup_url()).status_code == 403
+    assert django_client.post(_cleanup_url()).status_code == 403
+
+
+@pytest.mark.django_db
+def test_changelist_shows_cleanup_button(admin_client):
+    response = admin_client.get(reverse("admin:auth_user_changelist"))
+
+    assert _cleanup_url() in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_anonymous_redirected_to_login():
     old = timezone.now() - timedelta(days=UNVERIFIED_ACCOUNT_TTL_DAYS + 1)
     _account("stale@example.com", joined=old, verified=False)
 
-    call_command("cleanup_unverified_accounts", "--dry-run")
+    response = Client().get(_cleanup_url())
 
+    assert response.status_code == 302
     assert User.objects.filter(email="stale@example.com").exists()
