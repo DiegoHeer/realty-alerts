@@ -60,6 +60,13 @@ if not SETTINGS.headless_jwt_private_key:
 
 HEADLESS_JWT_PRIVATE_KEY = SETTINGS.headless_jwt_private_key
 
+# Google OAuth (Web client id/secret used to verify Google id tokens).
+if not SETTINGS.google_oauth_client_id or not SETTINGS.google_oauth_client_secret:
+    raise ImproperlyConfigured(
+        "GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be set in production "
+        "(the Web OAuth client id/secret used to verify Google id tokens)."
+    )
+
 # Email (SMTP) — transactional auth mail: verification codes, password reset.
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 if not SETTINGS.email_host or SETTINGS.email_host == "localhost":

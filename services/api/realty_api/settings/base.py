@@ -37,10 +37,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     "corsheaders",
     "allauth",
     "allauth.account",
     "allauth.headless",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "scraping",
     "django_celery_beat",
     "django_celery_results",
@@ -63,6 +66,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "realty_api.urls"
+SITE_ID = 1
 
 TEMPLATES = [
     {
@@ -164,6 +168,34 @@ HEADLESS_TOKEN_STRATEGY = "allauth.headless.tokens.strategies.jwt.JWTTokenStrate
 HEADLESS_JWT_ACCESS_TOKEN_EXPIRES_IN = 1800  # 30 minutes
 HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 31_536_000  # 365 days (inactivity window; rotation is on)
 HEADLESS_JWT_ROTATE_REFRESH_TOKEN = True
+
+# --- django-allauth (social / Google OAuth) ---
+# Native flow: the app performs Google Sign-In, obtains an id_token, and POSTs it
+# to /_allauth/app/v1/auth/provider/token. allauth verifies the token (audience ==
+# the Web client id) and issues the same JWT as the email/password flow.
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APPS": [
+            {
+                "client_id": SETTINGS.google_oauth_client_id,
+                "secret": SETTINGS.google_oauth_client_secret,
+                "key": "",
+            }
+        ],
+        "SCOPE": ["profile", "email"],
+        # Trust Google's verified email so social sign-in skips the email-code stage.
+        "EMAIL_AUTHENTICATION": True,
+        "VERIFIED_EMAIL": True,
+    }
+}
+# Promote the provider's full display name onto User.first_name (see adapter).
+SOCIALACCOUNT_ADAPTER = "scraping.adapters.SocialAccountAdapter"
+# Log the user into the existing account (and persist the link) when the verified
+# provider email matches an existing verified account, instead of erroring on a
+# duplicate address. Safe here: allauth email verification is mandatory and Google
+# emails carry email_verified.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 # --- CORS (django-cors-headers) ---
 # Browser clients on a different origin (the web build, local dev) need CORS
