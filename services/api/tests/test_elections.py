@@ -3,9 +3,9 @@ import io
 import zipfile
 from dataclasses import dataclass, field
 from typing import cast
+from unittest.mock import patch
 
 import pytest
-from django.core.management import call_command
 
 from scraping.models import City, District, Neighborhood
 from scraping.services import elections
@@ -166,33 +166,18 @@ class TestParsers:
         assert stations["0014"][100].lon is None
 
 
-@pytest.mark.django_db
-class TestLoadElectionStatsCommand:
-    def _write_fixtures(self, cache_dir):
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        rows = [
-            [
-                "GemeenteCode",
-                "GemeenteNaam",
-                "Postcode",
-                "StembureauNaam",
-                "StembureauCode",
-                "PartijNaam",
-                "AantalStemmen",
-            ],  # noqa: E501
-            ["518", "'s-Gravenhage", "2566AW", "Stembureau X", "SB1", "D66", "12"],
-            ["518", "'s-Gravenhage", "2566AW", "Stembureau X", "SB1", "VVD", "8"],
-        ]
-        buf = io.StringIO()
-        csv.writer(buf, delimiter=";").writerows(rows)
-        with zipfile.ZipFile(cache_dir / "tk2025_kiesraad_csv.zip", "w") as zf:
-            zf.writestr(elections.VOTES_CSV_NAME, buf.getvalue())
-        with (cache_dir / "tk2025_stemlokalen.csv").open("w") as f:
-            writer = csv.writer(f)
-            writer.writerow(["CBS gemeentecode", "Nummer stembureau", "Latitude", "Longitude"])
-            writer.writerow(["GM0518", "1", "0.5", "0.5"])
+def _den_haag_stations():
+    """One located station in SQUARE_A with 20 votes, as `load_stations` returns it."""
+    return {
+        "0518": {1: elections.Station(gemeente_code="0518", number=1, votes={"D66": 12, "VVD": 8}, lon=0.5, lat=0.5)}
+    }
 
-    def test_loads_stats_from_cached_sources(self, tmp_path):
+
+@pytest.mark.django_db
+class TestLoadCityElectionStatsTask:
+    def test_loads_stats_for_city_districts_and_neighborhoods(self):
+        from scraping.tasks import load_city_election_stats
+
         city = cast(City, CityFactory(code="0518"))
         district = cast(District, DistrictFactory(code="WK051801", city=city))
         buurt = cast(
@@ -201,9 +186,9 @@ class TestLoadElectionStatsCommand:
         fallback_buurt = cast(
             Neighborhood, NeighborhoodFactory(code="BU05180002", city=city, district=district, geometry=SQUARE_B)
         )
-        self._write_fixtures(tmp_path)
 
-        call_command("load_election_stats", cache_dir=tmp_path)
+        with patch("scraping.tasks.elections.load_stations", return_value=_den_haag_stations()):
+            load_city_election_stats(city.pk)
 
         city.refresh_from_db()
         district.refresh_from_db()
@@ -220,26 +205,82 @@ class TestLoadElectionStatsCommand:
         }
         assert (fallback_buurt.election_stats or {})["tk2025"]["source"] == "wijk"
 
-    def test_dry_run_writes_nothing(self, tmp_path):
-        city = cast(City, CityFactory(code="0518"))
-        NeighborhoodFactory(code="BU05180001", city=city, geometry=SQUARE_A)
-        self._write_fixtures(tmp_path)
+    def test_no_op_when_city_has_no_stations(self):
+        from scraping.tasks import load_city_election_stats
 
-        call_command("load_election_stats", cache_dir=tmp_path, dry_run=True)
+        city = cast(City, CityFactory(code="9999"))
+
+        with patch("scraping.tasks.elections.load_stations", return_value=_den_haag_stations()):
+            load_city_election_stats(city.pk)
 
         city.refresh_from_db()
         assert city.election_stats is None
+        assert city.election_stats_fetched_at is None
 
-    def test_preserves_other_election_keys(self, tmp_path):
+    def test_no_op_for_missing_city(self):
+        from scraping.tasks import load_city_election_stats
+
+        with patch("scraping.tasks.elections.load_stations") as mock_load:
+            load_city_election_stats(999999)
+
+        mock_load.assert_not_called()
+
+    def test_preserves_other_election_keys(self):
+        from scraping.tasks import load_city_election_stats
+
         city = cast(City, CityFactory(code="0518", election_stats={"gr2026": {"totalVotes": 1}}))
         NeighborhoodFactory(code="BU05180001", city=city, geometry=SQUARE_A)
-        self._write_fixtures(tmp_path)
 
-        call_command("load_election_stats", cache_dir=tmp_path)
+        with patch("scraping.tasks.elections.load_stations", return_value=_den_haag_stations()):
+            load_city_election_stats(city.pk)
 
         city.refresh_from_db()
         assert (city.election_stats or {})["gr2026"] == {"totalVotes": 1}
         assert (city.election_stats or {})["tk2025"]["totalVotes"] == 20
+
+
+class TestLoadStations:
+    def test_downloads_parses_and_joins(self, tmp_path):
+        rows = [
+            [
+                "GemeenteCode",
+                "GemeenteNaam",
+                "Postcode",
+                "StembureauNaam",
+                "StembureauCode",
+                "PartijNaam",
+                "AantalStemmen",
+            ],
+            ["518", "'s-Gravenhage", "2566AW", "Stembureau X", "SB1", "D66", "12"],
+        ]
+        buf = io.StringIO()
+        csv.writer(buf, delimiter=";").writerows(rows)
+        with zipfile.ZipFile(tmp_path / "tk2025_kiesraad_csv.zip", "w") as zf:
+            zf.writestr(elections.VOTES_CSV_NAME, buf.getvalue())
+        with (tmp_path / "tk2025_stemlokalen.csv").open("w") as f:
+            writer = csv.writer(f)
+            writer.writerow(["CBS gemeentecode", "Nummer stembureau", "Latitude", "Longitude"])
+            writer.writerow(["GM0518", "1", "0.5", "0.5"])
+
+        stations = elections.load_stations(tmp_path)
+
+        assert stations["0518"][1].votes == {"D66": 12}
+        assert (stations["0518"][1].lon, stations["0518"][1].lat) == (0.5, 0.5)
+
+
+@pytest.mark.django_db
+class TestFetchElectionStatsAdminAction:
+    def test_dispatches_task_per_city(self, admin_client):
+        c1 = cast(City, CityFactory())
+        c2 = cast(City, CityFactory())
+        with patch("scraping.admin.load_city_election_stats.delay") as mock_delay:
+            admin_client.post(
+                "/admin/scraping/city/",
+                {"action": "fetch_election_stats", "_selected_action": [c1.pk, c2.pk]},
+            )
+        assert mock_delay.call_count == 2
+        mock_delay.assert_any_call(c1.pk)
+        mock_delay.assert_any_call(c2.pk)
 
 
 @pytest.mark.django_db

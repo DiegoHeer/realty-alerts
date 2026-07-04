@@ -33,6 +33,7 @@ from scraping.tasks import (
     fetch_district_stats,
     fetch_neighbourhood_geo_shape,
     fetch_neighbourhood_stats,
+    load_city_election_stats,
 )
 from scraping.reconciliation import reconcile_residence
 
@@ -494,7 +495,7 @@ class CityAdmin(admin.ModelAdmin):
     search_fields = ("code", "name")
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
-    actions = ["fetch_geo_shapes", "fetch_stats", "fetch_districts"]
+    actions = ["fetch_geo_shapes", "fetch_stats", "fetch_districts", "fetch_election_stats"]
     change_list_template = "admin/scraping/city/change_list.html"
 
     def get_urls(self):
@@ -534,6 +535,14 @@ class CityAdmin(admin.ModelAdmin):
             fetch_city_stats.delay(city.pk)
             count += 1
         self.message_user(request, f"Dispatched stats fetch for {count} city/cities.", messages.SUCCESS)
+
+    @admin.action(description="Fetch election stats (TK2025)")
+    def fetch_election_stats(self, request, queryset):
+        count = 0
+        for city in queryset:
+            load_city_election_stats.delay(city.pk)
+            count += 1
+        self.message_user(request, f"Dispatched election stats load for {count} city/cities.", messages.SUCCESS)
 
     @admin.action(description="Fetch districts")
     def fetch_districts(self, request, queryset):

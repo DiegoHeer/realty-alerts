@@ -87,12 +87,10 @@ may vote anywhere in their gemeente.
 The data is loaded by a reproducible ETL over two CC0 sources ([Kiesraad votes
 per stembureau](https://data.overheid.nl/dataset/verkiezingsuitslag-tweede-kamer-2025)
 and [Waar is mijn stemlokaal locations](https://waarismijnstemlokaal.nl/data),
-pinned by URL + SHA-256, cached in `.election-cache/`):
-
-```bash
-uv run python manage.py load_election_stats             # all cities in DB
-uv run python manage.py load_election_stats --city 0518 --dry-run
-```
+pinned by URL + SHA-256, cached in the worker's temp dir). To (re)load, select
+cities in the [City admin](http://localhost:8000/admin/scraping/city/) and run
+the **"Fetch election stats (TK2025)"** action; each city dispatches a
+`scraping.load_city_election_stats` Celery task.
 
 Results live in the `election_stats` JSON column (separate from `stats`, which
 the CBS refresh overwrites wholesale) and are merged into `stats` at

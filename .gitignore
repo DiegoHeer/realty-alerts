@@ -8,8 +8,6 @@ __pycache__/
 .coverage
 .coverage.*
 
-# Election ETL source cache (load_election_stats)
-.election-cache/
 
 # Node.js
 node_modules/

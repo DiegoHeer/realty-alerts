@@ -24,15 +24,19 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import tempfile
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 
 import httpx
 from loguru import logger
 
 ELECTION_KEY = "tk2025"
+
+DEFAULT_CACHE_DIR = Path(tempfile.gettempdir()) / "realty-election-cache"
 
 VOTES_URL = (
     "https://data.overheid.nl/sites/default/files/dataset/"
@@ -281,3 +285,16 @@ def attach_locations(
             location = locations.get((gemeente, number))
             if location is not None:
                 station.lon, station.lat = location
+
+
+@lru_cache(maxsize=2)
+def load_stations(cache_dir: Path = DEFAULT_CACHE_DIR) -> dict[str, dict[int, Station]]:
+    """Download (cached), parse and join both sources into located stations.
+
+    Memoized so a worker processing several cities parses the national files
+    only once.
+    """
+    votes_zip, locations_csv = download_sources(cache_dir)
+    stations = parse_votes(votes_zip)
+    attach_locations(stations, parse_locations(locations_csv))
+    return stations
