@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from django.db.models import F
+from django.shortcuts import get_object_or_404
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
 from ninja.errors import HttpError
@@ -247,6 +248,11 @@ def list_residences(
         }
 
     return list(qs[offset : offset + limit])
+
+
+@v1_router.get("/residences/{residence_id}", response=ResidenceOut, tags=["catalog"])
+def get_residence(request, residence_id: int):
+    return get_object_or_404(Residence.objects.prefetch_related("listings"), id=residence_id)
 
 
 internal_router = Router()

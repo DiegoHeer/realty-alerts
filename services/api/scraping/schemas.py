@@ -97,6 +97,10 @@ class ResidenceOut(Schema):
     foundation_risk_soil_type: str | None = None
     foundation_risk_pre1970_pct: float | None = None
     foundation_risk_description: str | None = None
+    surface_area_m2: int | None = None
+    bedroom_count: int | None = None
+    bathroom_count: int | None = None
+    build_year: int | None = None
     current_price_eur: int | None = None
     current_status: ListingStatus
     last_scraped_at: datetime | None = None
