@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F
 from django.db.models.functions import Cast, NullIf
 
 
@@ -144,7 +145,9 @@ class Residence(models.Model):
 
     def _freshest_resolved_listing(self) -> Listing | None:
         return (
-            Listing.objects.filter(residence=self, bag_status=BagStatus.RESOLVED).order_by("-list_scraped_at").first()
+            Listing.objects.filter(residence=self, bag_status=BagStatus.RESOLVED)
+            .order_by(F("list_scraped_at").desc(nulls_last=True))
+            .first()
         )
 
     @property
