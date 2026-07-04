@@ -174,9 +174,9 @@ def _den_haag_stations():
 
 
 @pytest.mark.django_db
-class TestLoadCityElectionStatsTask:
+class TestLoadElectionStatsTask:
     def test_loads_stats_for_city_districts_and_neighborhoods(self):
-        from scraping.tasks import load_city_election_stats
+        from scraping.tasks import load_election_stats
 
         city = cast(City, CityFactory(code="0518"))
         district = cast(District, DistrictFactory(code="WK051801", city=city))
@@ -188,7 +188,7 @@ class TestLoadCityElectionStatsTask:
         )
 
         with patch("scraping.tasks.elections.load_stations", return_value=_den_haag_stations()):
-            load_city_election_stats(city.pk)
+            load_election_stats(city.pk)
 
         city.refresh_from_db()
         district.refresh_from_db()
@@ -206,33 +206,33 @@ class TestLoadCityElectionStatsTask:
         assert (fallback_buurt.election_stats or {})["tk2025"]["source"] == "wijk"
 
     def test_no_op_when_city_has_no_stations(self):
-        from scraping.tasks import load_city_election_stats
+        from scraping.tasks import load_election_stats
 
         city = cast(City, CityFactory(code="9999"))
 
         with patch("scraping.tasks.elections.load_stations", return_value=_den_haag_stations()):
-            load_city_election_stats(city.pk)
+            load_election_stats(city.pk)
 
         city.refresh_from_db()
         assert city.election_stats is None
         assert city.election_stats_fetched_at is None
 
     def test_no_op_for_missing_city(self):
-        from scraping.tasks import load_city_election_stats
+        from scraping.tasks import load_election_stats
 
         with patch("scraping.tasks.elections.load_stations") as mock_load:
-            load_city_election_stats(999999)
+            load_election_stats(999999)
 
         mock_load.assert_not_called()
 
     def test_preserves_other_election_keys(self):
-        from scraping.tasks import load_city_election_stats
+        from scraping.tasks import load_election_stats
 
         city = cast(City, CityFactory(code="0518", election_stats={"gr2026": {"totalVotes": 1}}))
         NeighborhoodFactory(code="BU05180001", city=city, geometry=SQUARE_A)
 
         with patch("scraping.tasks.elections.load_stations", return_value=_den_haag_stations()):
-            load_city_election_stats(city.pk)
+            load_election_stats(city.pk)
 
         city.refresh_from_db()
         assert (city.election_stats or {})["gr2026"] == {"totalVotes": 1}
@@ -273,7 +273,7 @@ class TestFetchElectionStatsAdminAction:
     def test_dispatches_task_per_city(self, admin_client):
         c1 = cast(City, CityFactory())
         c2 = cast(City, CityFactory())
-        with patch("scraping.admin.load_city_election_stats.delay") as mock_delay:
+        with patch("scraping.admin.load_election_stats.delay") as mock_delay:
             admin_client.post(
                 "/admin/scraping/city/",
                 {"action": "fetch_election_stats", "_selected_action": [c1.pk, c2.pk]},

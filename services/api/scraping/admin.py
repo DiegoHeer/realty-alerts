@@ -33,7 +33,7 @@ from scraping.tasks import (
     fetch_district_stats,
     fetch_neighbourhood_geo_shape,
     fetch_neighbourhood_stats,
-    load_city_election_stats,
+    load_election_stats,
 )
 from scraping.reconciliation import reconcile_residence
 
@@ -540,7 +540,7 @@ class CityAdmin(admin.ModelAdmin):
     def fetch_election_stats(self, request, queryset):
         count = 0
         for city in queryset:
-            load_city_election_stats.delay(city.pk)
+            load_election_stats.delay(city.pk)
             count += 1
         self.message_user(request, f"Dispatched election stats load for {count} city/cities.", messages.SUCCESS)
 

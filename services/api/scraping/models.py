@@ -258,8 +258,6 @@ class City(models.Model):
     stats_year = models.PositiveSmallIntegerField(null=True, blank=True)
     geometry_fetched_at = models.DateTimeField(null=True, blank=True)
     stats_fetched_at = models.DateTimeField(null=True, blank=True)
-    # Election results (e.g. {"tk2025": {...}}), loaded by `load_election_stats`.
-    # Kept out of `stats` because the CBS refresh replaces that JSON wholesale.
     election_stats = models.JSONField(null=True, blank=True)
     election_stats_fetched_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

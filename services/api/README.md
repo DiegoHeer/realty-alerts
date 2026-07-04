@@ -90,7 +90,7 @@ and [Waar is mijn stemlokaal locations](https://waarismijnstemlokaal.nl/data),
 pinned by URL + SHA-256, cached in the worker's temp dir). To (re)load, select
 cities in the [City admin](http://localhost:8000/admin/scraping/city/) and run
 the **"Fetch election stats (TK2025)"** action; each city dispatches a
-`scraping.load_city_election_stats` Celery task.
+`scraping.load_election_stats` Celery task.
 
 Results live in the `election_stats` JSON column (separate from `stats`, which
 the CBS refresh overwrites wholesale) and are merged into `stats` at
