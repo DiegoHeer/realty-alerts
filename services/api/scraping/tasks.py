@@ -3,6 +3,7 @@ import uuid
 import httpx
 from celery import shared_task
 from django.conf import settings
+from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 from loguru import logger
@@ -25,7 +26,7 @@ from scraping.resolvers import BagLookupFailure, BagLookupSuccess, create_resolv
 from scraping.resolvers.location import PdokLocationLookup
 from scraping.services.bestemmingsplan import BestemmingsplanLookup
 from scraping.services.bodemloket import BodemloketLookup
-from scraping.services import cbs
+from scraping.services import cbs, elections
 from scraping.services.ep_online import EpOnlineLookup
 from scraping.services.pdok_foundation_risk import PdokFoundationRiskLookup
 from scraping.resolvers.types import AddressQuery
@@ -570,6 +571,56 @@ def fetch_neighbourhood_stats(neighbourhood_id: int) -> None:
     neighbourhood.stats_fetched_at = timezone.now()
     neighbourhood.save(update_fields=["stats", "stats_year", "stats_fetched_at"])
     logger.info("Fetched stats for neighbourhood {}: {}", neighbourhood.code, neighbourhood.name)
+
+
+def _save_election_stats(obj, stats: dict, now) -> None:
+    obj.election_stats = {**(obj.election_stats or {}), elections.ELECTION_KEY: stats}
+    obj.election_stats_fetched_at = now
+    obj.save(update_fields=["election_stats", "election_stats_fetched_at"])
+
+
+@shared_task(name="scraping.load_election_stats", **_CBS_TASK_OPTS)
+def load_election_stats(city_id: int) -> None:
+    """Load election results for a city at every geographic level.
+
+    Aggregates the city's polling stations in a single pass (buurt, with wijk
+    fallback, rolled up to gemeente) and stores each level's results on the
+    City, its Districts, and its Neighborhoods under `elections.ELECTION_KEY`,
+    preserving results of other elections already present.
+    """
+    try:
+        city = City.objects.get(pk=city_id)
+    except City.DoesNotExist:
+        return
+    stations = elections.load_stations().get(city.code)
+    if not stations:
+        logger.warning("No election stations found for city {}: {}", city.code, city.name)
+        return
+
+    neighborhoods = list(Neighborhood.objects.filter(city=city).select_related("district"))
+    result = elections.aggregate_city(stations, neighborhoods)
+
+    now = timezone.now()
+    with transaction.atomic():
+        _save_election_stats(city, result.city, now)
+        for district in city.districts.all():
+            if district_stats := result.districts.get(district.code):
+                _save_election_stats(district, district_stats, now)
+        for neighborhood in neighborhoods:
+            if neighborhood_stats := result.neighborhoods.get(neighborhood.code):
+                _save_election_stats(neighborhood, neighborhood_stats, now)
+
+    logger.info(
+        "Loaded election stats for city {} ({}): {}/{} stations located, "
+        "{} buurten direct, {} via wijk fallback, {} empty",
+        city.code,
+        city.name,
+        result.located_stations,
+        result.total_stations,
+        len(result.neighborhoods) - result.fallback_neighborhoods,
+        result.fallback_neighborhoods,
+        result.empty_neighborhoods,
+    )
 
 
 def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) -> dict:

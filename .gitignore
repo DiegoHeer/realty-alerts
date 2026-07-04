@@ -8,6 +8,7 @@ __pycache__/
 .coverage
 .coverage.*
 
+
 # Node.js
 node_modules/
 .next/

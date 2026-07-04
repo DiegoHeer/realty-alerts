@@ -67,3 +67,34 @@ Events webhook (`ARGO_EVENTS_WEBHOOK_URL`) which spawns a one-shot scraper
 If `ARGO_EVENTS_WEBHOOK_URL` is unset (local dev, preview namespaces), the
 task short-circuits with a warning instead of erroring — useful for running
 Beat locally without a real webhook to call.
+
+## Election stats (TK2025)
+
+`/v1/stats/{cities,districts,neighborhoods}` responses carry election results
+in an `election_stats` field next to the CBS `stats` dict, keyed by election,
+e.g.:
+
+```json
+"stats": { "AantalInwoners_5": 6285 },
+"election_stats": { "tk2025": {
+  "totalVotes": 2746, "stationCount": 2, "source": "buurt",
+  "parties": { "D66": 867, "VVD": 566, "...": 0 } } }
+```
+
+`source` is `buurt` for direct polling-station aggregates, `wijk` when a buurt
+without a station inherits its wijk's totals, and `gemeente` on city records.
+Buurt figures approximate the leanings of the stations' surroundings — voters
+may vote anywhere in their gemeente.
+
+The data is loaded by a reproducible ETL over two CC0 sources ([Kiesraad votes
+per stembureau](https://data.overheid.nl/dataset/verkiezingsuitslag-tweede-kamer-2025)
+and [Waar is mijn stemlokaal locations](https://waarismijnstemlokaal.nl/data),
+pinned by URL + SHA-256, cached in the worker's temp dir). To (re)load, select
+cities in the [City admin](http://localhost:8000/admin/scraping/city/) and run
+the **"Fetch election stats (TK2025)"** action; each city dispatches a
+`scraping.load_election_stats` Celery task.
+
+Results live in the `election_stats` JSON column, separate from `stats`, which
+the CBS refresh overwrites wholesale. See `scraping/services/elections.py` for the
+station-to-buurt assignment rules (point-in-polygon, nearest-buurt rescue,
+wijk fallback).

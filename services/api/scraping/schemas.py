@@ -226,6 +226,7 @@ class CityStatsOut(Schema):
     name: str
     stats: dict | None
     stats_year: int | None
+    election_stats: dict | None
 
 
 class DistrictStatsOut(Schema):
@@ -234,6 +235,7 @@ class DistrictStatsOut(Schema):
     city_code: str
     stats: dict | None
     stats_year: int | None
+    election_stats: dict | None
     geometry: list | None = None
 
     @staticmethod
@@ -248,6 +250,7 @@ class NeighborhoodStatsOut(Schema):
     district_code: str | None
     stats: dict | None
     stats_year: int | None
+    election_stats: dict | None
     geometry: list | None = None
 
     @staticmethod
