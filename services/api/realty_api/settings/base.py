@@ -170,18 +170,31 @@ HEADLESS_JWT_REFRESH_TOKEN_EXPIRES_IN = 31_536_000  # 365 days (inactivity windo
 HEADLESS_JWT_ROTATE_REFRESH_TOKEN = True
 
 # --- django-allauth (social / Google OAuth) ---
-# Native flow: the app performs Google Sign-In, obtains an id_token, and POSTs it
-# to /_allauth/app/v1/auth/provider/token. allauth verifies the token (audience ==
-# the Web client id) and issues the same JWT as the email/password flow.
+# Token flow: the app obtains a Google id_token itself (web: OIDC implicit with
+# the Web client id; Android/iOS: code+PKCE with the platform's installed-app
+# client id) and POSTs it to /_allauth/app/v1/auth/provider/token. allauth
+# selects the app whose client_id matches the posted token.client_id, verifies
+# the id_token (issuer, signature, audience == that client_id), and issues the
+# same JWT as the email/password flow.
+#
+# The Web app (id + secret) is primary. Installed-app clients carry no secret
+# and are marked "hidden" so lookups without an explicit client_id (e.g. the
+# config endpoint) unambiguously resolve to the Web app.
+_google_oauth_apps = [
+    {
+        "client_id": SETTINGS.google_oauth_client_id,
+        "secret": SETTINGS.google_oauth_client_secret,
+        "key": "",
+    },
+    *(
+        {"client_id": _client_id, "secret": "", "key": "", "settings": {"hidden": True}}
+        for _client_id in (SETTINGS.google_oauth_android_client_id, SETTINGS.google_oauth_ios_client_id)
+        if _client_id
+    ),
+]
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "APPS": [
-            {
-                "client_id": SETTINGS.google_oauth_client_id,
-                "secret": SETTINGS.google_oauth_client_secret,
-                "key": "",
-            }
-        ],
+        "APPS": _google_oauth_apps,
         "SCOPE": ["profile", "email"],
         # Trust Google's verified email so social sign-in skips the email-code stage.
         "EMAIL_AUTHENTICATION": True,

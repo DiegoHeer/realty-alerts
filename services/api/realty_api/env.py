@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     google_oauth_client_id: str = ""
     google_oauth_client_secret: str = ""
 
+    # Google installed-app client ids (same Google project, no secret). Native
+    # builds obtain id_tokens whose audience is their platform's own client id,
+    # so the provider-token endpoint must accept these too. Optional: empty
+    # means that platform's tokens are rejected.
+    google_oauth_android_client_id: str = ""
+    google_oauth_ios_client_id: str = ""
+
     # Email / SMTP. Defaults suit local dev (console backend); prod.py switches
     # to SMTP and validates the host/credentials are real.
     email_backend: str = "django.core.mail.backends.console.EmailBackend"

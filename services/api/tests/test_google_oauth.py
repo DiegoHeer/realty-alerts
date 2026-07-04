@@ -49,11 +49,11 @@ def headless_client() -> DjangoTestClient:
     return DjangoTestClient()
 
 
-def _post_google_token(client: DjangoTestClient, identity: dict) -> HttpResponse:
+def _post_google_token(client: DjangoTestClient, identity: dict, client_id: str = TEST_CLIENT_ID) -> HttpResponse:
     payload = {
         "provider": "google",
         "process": "login",
-        "token": {"client_id": TEST_CLIENT_ID, "id_token": "fake-id-token"},
+        "token": {"client_id": client_id, "id_token": "fake-id-token"},
     }
     with patch(
         "allauth.socialaccount.providers.google.views._verify_and_decode",
@@ -140,5 +140,54 @@ class TestProviderTokenLogin:
             response = headless_client.post(
                 PROVIDER_TOKEN_URL, data=json.dumps(payload), content_type="application/json"
             )
+
+        assert response.status_code in (400, 401)
+
+
+# Installed-app (Android/iOS) clients: no secret, marked "hidden" so lookups
+# without an explicit client_id keep resolving to the (visible) Web app. The
+# provider-token endpoint selects the app matching the posted token.client_id,
+# mirroring what settings/base.py builds from GOOGLE_OAUTH_*_CLIENT_ID.
+ANDROID_CLIENT_ID = "test-android-client-id.apps.googleusercontent.com"
+
+GOOGLE_SETTINGS_WITH_NATIVE_APP = {
+    "google": {
+        "APPS": [
+            GOOGLE_SETTINGS["google"]["APPS"][0],
+            {"client_id": ANDROID_CLIENT_ID, "secret": "", "key": "", "settings": {"hidden": True}},
+        ],
+        "SCOPE": ["profile", "email"],
+        "EMAIL_AUTHENTICATION": True,
+        "VERIFIED_EMAIL": True,
+    }
+}
+
+
+@pytest.mark.django_db
+class TestNativeClientIdLogin:
+    @pytest.fixture(autouse=True)
+    def _google_settings(self, settings):
+        settings.SOCIALACCOUNT_PROVIDERS = GOOGLE_SETTINGS_WITH_NATIVE_APP
+
+    def test_android_client_id_token_returns_jwt(self, headless_client):
+        identity = _google_identity()
+        identity["aud"] = ANDROID_CLIENT_ID
+
+        response = _post_google_token(headless_client, identity, client_id=ANDROID_CLIENT_ID)
+
+        assert response.status_code == 200, response.content
+        body = _body(response)
+        assert body["meta"]["access_token"]
+        assert body["data"]["user"]["email"] == "ada@gmail.com"
+
+    def test_web_client_id_still_works_alongside_the_hidden_app(self, headless_client):
+        response = _post_google_token(headless_client, _google_identity())
+
+        assert response.status_code == 200, response.content
+
+    def test_unknown_client_id_is_rejected(self, headless_client):
+        response = _post_google_token(
+            headless_client, _google_identity(), client_id="unknown.apps.googleusercontent.com"
+        )
 
         assert response.status_code in (400, 401)
