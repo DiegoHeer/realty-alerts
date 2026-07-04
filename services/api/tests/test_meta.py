@@ -6,7 +6,7 @@ class TestMeta:
         assert response.status_code == 200
         assert response.json() == {
             "current_api_version": 2,
-            "min_supported_api_version": 1,
+            "min_supported_api_version": 2,
         }
 
     def test_reflects_settings(self, client, settings):

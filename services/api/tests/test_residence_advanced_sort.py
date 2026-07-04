@@ -8,9 +8,8 @@ class TestAdvancedSort:
     endpoint = "/v1/residences"
 
     def _ids(self, client, sort):
-        # legacy array response (api_version absent) — list[ResidenceOut]
         body = client.get(self.endpoint, {"sort": sort, "limit": 100}).json()
-        return [item["id"] for item in body]
+        return [item["id"] for item in body["items"]]
 
     def test_price_asc_orders_cheapest_first(self, client):
         cheap = ResidenceFactory(current_price_eur=100_000)

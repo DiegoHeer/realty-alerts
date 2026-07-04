@@ -9,7 +9,7 @@ class TestNeighbourhoodCodeFilter:
 
     def _ids(self, client, query):
         body = client.get(f"{self.endpoint}?{query}").json()
-        return {item["id"] for item in body}
+        return {item["id"] for item in body["items"]}
 
     def test_filters_to_matching_code(self, client):
         a = ResidenceFactory(neighbourhood_code="BU03630000")
