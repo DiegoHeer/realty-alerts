@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    {% if accounts %}
+        <p>
+            The following {{ accounts|length }} account(s) never verified their email within
+            {{ ttl_days }} days of signing up and will be <strong>permanently deleted</strong>,
+            including their email address records:
+        </p>
+        <ul>
+            {% for account in accounts %}
+                <li>{{ account.email }} — joined {{ account.date_joined|date:"Y-m-d H:i" }}</li>
+            {% endfor %}
+        </ul>
+        <form method="post">
+            {% csrf_token %}
+            <input type="submit" value="Yes, delete these accounts" class="button">
+            <a href="{% url 'admin:auth_user_changelist' %}" class="button">Cancel</a>
+        </form>
+    {% else %}
+        <p>No stale unverified accounts found.</p>
+        <a href="{% url 'admin:auth_user_changelist' %}" class="button">Back to users</a>
+    {% endif %}
+{% endblock %}

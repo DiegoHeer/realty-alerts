@@ -1,12 +1,17 @@
 import httpx
 from django.contrib import admin, messages
 from django.conf import settings
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.contrib.auth.models import User
 from django.db.models import Count
 from django.utils import timezone
 
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
 
+from scraping.cleanup import UNVERIFIED_ACCOUNT_TTL_DAYS, delete_unverified_accounts, stale_unverified_users
 from scraping.resolvers import BagLookupFailure, ChainedResolver, create_resolver
 from scraping.services import cbs
 from scraping.resolvers.types import AddressQuery
@@ -665,3 +670,39 @@ class NeighborhoodAdmin(admin.ModelAdmin):
     @admin.display(boolean=True, description="Stats")
     def has_stats(self, obj):
         return obj.stats is not None
+
+
+admin.site.unregister(User)
+
+
+@admin.register(User)
+class UserAdmin(DjangoUserAdmin):
+    change_list_template = "admin/auth/user/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "cleanup-unverified/",
+                self.admin_site.admin_view(self.cleanup_unverified_view),
+                name="auth_user_cleanup_unverified",
+            ),
+        ]
+        return custom_urls + urls
+
+    def cleanup_unverified_view(self, request):
+        # The confirm page exposes account emails, so viewing is gated the
+        # same as deleting.
+        if not self.has_delete_permission(request):
+            raise PermissionDenied
+        if request.method == "POST":
+            deleted = delete_unverified_accounts(now=timezone.now())
+            messages.success(request, f"Deleted {deleted} unverified account(s).")
+            return HttpResponseRedirect(reverse("admin:auth_user_changelist"))
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Clean up unverified accounts",
+            "accounts": stale_unverified_users(now=timezone.now()).order_by("date_joined"),
+            "ttl_days": UNVERIFIED_ACCOUNT_TTL_DAYS,
+        }
+        return TemplateResponse(request, "admin/auth/user/cleanup_unverified_confirm.html", context)
