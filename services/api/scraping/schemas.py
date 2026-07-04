@@ -221,26 +221,12 @@ class GeoCityOut(Schema):
     geometry: list
 
 
-def _stats_with_elections(obj) -> dict | None:
-    """Merge `election_stats` (e.g. {"tk2025": ...}) into the CBS stats dict.
-
-    Election results live in their own column so the CBS stats refresh cannot
-    clobber them; clients see a single `stats` dict either way.
-    """
-    if not obj.election_stats:
-        return obj.stats
-    return {**(obj.stats or {}), **obj.election_stats}
-
-
 class CityStatsOut(Schema):
     code: str
     name: str
     stats: dict | None
     stats_year: int | None
-
-    @staticmethod
-    def resolve_stats(obj):
-        return _stats_with_elections(obj)
+    election_stats: dict | None
 
 
 class DistrictStatsOut(Schema):
@@ -249,15 +235,12 @@ class DistrictStatsOut(Schema):
     city_code: str
     stats: dict | None
     stats_year: int | None
+    election_stats: dict | None
     geometry: list | None = None
 
     @staticmethod
     def resolve_city_code(obj):
         return obj.city.code if hasattr(obj.city, "code") else obj.city_id
-
-    @staticmethod
-    def resolve_stats(obj):
-        return _stats_with_elections(obj)
 
 
 class NeighborhoodStatsOut(Schema):
@@ -267,15 +250,12 @@ class NeighborhoodStatsOut(Schema):
     district_code: str | None
     stats: dict | None
     stats_year: int | None
+    election_stats: dict | None
     geometry: list | None = None
 
     @staticmethod
     def resolve_city_code(obj):
         return obj.city.code if hasattr(obj.city, "code") else obj.city_id
-
-    @staticmethod
-    def resolve_stats(obj):
-        return _stats_with_elections(obj)
 
     @staticmethod
     def resolve_district_code(obj):

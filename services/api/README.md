@@ -71,10 +71,12 @@ Beat locally without a real webhook to call.
 ## Election stats (TK2025)
 
 `/v1/stats/{cities,districts,neighborhoods}` responses carry election results
-under the `tk2025` key of each `stats` dict, e.g.:
+in an `election_stats` field next to the CBS `stats` dict, keyed by election,
+e.g.:
 
 ```json
-"stats": { "AantalInwoners_5": 6285, "tk2025": {
+"stats": { "AantalInwoners_5": 6285 },
+"election_stats": { "tk2025": {
   "totalVotes": 2746, "stationCount": 2, "source": "buurt",
   "parties": { "D66": 867, "VVD": 566, "...": 0 } } }
 ```
@@ -92,8 +94,7 @@ cities in the [City admin](http://localhost:8000/admin/scraping/city/) and run
 the **"Fetch election stats (TK2025)"** action; each city dispatches a
 `scraping.load_election_stats` Celery task.
 
-Results live in the `election_stats` JSON column (separate from `stats`, which
-the CBS refresh overwrites wholesale) and are merged into `stats` at
-serialization time. See `scraping/services/elections.py` for the
+Results live in the `election_stats` JSON column, separate from `stats`, which
+the CBS refresh overwrites wholesale. See `scraping/services/elections.py` for the
 station-to-buurt assignment rules (point-in-polygon, nearest-buurt rescue,
 wijk fallback).

@@ -285,7 +285,7 @@ class TestFetchElectionStatsAdminAction:
 
 @pytest.mark.django_db
 class TestElectionStatsInApi:
-    def test_neighborhood_stats_merge_election_data(self, client):
+    def test_neighborhood_election_stats_as_separate_field(self, client):
         city = cast(City, CityFactory(code="0518"))
         NeighborhoodFactory(
             code="BU05180001",
@@ -300,9 +300,9 @@ class TestElectionStatsInApi:
         response = client.get("/v1/stats/neighborhoods", {"city": "0518"})
 
         assert response.status_code == 200
-        stats = response.json()[0]["stats"]
-        assert stats["AantalInwoners_5"] == 6285
-        assert stats["tk2025"]["parties"]["D66"] == 12
+        body = response.json()[0]
+        assert body["stats"] == {"AantalInwoners_5": 6285}
+        assert body["election_stats"]["tk2025"]["parties"]["D66"] == 12
 
     def test_election_data_without_cbs_stats(self, client):
         city = cast(City, CityFactory(code="0518"))
@@ -310,22 +310,28 @@ class TestElectionStatsInApi:
 
         response = client.get("/v1/stats/neighborhoods", {"city": "0518"})
 
-        assert response.json()[0]["stats"] == {"tk2025": {"totalVotes": 5}}
+        body = response.json()[0]
+        assert body["stats"] is None
+        assert body["election_stats"] == {"tk2025": {"totalVotes": 5}}
 
-    def test_stats_stay_null_without_any_data(self, client):
+    def test_both_fields_stay_null_without_any_data(self, client):
         city = cast(City, CityFactory(code="0518"))
         NeighborhoodFactory(code="BU05180001", city=city, stats=None, election_stats=None)
 
         response = client.get("/v1/stats/neighborhoods", {"city": "0518"})
 
-        assert response.json()[0]["stats"] is None
+        body = response.json()[0]
+        assert body["stats"] is None
+        assert body["election_stats"] is None
 
-    def test_city_and_district_stats_merge_election_data(self, client):
+    def test_city_and_district_election_stats_as_separate_field(self, client):
         city = cast(City, CityFactory(code="0518", stats={"a": 1}, election_stats={"tk2025": {"totalVotes": 9}}))
         DistrictFactory(code="WK051801", city=city, stats=None, election_stats={"tk2025": {"totalVotes": 4}})
 
         city_resp = client.get("/v1/stats/cities/0518")
         district_resp = client.get("/v1/stats/districts", {"city": "0518"})
 
-        assert city_resp.json()["stats"] == {"a": 1, "tk2025": {"totalVotes": 9}}
-        assert district_resp.json()[0]["stats"] == {"tk2025": {"totalVotes": 4}}
+        assert city_resp.json()["stats"] == {"a": 1}
+        assert city_resp.json()["election_stats"] == {"tk2025": {"totalVotes": 9}}
+        assert district_resp.json()[0]["stats"] is None
+        assert district_resp.json()[0]["election_stats"] == {"tk2025": {"totalVotes": 4}}
