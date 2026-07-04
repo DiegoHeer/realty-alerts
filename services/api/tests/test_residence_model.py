@@ -1,9 +1,10 @@
+from datetime import UTC, datetime
 from typing import cast
 
 import pytest
 
 from scraping.models import DealType, Residence
-from tests.factories import ResidenceFactory
+from tests.factories import ListingFactory, ResidenceFactory
 
 
 def test_deal_type_defaults_to_sale():
@@ -60,3 +61,16 @@ def test_residence_stores_neighbourhood_code():
     residence = cast(Residence, ResidenceFactory(neighbourhood_code="BU03630000"))
     residence.refresh_from_db()
     assert residence.neighbourhood_code == "BU03630000"
+
+
+@pytest.mark.django_db
+def test_freshest_listing_ranks_null_timestamps_last():
+    residence = ResidenceFactory()
+    ListingFactory(residence=residence, image_url="https://example.com/null-ts.jpg", list_scraped_at=None)
+    ListingFactory(
+        residence=residence,
+        image_url="https://example.com/fresh.jpg",
+        list_scraped_at=datetime(2026, 6, 1, tzinfo=UTC),
+    )
+
+    assert residence.image_url == "https://example.com/fresh.jpg"  # ty: ignore[unresolved-attribute]

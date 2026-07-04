@@ -3,7 +3,8 @@ from datetime import UTC, datetime
 
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
-from django.db.models import F
+from django.db.models import F, OuterRef, Subquery
+from django.shortcuts import get_object_or_404
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
 from ninja.errors import HttpError
@@ -81,20 +82,6 @@ def readyz(request):
 
 
 v1_router = Router()
-
-
-def _resolve_api_version(request, api_version: int | None) -> int:
-    """Resolve the response-contract version: explicit query param wins, then
-    the `X-API-Version` header, else legacy 1. A non-integer header is ignored."""
-    if api_version is not None:
-        return api_version
-    header = request.headers.get("X-API-Version")
-    if header is not None:
-        try:
-            return int(header)
-        except ValueError:
-            return 1
-    return 1
 
 
 def _flatten_multi(raw: list[str] | None) -> list[str] | None:
@@ -208,12 +195,21 @@ _SORT_ORDER = {
     SortOption.PRICE_PER_M2_ASC: (F("price_per_m2").asc(nulls_last=True), F("id").asc()),
 }
 
+# Best-effort cover photo: freshest listing (any bag_status) with an image.
+# nulls_last mirrors Residence._freshest_resolved_listing and reconciliation.
+_COVER_IMAGE = Subquery(
+    Listing.objects.filter(residence=OuterRef("pk"))
+    .exclude(image_url__isnull=True)
+    .exclude(image_url="")
+    .order_by(F("list_scraped_at").desc(nulls_last=True))
+    .values("image_url")[:1]
+)
 
-@v1_router.get("/residences", response=list[ResidenceOut] | ResidencePage, tags=["catalog"])
+
+@v1_router.get("/residences", response=ResidencePage, tags=["catalog"])
 def list_residences(
     request,
     filters: Query[ResidenceFilters],
-    api_version: QueryEx[int | None, P(ge=1)] = None,
     limit: QueryEx[int, P(ge=0, le=100)] = 20,
     offset: QueryEx[int, P(ge=0)] = 0,
     building_type: QueryEx[list[str] | None, P()] = None,
@@ -222,31 +218,35 @@ def list_residences(
     bbox: str | None = None,
     sort: SortOption = SortOption.NEWEST,
 ):
-    qs = Residence.objects.prefetch_related("listings").order_by(*_SORT_ORDER[sort])
+    qs = (
+        Residence.objects.filter(latitude__isnull=False, longitude__isnull=False)
+        .annotate(cover_image_url=_COVER_IMAGE)
+        .order_by(*_SORT_ORDER[sort])
+    )
     qs = _apply_residence_filters(qs, filters, building_type, energy_label, neighbourhood_code)
     if bbox:
         min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)
         qs = qs.filter(
-            latitude__isnull=False,
-            longitude__isnull=False,
             latitude__gte=min_lat,
             latitude__lte=max_lat,
             longitude__gte=min_lon,
             longitude__lte=max_lon,
         )
 
-    if _resolve_api_version(request, api_version) >= 2:
-        total = qs.count()
-        items = list(qs[offset : offset + limit])
-        return {
-            "items": items,
-            "total": total,
-            "limit": limit,
-            "offset": offset,
-            "has_more": offset + len(items) < total,
-        }
+    total = qs.count()
+    items = list(qs[offset : offset + limit])
+    return {
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "has_more": offset + len(items) < total,
+    }
 
-    return list(qs[offset : offset + limit])
+
+@v1_router.get("/residences/{residence_id}", response=ResidenceOut, tags=["catalog"])
+def get_residence(request, residence_id: int):
+    return get_object_or_404(Residence.objects.prefetch_related("listings"), id=residence_id)
 
 
 internal_router = Router()

@@ -97,6 +97,10 @@ class ResidenceOut(Schema):
     foundation_risk_soil_type: str | None = None
     foundation_risk_pre1970_pct: float | None = None
     foundation_risk_description: str | None = None
+    surface_area_m2: int | None = None
+    bedroom_count: int | None = None
+    bathroom_count: int | None = None
+    build_year: int | None = None
     current_price_eur: int | None = None
     current_status: ListingStatus
     last_scraped_at: datetime | None = None
@@ -106,8 +110,34 @@ class ResidenceOut(Schema):
     listings: list[ListingOut]
 
 
+class ResidenceSummaryOut(Schema):
+    id: int
+    city: str
+    street: str | None = None
+    house_number: int | None = None
+    house_letter: str | None = None
+    house_number_suffix: str | None = None
+    postcode: str | None = None
+    latitude: float
+    longitude: float
+    current_price_eur: int | None = None
+    current_status: ListingStatus
+    surface_area_m2: int | None = None
+    bedroom_count: int | None = None
+    bathroom_count: int | None = None
+    energy_label: EnergyLabel | None = None
+    image_url: str | None = None
+
+    @staticmethod
+    def resolve_image_url(obj) -> str | None:
+        # Reads the queryset annotation, NOT the Residence.image_url property —
+        # the property issues one query per row. AttributeError here means the
+        # endpoint forgot to annotate.
+        return obj.cover_image_url
+
+
 class ResidencePage(Schema):
-    items: list[ResidenceOut]
+    items: list[ResidenceSummaryOut]
     total: int
     limit: int
     offset: int

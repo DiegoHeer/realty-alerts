@@ -26,6 +26,8 @@ class ResidenceFactory(DjangoModelFactory):
     current_status = ListingStatus.NEW
     status_changed_at = factory.LazyFunction(lambda: datetime.now(UTC))
     last_scraped_at = factory.LazyFunction(lambda: datetime.now(UTC))
+    latitude = 52.3676
+    longitude = 4.8841
 
 
 class ListingFactory(DjangoModelFactory):
