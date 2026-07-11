@@ -93,3 +93,31 @@ def test_put_notifications_lww(client, user_headers):
 @pytest.mark.django_db
 def test_notifications_requires_auth(client):
     assert client.get("/v1/me/preferences/notifications").status_code == 401
+
+
+@pytest.mark.django_db
+def test_search_preferences_isolated_between_users(client, test_user, user_headers):
+    from allauth.account.models import EmailAddress
+    from allauth.headless.tokens.strategies.jwt.internal import create_access_token
+    from django.contrib.auth.models import User
+    from django.contrib.sessions.backends.db import SessionStore
+
+    ts = datetime(2026, 5, 1, tzinfo=UTC).isoformat()
+    client.put(
+        "/v1/me/preferences/search",
+        json={"search": {"owner": "A"}, "updated_at": ts},
+        headers=user_headers,
+    )
+
+    user_b = User.objects.create_user(email="b@example.com", username="b@example.com", password="pass12345!")
+    EmailAddress.objects.create(user=user_b, email=user_b.email, verified=True, primary=True)
+    session = SessionStore()
+    session.create()
+    token_b = create_access_token(user_b, session, {})
+    headers_b = {"AUTHORIZATION": f"Bearer {token_b}"}
+
+    resp_b = client.get("/v1/me/preferences/search", headers=headers_b)
+    assert resp_b.json() == {"search": None, "updated_at": None}
+
+    resp_a = client.get("/v1/me/preferences/search", headers=user_headers)
+    assert resp_a.json()["search"] == {"owner": "A"}
