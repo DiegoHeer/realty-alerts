@@ -15,6 +15,7 @@ from scraping.models import (
     DetailScrapeRun,
     DetailScrapeRunStatus,
     District,
+    Feedback,
     Listing,
     ListingStatus,
     Neighborhood,
@@ -635,3 +636,58 @@ def _residence_defaults_from_lookup(result: BagLookupSuccess, listing: Listing) 
         "status_changed_at": timezone.now(),
         "last_scraped_at": listing.list_scraped_at,
     }
+
+
+def _fenced(text: str) -> str:
+    """Wrap untrusted text in a code fence long enough to survive any backtick
+    run inside it. Fencing stops the feedback body from triggering @channel/@here
+    mentions or injecting markdown into the channel, and preserves it verbatim."""
+    longest_run = current = 0
+    for char in text:
+        current = current + 1 if char == "`" else 0
+        longest_run = max(longest_run, current)
+    fence = "`" * max(3, longest_run + 1)
+    return f"{fence}\n{text}\n{fence}"
+
+
+def _format_feedback_message(feedback: Feedback) -> str:
+    """Render a feedback row as Mattermost markdown."""
+    who = feedback.user.email if feedback.user else "anonymous"
+    meta = " · ".join(
+        part
+        for part in (
+            f"platform: {feedback.platform}" if feedback.platform else "",
+            f"locale: {feedback.locale}" if feedback.locale else "",
+            f"app: {feedback.app_version}" if feedback.app_version else "",
+        )
+        if part
+    )
+    lines = [f"**New feedback** #{feedback.pk} from {who}", _fenced(feedback.message)]
+    if meta:
+        lines.append(f"_{meta}_")
+    return "\n".join(lines)
+
+
+@shared_task(
+    name="scraping.notify_feedback",
+    autoretry_for=(httpx.HTTPError,),
+    retry_backoff=True,
+    retry_backoff_max=60,
+    max_retries=3,
+)
+def notify_feedback(feedback_id: int) -> None:
+    """POST a new feedback submission to the Mattermost feedback channel."""
+    webhook_url = settings.MATTERMOST_FEEDBACK_WEBHOOK_URL
+    if not webhook_url:
+        logger.warning(
+            "MATTERMOST_FEEDBACK_WEBHOOK_URL is not set; skipping notification for feedback {}",
+            feedback_id,
+        )
+        return
+
+    feedback = Feedback.objects.select_related("user").get(pk=feedback_id)
+    with httpx.Client(timeout=10.0) as client:
+        response = client.post(webhook_url, json={"text": _format_feedback_message(feedback)})
+        response.raise_for_status()
+
+    logger.info("Notified Mattermost of feedback {}", feedback_id)
