@@ -36,7 +36,10 @@ def get_search_preferences(request):
 
 @me_router.put("/preferences/search", response=SearchPrefOut)
 def put_search_preferences(request, payload: SearchPrefIn):
-    if len(json.dumps(payload.search).encode()) > SEARCH_MAX_BYTES:
+    # Reject oversized payloads before the LWW gate — fail fast on abusive
+    # input regardless of whether the write would win. Measure compact bytes
+    # so the cap matches what is actually stored.
+    if len(json.dumps(payload.search, separators=(",", ":")).encode()) > SEARCH_MAX_BYTES:
         raise HttpError(422, "payload_too_large")
     prefs, _ = UserPreferences.objects.get_or_create(user=request.user)
     _apply_lww(prefs, "search", "search_updated_at", payload.search, payload.updated_at)
