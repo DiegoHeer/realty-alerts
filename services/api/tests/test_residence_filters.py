@@ -1,8 +1,9 @@
+import math
 import pytest
 from datetime import UTC, datetime
 
 from scraping.models import Residence
-from scraping.api import _parse_near
+from scraping.api import _parse_near, _radius_bbox
 from ninja.errors import HttpError
 from tests.factories import ResidenceFactory
 
@@ -144,3 +145,16 @@ class TestParseNear:
         with pytest.raises(HttpError) as exc:
             _parse_near("4.0,200.0")
         assert exc.value.status_code == 422
+
+
+class TestRadiusBbox:
+    def test_box_encloses_center(self):
+        min_lon, min_lat, max_lon, max_lat = _radius_bbox(4.8841, 52.3676, 1000)
+        assert min_lon < 4.8841 < max_lon
+        assert min_lat < 52.3676 < max_lat
+
+    def test_latitude_delta_matches_meters(self):
+        # 1000 m north/south ≈ 1000 / 111_320 degrees of latitude
+        _, min_lat, _, max_lat = _radius_bbox(4.8841, 52.3676, 1000)
+        expected_delta = 1000 / 111_320
+        assert math.isclose((max_lat - min_lat) / 2, expected_delta, rel_tol=1e-6)

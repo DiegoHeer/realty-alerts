@@ -1,9 +1,11 @@
 import hmac
+import math
 from datetime import UTC, datetime
 
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
-from django.db.models import F, OuterRef, Subquery
+from django.db.models import F, OuterRef, Subquery, Value
+from django.db.models.functions import ACos, Cos, Least, Radians, Sin
 from django.shortcuts import get_object_or_404
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
@@ -153,6 +155,32 @@ def _parse_near(raw: str) -> tuple[float, float]:
     if not (-90 <= lat <= 90):
         raise HttpError(422, "near latitude out of range")
     return lon, lat
+
+
+_EARTH_RADIUS_M = 6_371_000.0
+
+
+def _radius_bbox(lon: float, lat: float, radius_m: int) -> tuple[float, float, float, float]:
+    """Degree-space bounding box enclosing the radius circle, for an indexed
+    prefilter (idx_res_lat_lon) before the exact haversine. Returns
+    (min_lon, min_lat, max_lon, max_lat)."""
+    lat_delta = radius_m / 111_320
+    lon_delta = radius_m / (111_320 * math.cos(math.radians(lat)))
+    return lon - lon_delta, lat - lat_delta, lon + lon_delta, lat + lat_delta
+
+
+def _distance_expr(lon: float, lat: float):
+    """Great-circle distance (meters) from (lon, lat) to each row's coordinate,
+    via the spherical law of cosines. Least(1.0, ...) guards the ACos domain
+    against float overshoot at ~0 m."""
+    central_angle = ACos(
+        Least(
+            Value(1.0),
+            Sin(Radians(Value(lat))) * Sin(Radians(F("latitude")))
+            + Cos(Radians(Value(lat))) * Cos(Radians(F("latitude"))) * Cos(Radians(F("longitude") - Value(lon))),
+        )
+    )
+    return central_angle * Value(_EARTH_RADIUS_M)
 
 
 def _apply_listing_filters(qs, filters: ResidenceFilters):
