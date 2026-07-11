@@ -68,6 +68,29 @@ If `ARGO_EVENTS_WEBHOOK_URL` is unset (local dev, preview namespaces), the
 task short-circuits with a warning instead of erroring — useful for running
 Beat locally without a real webhook to call.
 
+## Location search params (GET /v1/residences)
+
+- `near` — WGS84 `lon,lat` (longitude first). Center for `radius_m` and reference for `sort=distance`.
+- `radius_m` — integer 1..50000. Keep residences within this many meters of `near`. Requires `near` (else 422).
+- `sort=distance` — orders nearest-first by distance to `near`. Requires `near` (else 422).
+
+**City vocabulary:** `Residence.city` is the BAG woonplaats name (from the BAG
+lookup, `woonplaatsnaam`/`woonplaatsNaam`) — the same vocabulary PDOK returns.
+So `city=<PDOK woonplaats label>` matches.
+
+**Client guidance for PDOK result types:**
+
+| PDOK type | Recommended params |
+|---|---|
+| `woonplaats` | `city=<name>` + `near` + `sort=distance` |
+| `wijk` / `buurt` | `neighbourhood_code=<code>` + `near` + `sort=distance` |
+| `weg` | `near` + `radius_m` (~600 m) + `sort=distance` |
+| `postcode` / `adres` | `near` + `radius_m` (~300 m) + `sort=distance` |
+
+Prefer exact-boundary filters (`city`, `neighbourhood_code`) for area picks —
+a fixed radius under-covers large municipalities and bleeds into neighbors.
+Use `radius_m` for street/address-level picks where there is no exact set.
+
 ## Election stats (TK2025)
 
 `/v1/stats/{cities,districts,neighborhoods}` responses carry election results
