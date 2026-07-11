@@ -1,6 +1,10 @@
 import hmac
 from datetime import UTC, datetime
 
+from allauth.account.adapter import get_adapter
+from allauth.core.internal.httpkit import get_authorization_credential
+from allauth.headless import app_settings as headless_settings
+from allauth.headless.tokens.strategies.jwt.internal import validate_access_token
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from django.db.models import F, OuterRef, Subquery
@@ -19,6 +23,7 @@ from scraping.models import (
     DetailScrapeRunStatus,
     District,
     EnergyLabel,
+    Feedback,
     ListScrapeRun,
     ListScrapeRunStatus,
     Listing,
@@ -34,6 +39,8 @@ from scraping.schemas import (
     DetailResultStatus,
     DetailScrapeRunOut,
     DistrictStatsOut,
+    FeedbackAck,
+    FeedbackIn,
     GeoCityOut,
     GeoDistrictOut,
     GeoNeighborhoodOut,
@@ -48,7 +55,7 @@ from scraping.schemas import (
     SortOption,
 )
 from scraping.reconciliation import reconcile_residence
-from scraping.tasks import resolve_bag
+from scraping.tasks import notify_feedback, resolve_bag
 
 
 class HealthOut(Schema):
@@ -247,6 +254,38 @@ def list_residences(
 @v1_router.get("/residences/{residence_id}", response=ResidenceOut, tags=["catalog"])
 def get_residence(request, residence_id: int):
     return get_object_or_404(Residence.objects.prefetch_related("listings"), id=residence_id)
+
+
+def _resolve_optional_user(request):
+    """Derive the submitting user from a JWT bearer token, if present.
+
+    Mirrors allauth's JWTTokenAuth, but keeps anonymous submissions valid: a
+    missing token → None (anonymous), a present-but-invalid token → 401.
+    """
+    token = get_authorization_credential(request, headless_settings.JWT_AUTHORIZATION_HEADER_SCHEME)
+    if token is None:
+        return None
+    result = validate_access_token(token)
+    if result is None:
+        raise HttpError(401, "invalid or expired token")
+    user, _payload = result
+    return user
+
+
+@v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, tags=["feedback"])
+def submit_feedback(request, payload: FeedbackIn):
+    user = _resolve_optional_user(request)
+    feedback = Feedback.objects.create(
+        user=user,
+        message=payload.message,
+        app_version=payload.app_version or "",
+        platform=payload.platform.value if payload.platform else "",
+        locale=payload.locale.value if payload.locale else "",
+        ip=get_adapter().get_client_ip(request),
+        user_agent=request.headers.get("User-Agent", ""),
+    )
+    notify_feedback.delay(feedback.pk)
+    return Status(201, feedback)
 
 
 internal_router = Router()

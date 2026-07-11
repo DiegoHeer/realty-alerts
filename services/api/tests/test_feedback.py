@@ -1,0 +1,104 @@
+import json
+from unittest import mock
+
+import pytest
+
+from scraping.models import Feedback
+from scraping.tasks import notify_feedback
+from tests.factories import FeedbackFactory
+
+
+@pytest.mark.django_db
+class TestSubmitFeedback:
+    def test_anonymous_submission_is_stored(self, client):
+        with mock.patch("scraping.api.notify_feedback.delay") as notify:
+            response = client.post(
+                "/v1/feedback",
+                json={"message": "  Love it  ", "platform": "ios", "locale": "nl", "app_version": "1.4.0"},
+            )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["id"]
+        assert body["created_at"]
+
+        feedback = Feedback.objects.get(pk=body["id"])
+        assert feedback.user is None
+        assert feedback.message == "Love it"  # trimmed
+        assert feedback.platform == "ios"
+        assert feedback.locale == "nl"
+        assert feedback.app_version == "1.4.0"
+        notify.assert_called_once_with(feedback.pk)
+
+    def test_authenticated_submission_attributes_the_user(self, client, user_headers, test_user):
+        with mock.patch("scraping.api.notify_feedback.delay"):
+            response = client.post("/v1/feedback", json={"message": "Signed-in feedback"}, headers=user_headers)
+
+        assert response.status_code == 201
+        feedback = Feedback.objects.get(pk=response.json()["id"])
+        assert feedback.user == test_user
+
+    def test_malformed_token_is_rejected(self, client):
+        with mock.patch("scraping.api.notify_feedback.delay"):
+            response = client.post(
+                "/v1/feedback",
+                json={"message": "hi"},
+                headers={"AUTHORIZATION": "Bearer not-a-jwt"},
+            )
+
+        assert response.status_code == 401
+        assert Feedback.objects.count() == 0
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"message": "   "},
+            {"message": ""},
+            {"message": "x" * 5001},
+            {"message": "ok", "platform": "windows"},
+            {"message": "ok", "locale": "de"},
+        ],
+    )
+    def test_invalid_body_returns_422(self, client, payload):
+        with mock.patch("scraping.api.notify_feedback.delay"):
+            response = client.post("/v1/feedback", json=payload)
+
+        assert response.status_code == 422
+        assert Feedback.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestNotifyFeedback:
+    def test_posts_to_webhook_when_configured(self, settings, respx_mock):
+        settings.MATTERMOST_FEEDBACK_WEBHOOK_URL = "https://mm.example.com/hooks/abc"
+        route = respx_mock.post("https://mm.example.com/hooks/abc").respond(200)
+        feedback = FeedbackFactory(message="Ship it")
+
+        notify_feedback(feedback.pk)  # ty: ignore[unresolved-attribute]
+
+        assert route.called
+        sent = json.loads(route.calls.last.request.content)
+        assert "Ship it" in sent["text"]
+
+    def test_untrusted_message_is_fenced(self, settings, respx_mock):
+        settings.MATTERMOST_FEEDBACK_WEBHOOK_URL = "https://mm.example.com/hooks/abc"
+        route = respx_mock.post("https://mm.example.com/hooks/abc").respond(200)
+        feedback = FeedbackFactory(message="hey @channel ``` please look")
+
+        notify_feedback(feedback.pk)  # ty: ignore[unresolved-attribute]
+
+        text = json.loads(route.calls.last.request.content)["text"]
+        # The raw body is fenced so @channel can't ping and its backticks can't
+        # break out of the block.
+        body = text.split("from anonymous\n", 1)[1]
+        fence = body.split("\n", 1)[0]
+        assert fence.startswith("````")  # longer than the ``` inside the message
+        assert body == f"{fence}\nhey @channel ``` please look\n{fence}"
+
+    def test_skips_when_webhook_unset(self, settings, respx_mock):
+        settings.MATTERMOST_FEEDBACK_WEBHOOK_URL = None
+        feedback = FeedbackFactory()
+
+        notify_feedback(feedback.pk)  # ty: ignore[unresolved-attribute]
+
+        assert not respx_mock.calls
