@@ -95,6 +95,18 @@ class TestNotifyFeedback:
         assert fence.startswith("````")  # longer than the ``` inside the message
         assert body == f"{fence}\nhey @channel ``` please look\n{fence}"
 
+    def test_app_version_mentions_are_neutralised(self, settings, respx_mock):
+        settings.MATTERMOST_FEEDBACK_WEBHOOK_URL = "https://mm.example.com/hooks/abc"
+        route = respx_mock.post("https://mm.example.com/hooks/abc").respond(200)
+        feedback = FeedbackFactory(message="x", app_version="@channel")
+
+        notify_feedback(feedback.pk)
+
+        text = json.loads(route.calls.last.request.content)["text"]
+        # app_version is wrapped in inline code, so @channel can't ping the channel.
+        assert "app: `@channel`" in text
+        assert "app: @channel" not in text
+
     def test_skips_when_webhook_unset(self, settings, respx_mock):
         settings.MATTERMOST_FEEDBACK_WEBHOOK_URL = None
         feedback = FeedbackFactory()
