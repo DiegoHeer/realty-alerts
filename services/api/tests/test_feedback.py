@@ -100,7 +100,7 @@ class TestNotifyFeedback:
         route = respx_mock.post("https://mm.example.com/hooks/abc").respond(200)
         feedback = FeedbackFactory(message="x", app_version="@channel")
 
-        notify_feedback(feedback.pk)
+        notify_feedback(feedback.pk)  # ty: ignore[unresolved-attribute]
 
         text = json.loads(route.calls.last.request.content)["text"]
         # app_version is wrapped in inline code, so @channel can't ping the channel.
@@ -112,5 +112,14 @@ class TestNotifyFeedback:
         feedback = FeedbackFactory()
 
         notify_feedback(feedback.pk)  # ty: ignore[unresolved-attribute]
+
+        assert not respx_mock.calls
+
+    def test_deleted_feedback_is_a_noop(self, settings, respx_mock):
+        settings.MATTERMOST_FEEDBACK_WEBHOOK_URL = "https://mm.example.com/hooks/abc"
+        respx_mock.post("https://mm.example.com/hooks/abc").respond(200)
+
+        # No row with this id — must not raise (task isn't retried on DoesNotExist).
+        notify_feedback(999_999)
 
         assert not respx_mock.calls

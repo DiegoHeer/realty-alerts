@@ -700,7 +700,13 @@ def notify_feedback(feedback_id: int) -> None:
         )
         return
 
-    feedback = Feedback.objects.select_related("user").get(pk=feedback_id)
+    try:
+        feedback = Feedback.objects.select_related("user").get(pk=feedback_id)
+    except Feedback.DoesNotExist:
+        # Row deleted between enqueue and execution (e.g. admin cleared spam).
+        logger.info("Feedback {} no longer exists; skipping notification", feedback_id)
+        return
+
     with httpx.Client(timeout=10.0) as client:
         response = client.post(webhook_url, json={"text": _format_feedback_message(feedback)})
         response.raise_for_status()
