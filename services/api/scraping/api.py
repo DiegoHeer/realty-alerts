@@ -295,7 +295,12 @@ def list_residences(
             longitude__lte=max_lon,
         ).filter(distance__lte=radius_m)
 
-    qs = qs.order_by(*_SORT_ORDER[sort])
+    if sort == SortOption.DISTANCE:
+        if near_point is None:
+            raise HttpError(422, "sort=distance requires near")
+        qs = qs.order_by("distance", "id")
+    else:
+        qs = qs.order_by(*_SORT_ORDER[sort])
 
     total = qs.count()
     items = list(qs[offset : offset + limit])

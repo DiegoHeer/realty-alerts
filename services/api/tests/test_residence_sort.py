@@ -42,3 +42,19 @@ class TestResidenceSort:
         ResidenceFactory()
         response = client.get(self.endpoint, {"sort": "cheapest"})
         assert response.status_code == 422
+
+
+@pytest.mark.django_db
+class TestSortDistance:
+    endpoint = "/v1/residences"
+
+    def test_orders_nearest_first(self, client):
+        far = ResidenceFactory(latitude=52.3856, longitude=4.8841)  # ~2 km north
+        near = ResidenceFactory(latitude=52.3686, longitude=4.8841)  # ~110 m north
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676", "sort": "distance"})
+        ids = [item["id"] for item in response.json()["items"]]
+        assert ids == [near.id, far.id]  # ty: ignore[unresolved-attribute]
+
+    def test_distance_without_near_returns_422(self, client):
+        response = client.get(self.endpoint, {"sort": "distance"})
+        assert response.status_code == 422
