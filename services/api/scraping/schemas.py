@@ -3,13 +3,15 @@ from enum import StrEnum
 from typing import Annotated, Self
 
 from ninja import Schema
-from pydantic import StringConstraints, model_validator
+from pydantic import StringConstraints, field_validator, model_validator
 
 from scraping.models import (
     BuildingType,
     DealType,
     DetailScrapeRunStatus,
     EnergyLabel,
+    FeedbackLocale,
+    FeedbackPlatform,
     ListScrapeRunStatus,
     ListingStatus,
     Website,
@@ -321,3 +323,23 @@ class GeoNeighborhoodOut(Schema):
         if obj.district:
             return obj.district.code if hasattr(obj.district, "code") else obj.district_id
         return None
+
+
+class FeedbackIn(Schema):
+    message: str
+    app_version: Annotated[str, StringConstraints(max_length=20)] | None = None
+    platform: FeedbackPlatform | None = None
+    locale: FeedbackLocale | None = None
+
+    @field_validator("message")
+    @classmethod
+    def _trim_message(cls, value: str) -> str:
+        trimmed = value.strip()
+        if not 1 <= len(trimmed) <= 5000:
+            raise ValueError("message must be 1–5000 characters after trimming")
+        return trimmed
+
+
+class FeedbackAck(Schema):
+    id: int
+    created_at: datetime

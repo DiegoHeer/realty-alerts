@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_task_always_eager: bool = False
     argo_events_webhook_url: str | None = None
+    mattermost_feedback_webhook_url: str | None = None
     dso_api_key: str | None = None
     headless_jwt_private_key: str | None = None
 
