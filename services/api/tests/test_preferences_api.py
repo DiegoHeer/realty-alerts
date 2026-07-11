@@ -63,3 +63,33 @@ def test_put_search_empty_dict_roundtrips(client, user_headers):
     assert resp.status_code == 200
     assert resp.json()["search"] == {}  # explicitly-set empty filter, not null
     assert resp.json()["updated_at"] is not None
+
+
+@pytest.mark.django_db
+def test_get_notifications_empty_when_unset(client, user_headers):
+    resp = client.get("/v1/me/preferences/notifications", headers=user_headers)
+    assert resp.status_code == 200
+    assert resp.json() == {"notifications": None, "updated_at": None}
+
+
+@pytest.mark.django_db
+def test_put_notifications_lww(client, user_headers):
+    newer = datetime(2026, 3, 1, tzinfo=UTC)
+    older = newer - timedelta(days=5)
+    client.put(
+        "/v1/me/preferences/notifications",
+        json={"notifications": {"email": True}, "updated_at": newer.isoformat()},
+        headers=user_headers,
+    )
+    resp = client.put(
+        "/v1/me/preferences/notifications",
+        json={"notifications": {"email": False}, "updated_at": older.isoformat()},
+        headers=user_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["notifications"] == {"email": True}
+
+
+@pytest.mark.django_db
+def test_notifications_requires_auth(client):
+    assert client.get("/v1/me/preferences/notifications").status_code == 401
