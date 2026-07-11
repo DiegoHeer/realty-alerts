@@ -1,11 +1,15 @@
 import hmac
+import operator
 from datetime import UTC, datetime
+from functools import reduce
 
 from allauth.account.adapter import get_adapter
 from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.conf import settings
+from django.contrib.postgres.search import TrigramWordSimilarity  # ty: ignore[unresolved-import]
 from django.db import OperationalError, connection, transaction
-from django.db.models import F, OuterRef, Subquery
+from django.db.models import F, OuterRef, Q, Subquery
+from django.db.models.functions import Greatest
 from django.shortcuts import get_object_or_404
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
@@ -49,6 +53,7 @@ from scraping.schemas import (
     ResidenceFilters,
     ResidenceOut,
     ResidencePage,
+    ResidenceSummaryOut,
     ScrapeResultsIn,
     SortOption,
 )
@@ -211,6 +216,20 @@ _COVER_IMAGE = Subquery(
 )
 
 
+# --- Address typeahead (/v1/residences/search) --------------------------------
+# Fields the search ranks against, in rough display priority.
+SEARCH_FIELDS = ("street", "city", "postcode", "neighbourhood")
+SEARCH_MIN_QUERY_LEN = 2
+# Loosened from pg_trgm's 0.6 default so short partial queries ("ams" → "Amsterdam")
+# still match; hits are ranked by similarity and capped, so noise sinks to the bottom.
+SEARCH_WORD_SIMILARITY_THRESHOLD = "0.3"
+
+
+def _match_any_field(lookup: str, value: str) -> Q:
+    """OR a ``field__lookup=value`` predicate across every SEARCH_FIELDS column."""
+    return reduce(operator.or_, (Q(**{f"{field}__{lookup}": value}) for field in SEARCH_FIELDS))
+
+
 @v1_router.get("/residences", response=ResidencePage, tags=["catalog"])
 def list_residences(
     request,
@@ -247,6 +266,47 @@ def list_residences(
         "offset": offset,
         "has_more": offset + len(items) < total,
     }
+
+
+@v1_router.get("/residences/search", response=list[ResidenceSummaryOut], tags=["catalog"])
+def search_residences(request, q: str, limit: QueryEx[int, P(ge=1, le=25)] = 8):
+    """Fuzzy, ranked address typeahead over geocoded residences — the backend for
+    the app's search-bar suggestions. Uses pg_trgm word similarity with GIN
+    trigram indexes (migration 0004), so it stays typo-tolerant and fast past the
+    100-row list page. Degrades to a plain substring match on the SQLite dev
+    fallback. Declared before ``/residences/{residence_id}`` so the literal path
+    wins over the int route."""
+    q = q.strip()
+    if len(q) < SEARCH_MIN_QUERY_LEN:
+        return []
+
+    # Only geocoded rows: every hit must be placeable on the map, and
+    # ResidenceSummaryOut requires non-null coordinates.
+    base = Residence.objects.filter(latitude__isnull=False, longitude__isnull=False).annotate(
+        cover_image_url=_COVER_IMAGE
+    )
+
+    if connection.vendor != "postgresql":
+        qs = base.filter(_match_any_field("icontains", q)).order_by(
+            F("created_at").desc(nulls_last=True), F("id").desc()
+        )
+        return list(qs[:limit])
+
+    rank = Greatest(*(TrigramWordSimilarity(q, field) for field in SEARCH_FIELDS))
+    qs = (
+        base.annotate(search_rank=rank)
+        .filter(_match_any_field("trigram_word_similar", q))
+        .order_by("-search_rank", F("created_at").desc(nulls_last=True), F("id").desc())
+    )
+    # set_config(..., is_local=true) scopes the loosened threshold to this
+    # transaction so it never leaks onto a pooled connection.
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT set_config('pg_trgm.word_similarity_threshold', %s, true)",
+                [SEARCH_WORD_SIMILARITY_THRESHOLD],
+            )
+        return list(qs[:limit])
 
 
 @v1_router.get("/residences/{residence_id}", response=ResidenceOut, tags=["catalog"])
