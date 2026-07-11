@@ -138,6 +138,23 @@ def _parse_bbox(raw: str) -> tuple[float, float, float, float]:
     return min_lon, min_lat, max_lon, max_lat
 
 
+def _parse_near(raw: str) -> tuple[float, float]:
+    """Parse 'lon,lat' (WGS84) into (lon, lat) floats. Raises 422 on a wrong
+    count, non-numeric value, or out-of-range coordinate. Mirrors _parse_bbox."""
+    parts = raw.split(",")
+    if len(parts) != 2:
+        raise HttpError(422, "near must be 'lon,lat'")
+    try:
+        lon, lat = (float(p) for p in parts)
+    except ValueError as exc:
+        raise HttpError(422, "near values must be numbers") from exc
+    if not (-180 <= lon <= 180):
+        raise HttpError(422, "near longitude out of range")
+    if not (-90 <= lat <= 90):
+        raise HttpError(422, "near latitude out of range")
+    return lon, lat
+
+
 def _apply_listing_filters(qs, filters: ResidenceFilters):
     """Apply listing-level numeric filter predicates to a Residence queryset."""
     if filters.min_bedrooms is not None:

@@ -2,6 +2,8 @@ import pytest
 from datetime import UTC, datetime
 
 from scraping.models import Residence
+from scraping.api import _parse_near
+from ninja.errors import HttpError
 from tests.factories import ResidenceFactory
 
 
@@ -117,3 +119,28 @@ class TestResidenceFilters:
         ids = [r["id"] for r in response.json()["items"]]
         assert ids == sorted(ids, reverse=True)
         assert set(ids) == {r.id for r in residences}  # ty: ignore[unresolved-attribute]
+
+
+class TestParseNear:
+    def test_parses_lon_lat(self):
+        assert _parse_near("4.8841,52.3676") == (4.8841, 52.3676)
+
+    def test_wrong_count_raises_422(self):
+        with pytest.raises(HttpError) as exc:
+            _parse_near("4.8841")
+        assert exc.value.status_code == 422
+
+    def test_non_numeric_raises_422(self):
+        with pytest.raises(HttpError) as exc:
+            _parse_near("abc,52.0")
+        assert exc.value.status_code == 422
+
+    def test_longitude_out_of_range_raises_422(self):
+        with pytest.raises(HttpError) as exc:
+            _parse_near("200.0,52.0")
+        assert exc.value.status_code == 422
+
+    def test_latitude_out_of_range_raises_422(self):
+        with pytest.raises(HttpError) as exc:
+            _parse_near("4.0,200.0")
+        assert exc.value.status_code == 422
