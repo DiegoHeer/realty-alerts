@@ -2,9 +2,7 @@ import hmac
 from datetime import UTC, datetime
 
 from allauth.account.adapter import get_adapter
-from allauth.core.internal.httpkit import get_authorization_credential
-from allauth.headless import app_settings as headless_settings
-from allauth.headless.tokens.strategies.jwt.internal import validate_access_token
+from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from django.db.models import F, OuterRef, Subquery
@@ -257,19 +255,18 @@ def get_residence(request, residence_id: int):
 
 
 def _resolve_optional_user(request):
-    """Derive the submitting user from a JWT bearer token, if present.
+    """Attribute feedback to a JWT-authenticated user when a bearer token is
+    present. Missing token → anonymous (None); present but invalid → 401.
 
-    Mirrors allauth's JWTTokenAuth, but keeps anonymous submissions valid: a
-    missing token → None (anonymous), a present-but-invalid token → 401.
+    allauth's public jwt_token_auth returns None for BOTH a missing and an
+    invalid token (and sets request.user on success), so we split the two by
+    inspecting the Authorization header before delegating validation to it.
     """
-    token = get_authorization_credential(request, headless_settings.JWT_AUTHORIZATION_HEADER_SCHEME)
-    if token is None:
+    if not request.headers.get("Authorization", "").lower().startswith("bearer "):
         return None
-    result = validate_access_token(token)
-    if result is None:
+    if jwt_token_auth(request) is None:
         raise HttpError(401, "invalid or expired token")
-    user, _payload = result
-    return user
+    return request.user
 
 
 @v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, tags=["feedback"])
