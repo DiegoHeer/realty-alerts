@@ -175,7 +175,7 @@ class TestRadiusFilter:
         response = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 1000})
         items = response.json()["items"]
         assert len(items) == 1
-        assert items[0]["id"] == r.id
+        assert items[0]["id"] == r.id  # ty: ignore[unresolved-attribute]
 
     def test_excludes_point_outside_radius(self, client):
         # ~2 km north of the center, radius only 1 km
