@@ -281,7 +281,7 @@ def submit_feedback(request, payload: FeedbackIn):
         ip=get_adapter().get_client_ip(request),
         user_agent=request.headers.get("User-Agent", ""),
     )
-    notify_feedback.delay(feedback.pk)
+    transaction.on_commit(lambda: notify_feedback.delay(feedback.pk))
     return Status(201, feedback)
 
 

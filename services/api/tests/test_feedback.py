@@ -8,10 +8,16 @@ from scraping.tasks import notify_feedback
 from tests.factories import FeedbackFactory
 
 
+def _on_commit_inline():
+    # django_db wraps each test in a transaction that never commits, so
+    # transaction.on_commit callbacks never fire. Run them inline instead.
+    return mock.patch("scraping.api.transaction.on_commit", side_effect=lambda fn: fn())
+
+
 @pytest.mark.django_db
 class TestSubmitFeedback:
     def test_anonymous_submission_is_stored(self, client):
-        with mock.patch("scraping.api.notify_feedback.delay") as notify:
+        with _on_commit_inline(), mock.patch("scraping.api.notify_feedback.delay") as notify:
             response = client.post(
                 "/v1/feedback",
                 json={"message": "  Love it  ", "platform": "ios", "locale": "nl", "app_version": "1.4.0"},
@@ -31,7 +37,7 @@ class TestSubmitFeedback:
         notify.assert_called_once_with(feedback.pk)
 
     def test_authenticated_submission_attributes_the_user(self, client, user_headers, test_user):
-        with mock.patch("scraping.api.notify_feedback.delay"):
+        with _on_commit_inline(), mock.patch("scraping.api.notify_feedback.delay"):
             response = client.post("/v1/feedback", json={"message": "Signed-in feedback"}, headers=user_headers)
 
         assert response.status_code == 201
