@@ -295,6 +295,37 @@ class District(models.Model):
         return f"{self.name} ({self.code})"
 
 
+class FeedbackPlatform(models.TextChoices):
+    IOS = "ios", "iOS"
+    ANDROID = "android", "Android"
+    WEB = "web", "Web"
+
+
+class FeedbackLocale(models.TextChoices):
+    EN = "en", "English"
+    NL = "nl", "Dutch"
+    PT = "pt", "Portuguese"
+
+
+class Feedback(models.Model):
+    user = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="feedback")
+    message = models.TextField()
+    app_version = models.CharField(max_length=20, blank=True)
+    platform = models.CharField(max_length=10, blank=True, choices=FeedbackPlatform.choices)
+    locale = models.CharField(max_length=5, blank=True, choices=FeedbackLocale.choices)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "feedback"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        who = self.user.email if self.user else "anonymous"
+        return f"Feedback #{self.pk} from {who}"
+
+
 class Neighborhood(models.Model):
     code = models.CharField(max_length=12, unique=True)
     name = models.CharField(max_length=255)
