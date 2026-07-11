@@ -165,7 +165,11 @@ def _radius_bbox(lon: float, lat: float, radius_m: int) -> tuple[float, float, f
     prefilter (idx_res_lat_lon) before the exact haversine. Returns
     (min_lon, min_lat, max_lon, max_lat)."""
     lat_delta = radius_m / 111_320
-    lon_delta = radius_m / (111_320 * math.cos(math.radians(lat)))
+    # cos(lat) → 0 at the poles, so lon_delta grows without bound; cap it at a
+    # full-width (180°) half-span. NL coordinates never approach this, but the
+    # cap keeps the degenerate case a sane all-longitudes box.
+    cos_lat = max(math.cos(math.radians(lat)), 1e-12)
+    lon_delta = min(radius_m / (111_320 * cos_lat), 180.0)
     return lon - lon_delta, lat - lat_delta, lon + lon_delta, lat + lat_delta
 
 

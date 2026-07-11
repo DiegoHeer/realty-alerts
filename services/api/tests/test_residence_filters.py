@@ -159,6 +159,12 @@ class TestRadiusBbox:
         expected_delta = 1000 / 111_320
         assert math.isclose((max_lat - min_lat) / 2, expected_delta, rel_tol=1e-6)
 
+    def test_pole_latitude_does_not_blow_up(self):
+        # cos(lat) → 0 at the poles; the clamp keeps lon_delta finite instead of
+        # dividing by ~0 and producing a full-width box.
+        min_lon, _, max_lon, _ = _radius_bbox(0.0, 90.0, 1000)
+        assert max_lon - min_lon <= 360
+
 
 @pytest.mark.django_db
 class TestRadiusFilter:
