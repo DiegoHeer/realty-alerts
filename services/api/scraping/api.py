@@ -302,6 +302,10 @@ def list_residences(
     if sort == SortOption.DISTANCE:
         if near_point is None:
             raise HttpError(422, "sort=distance requires near")
+        # Without radius_m there is no bbox prefilter, so this haversine sort
+        # scans every coordinate-bearing row. Fine at current scale; clients are
+        # steered to pair sort=distance with radius_m (see README). Revisit with
+        # a default-radius prefilter or PostGIS if the table grows large.
         qs = qs.order_by("distance", "id")
     else:
         qs = qs.order_by(*_SORT_ORDER[sort])
