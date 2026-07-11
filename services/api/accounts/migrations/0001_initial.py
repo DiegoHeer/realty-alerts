@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,20 +14,20 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='UserPreferences',
+            name="UserPreferences",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('search', models.JSONField(blank=True, default=dict)),
-                ('search_updated_at', models.DateTimeField(blank=True, null=True)),
-                ('notifications', models.JSONField(blank=True, default=dict)),
-                ('notifications_updated_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("search", models.JSONField(blank=True, default=dict)),
+                ("search_updated_at", models.DateTimeField(blank=True, null=True)),
+                ("notifications", models.JSONField(blank=True, default=dict)),
+                ("notifications_updated_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
                 (
-                    'user',
+                    "user",
                     models.OneToOneField(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='preferences',
+                        related_name="preferences",
                         to=settings.AUTH_USER_MODEL,
                     ),
                 ),
