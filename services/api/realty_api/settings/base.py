@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "scraping",
+    "accounts",
     "django_celery_beat",
     "django_celery_results",
 ]
