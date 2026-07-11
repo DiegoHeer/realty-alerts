@@ -1,5 +1,3 @@
-from typing import Any
-
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -14,4 +12,4 @@ class UserPreferences(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"Preferences<{self.__dict__['user_id']}>"
+        return f"Preferences<{self.user.pk}>"
