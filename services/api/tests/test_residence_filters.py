@@ -158,3 +158,61 @@ class TestRadiusBbox:
         _, min_lat, _, max_lat = _radius_bbox(4.8841, 52.3676, 1000)
         expected_delta = 1000 / 111_320
         assert math.isclose((max_lat - min_lat) / 2, expected_delta, rel_tol=1e-6)
+
+
+@pytest.mark.django_db
+class TestRadiusFilter:
+    endpoint = "/v1/residences"
+
+    def test_includes_point_inside_radius(self, client):
+        r = ResidenceFactory(latitude=52.3676, longitude=4.8841)
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 1000})
+        items = response.json()["items"]
+        assert len(items) == 1
+        assert items[0]["id"] == r.id
+
+    def test_excludes_point_outside_radius(self, client):
+        # ~2 km north of the center, radius only 1 km
+        ResidenceFactory(latitude=52.3856, longitude=4.8841)
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 1000})
+        assert response.json()["items"] == []
+
+    def test_point_just_outside_is_excluded_but_larger_radius_includes(self, client):
+        ResidenceFactory(latitude=52.3856, longitude=4.8841)
+        small = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 1000})
+        big = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 5000})
+        assert small.json()["items"] == []
+        assert len(big.json()["items"]) == 1
+
+    def test_radius_combines_with_price_filter(self, client):
+        ResidenceFactory(latitude=52.3676, longitude=4.8841, current_price_eur=400_000)
+        ResidenceFactory(latitude=52.3676, longitude=4.8841, current_price_eur=900_000)
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 1000, "max_price": 500_000})
+        assert len(response.json()["items"]) == 1
+
+    def test_radius_combines_with_bbox_intersection(self, client):
+        # inside radius but outside the bbox → excluded
+        ResidenceFactory(latitude=52.3676, longitude=4.8841)
+        response = client.get(
+            self.endpoint,
+            {"near": "4.8841,52.3676", "radius_m": 5000, "bbox": "5.0,52.0,5.1,52.1"},
+        )
+        assert response.json()["items"] == []
+
+    def test_radius_without_near_returns_422(self, client):
+        response = client.get(self.endpoint, {"radius_m": 1000})
+        assert response.status_code == 422
+
+    def test_radius_zero_returns_422(self, client):
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 0})
+        assert response.status_code == 422
+
+    def test_radius_over_cap_returns_422(self, client):
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 50001})
+        assert response.status_code == 422
+
+    def test_near_alone_is_allowed(self, client):
+        ResidenceFactory(latitude=52.3676, longitude=4.8841)
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676"})
+        assert response.status_code == 200
+        assert len(response.json()["items"]) == 1

@@ -261,12 +261,12 @@ def list_residences(
     energy_label: QueryEx[list[str] | None, P()] = None,
     neighbourhood_code: QueryEx[list[str] | None, P()] = None,
     bbox: str | None = None,
+    near: str | None = None,
+    radius_m: QueryEx[int | None, P(ge=1, le=50000)] = None,
     sort: SortOption = SortOption.NEWEST,
 ):
-    qs = (
-        Residence.objects.filter(latitude__isnull=False, longitude__isnull=False)
-        .annotate(cover_image_url=_COVER_IMAGE)
-        .order_by(*_SORT_ORDER[sort])
+    qs = Residence.objects.filter(latitude__isnull=False, longitude__isnull=False).annotate(
+        cover_image_url=_COVER_IMAGE
     )
     qs = _apply_residence_filters(qs, filters, building_type, energy_label, neighbourhood_code)
     if bbox:
@@ -277,6 +277,25 @@ def list_residences(
             longitude__gte=min_lon,
             longitude__lte=max_lon,
         )
+
+    near_point = _parse_near(near) if near else None
+    if near_point:
+        lon, lat = near_point
+        qs = qs.annotate(distance=_distance_expr(lon, lat))
+
+    if radius_m is not None:
+        if near_point is None:
+            raise HttpError(422, "radius_m requires near")
+        lon, lat = near_point
+        min_lon, min_lat, max_lon, max_lat = _radius_bbox(lon, lat, radius_m)
+        qs = qs.filter(
+            latitude__gte=min_lat,
+            latitude__lte=max_lat,
+            longitude__gte=min_lon,
+            longitude__lte=max_lon,
+        ).filter(distance__lte=radius_m)
+
+    qs = qs.order_by(*_SORT_ORDER[sort])
 
     total = qs.count()
     items = list(qs[offset : offset + limit])
