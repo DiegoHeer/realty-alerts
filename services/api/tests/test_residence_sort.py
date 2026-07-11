@@ -58,3 +58,15 @@ class TestSortDistance:
     def test_distance_without_near_returns_422(self, client):
         response = client.get(self.endpoint, {"sort": "distance"})
         assert response.status_code == 422
+
+    def test_radius_and_distance_sort_combined(self, client):
+        # radius_m keeps only rows within the circle; sort=distance orders those
+        # nearest-first. The far row (~2 km) is outside the 1.5 km radius and must
+        # be excluded, while the two inside are returned nearest-first.
+        outside = ResidenceFactory(latitude=52.3856, longitude=4.8841)  # ~2 km north (outside 1.5 km)
+        near = ResidenceFactory(latitude=52.3686, longitude=4.8841)  # ~110 m north
+        mid = ResidenceFactory(latitude=52.3766, longitude=4.8841)  # ~1 km north (inside 1.5 km)
+        response = client.get(self.endpoint, {"near": "4.8841,52.3676", "radius_m": 1500, "sort": "distance"})
+        ids = [item["id"] for item in response.json()["items"]]
+        assert ids == [near.id, mid.id]  # ty: ignore[unresolved-attribute]
+        assert outside.id not in ids  # ty: ignore[unresolved-attribute]
