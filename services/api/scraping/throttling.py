@@ -31,6 +31,11 @@ class FeedbackThrottle(SimpleRateThrottle):
     rather than Ninja's REMOTE_ADDR/X-Forwarded-For. Fails open if the cache is
     unavailable so an outage never blocks legitimate submissions.
 
+    Only cache errors fail open. An anonymous request whose client IP can't be
+    resolved is rejected (the adapter raises): in prod that means a missing
+    CF-Connecting-IP, i.e. traffic that bypassed the Cloudflare edge. Dev/CI
+    don't set the trusted header, so they fall back to REMOTE_ADDR.
+
     Stashes per-request state on the shared instance; safe only under sync
     workers (one request per process).
     """
