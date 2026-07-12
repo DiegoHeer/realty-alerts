@@ -20,6 +20,7 @@ from scraping.models import (
     City,
     DetailScrapeRun,
     District,
+    Feedback,
     Listing,
     ListScrapeRun,
     Neighborhood,
@@ -715,3 +716,21 @@ class UserAdmin(DjangoUserAdmin):
             "ttl_days": UNVERIFIED_ACCOUNT_TTL_DAYS,
         }
         return TemplateResponse(request, "admin/auth/user/cleanup_unverified_confirm.html", context)
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ("id", "created_at", "user", "platform", "locale", "short_message")
+    list_filter = ("platform", "locale", "created_at")
+    search_fields = ("message", "user__email")
+    readonly_fields = ("user", "message", "app_version", "platform", "locale", "ip", "user_agent", "created_at")
+
+    @admin.display(description="message")
+    def short_message(self, obj: Feedback) -> str:
+        return obj.message[:80] + ("…" if len(obj.message) > 80 else "")
+
+    def has_add_permission(self, request) -> bool:
+        return False
+
+    def has_change_permission(self, request, obj=None) -> bool:
+        return False

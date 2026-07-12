@@ -1,6 +1,8 @@
 import hmac
 from datetime import UTC, datetime
 
+from allauth.account.adapter import get_adapter
+from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from django.db.models import F
@@ -20,6 +22,7 @@ from scraping.models import (
     DetailScrapeRunStatus,
     District,
     EnergyLabel,
+    Feedback,
     ListScrapeRun,
     ListScrapeRunStatus,
     Listing,
@@ -35,6 +38,8 @@ from scraping.schemas import (
     DetailResultStatus,
     DetailScrapeRunOut,
     DistrictStatsOut,
+    FeedbackAck,
+    FeedbackIn,
     GeoCityOut,
     GeoDistrictOut,
     GeoNeighborhoodOut,
@@ -50,7 +55,7 @@ from scraping.schemas import (
 )
 from scraping.reconciliation import reconcile_residence
 from scraping.selectors import COVER_IMAGE as _COVER_IMAGE
-from scraping.tasks import resolve_bag
+from scraping.tasks import notify_feedback, resolve_bag
 
 
 class HealthOut(Schema):
@@ -239,6 +244,37 @@ def list_residences(
 @v1_router.get("/residences/{residence_id}", response=ResidenceOut, tags=["catalog"])
 def get_residence(request, residence_id: int):
     return get_object_or_404(Residence.objects.prefetch_related("listings"), id=residence_id)
+
+
+def _resolve_optional_user(request):
+    """Attribute feedback to a JWT-authenticated user when a bearer token is
+    present. Missing token → anonymous (None); present but invalid → 401.
+
+    allauth's public jwt_token_auth returns None for BOTH a missing and an
+    invalid token (and sets request.user on success), so we split the two by
+    inspecting the Authorization header before delegating validation to it.
+    """
+    if not request.headers.get("Authorization", "").lower().startswith("bearer "):
+        return None
+    if jwt_token_auth(request) is None:
+        raise HttpError(401, "invalid or expired token")
+    return request.user
+
+
+@v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, tags=["feedback"])
+def submit_feedback(request, payload: FeedbackIn):
+    user = _resolve_optional_user(request)
+    feedback = Feedback.objects.create(
+        user=user,
+        message=payload.message,
+        app_version=payload.app_version or "",
+        platform=payload.platform.value if payload.platform else "",
+        locale=payload.locale.value if payload.locale else "",
+        ip=get_adapter().get_client_ip(request),
+        user_agent=request.headers.get("User-Agent", ""),
+    )
+    transaction.on_commit(lambda: notify_feedback.delay(feedback.pk))
+    return Status(201, feedback)
 
 
 internal_router = Router()

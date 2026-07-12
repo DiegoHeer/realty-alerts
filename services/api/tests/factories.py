@@ -6,6 +6,7 @@ from factory.django import DjangoModelFactory
 from scraping.models import (
     City,
     District,
+    Feedback,
     ListScrapeRun,
     ListScrapeRunStatus,
     Listing,
@@ -77,3 +78,10 @@ class NeighborhoodFactory(DjangoModelFactory):
     name = factory.LazyAttribute(lambda o: f"Neighborhood-{o.code}")
     city = factory.SubFactory(CityFactory)
     district = factory.SubFactory(DistrictFactory, city=factory.SelfAttribute("..city"))
+
+
+class FeedbackFactory(DjangoModelFactory):
+    class Meta:
+        model = Feedback
+
+    message = factory.Sequence(lambda n: f"Feedback message {n}")

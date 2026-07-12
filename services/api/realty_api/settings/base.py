@@ -144,6 +144,11 @@ CACHES = _cache_config(SETTINGS.cache_url)
 # dev and preview namespaces that don't run Argo Events.
 ARGO_EVENTS_WEBHOOK_URL = SETTINGS.argo_events_webhook_url
 
+# Mattermost incoming-webhook URL for the feedback channel. Unset ⇒ the
+# notification task short-circuits (logged warning, no HTTP call); feedback is
+# still stored. Best-effort, so it stays optional in every environment.
+MATTERMOST_FEEDBACK_WEBHOOK_URL = SETTINGS.mattermost_feedback_webhook_url
+
 # --- django-allauth (headless) ---
 HEADLESS_ONLY = True
 HEADLESS_CLIENTS = ("app",)
