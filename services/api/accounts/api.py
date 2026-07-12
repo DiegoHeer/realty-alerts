@@ -3,7 +3,7 @@ from datetime import datetime
 
 from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.utils import timezone
-from ninja import Router
+from ninja import Router, Status
 from ninja.errors import HttpError
 
 from accounts.models import Favorite, UserPreferences
@@ -111,10 +111,10 @@ def put_favorite(request, residence_id: int, payload: FavoritePutIn):
         timestamp=liked_at,
         cap=FAVORITES_CAP,
     )
-    return 204, None
+    return Status(204, None)
 
 
 @me_router.delete("/favorites/{residence_id}", response={204: None})
 def delete_favorite(request, residence_id: int):
     Favorite.objects.filter(user=request.user, residence_id=residence_id).delete()
-    return 204, None
+    return Status(204, None)
