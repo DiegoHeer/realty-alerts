@@ -121,3 +121,23 @@ def test_search_preferences_isolated_between_users(client, test_user, user_heade
 
     resp_a = client.get("/v1/me/preferences/search", headers=user_headers)
     assert resp_a.json()["search"] == {"owner": "A"}
+
+
+@pytest.mark.django_db
+def test_put_search_rejects_naive_updated_at(client, user_headers):
+    resp = client.put(
+        "/v1/me/preferences/search",
+        json={"search": {"v": 1}, "updated_at": "2026-02-01T00:00:00"},
+        headers=user_headers,
+    )
+    assert resp.status_code == 422
+
+
+@pytest.mark.django_db
+def test_put_notifications_rejects_naive_updated_at(client, user_headers):
+    resp = client.put(
+        "/v1/me/preferences/notifications",
+        json={"notifications": {"email": True}, "updated_at": "2026-02-01T00:00:00"},
+        headers=user_headers,
+    )
+    assert resp.status_code == 422

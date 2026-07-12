@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from ninja import Schema
+from pydantic import AwareDatetime
 
 
 class SearchPrefOut(Schema):
@@ -10,7 +11,7 @@ class SearchPrefOut(Schema):
 
 class SearchPrefIn(Schema):
     search: dict
-    updated_at: datetime
+    updated_at: AwareDatetime
 
 
 class NotificationsPrefOut(Schema):
@@ -20,4 +21,4 @@ class NotificationsPrefOut(Schema):
 
 class NotificationsPrefIn(Schema):
     notifications: dict
-    updated_at: datetime
+    updated_at: AwareDatetime
