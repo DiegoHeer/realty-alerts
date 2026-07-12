@@ -1,14 +1,14 @@
 import json
 from datetime import datetime
 
+from allauth.headless.contrib.ninja.security import jwt_token_auth
 from ninja import Router
 from ninja.errors import HttpError
 
-from accounts.auth import JWTAuth
 from accounts.models import UserPreferences
 from accounts.schemas import NotificationsPrefIn, NotificationsPrefOut, SearchPrefIn, SearchPrefOut
 
-me_router = Router(auth=JWTAuth())
+me_router = Router(auth=jwt_token_auth)
 
 SEARCH_MAX_BYTES = 4096
 
