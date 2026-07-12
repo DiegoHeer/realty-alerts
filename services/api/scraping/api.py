@@ -2,7 +2,6 @@ import hmac
 from datetime import UTC, datetime
 
 from allauth.account.adapter import get_adapter
-from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
 from django.db.models import F, OuterRef, Subquery
@@ -54,6 +53,7 @@ from scraping.schemas import (
 )
 from scraping.reconciliation import reconcile_residence
 from scraping.tasks import notify_feedback, resolve_bag
+from scraping.throttling import resolve_jwt_user
 
 
 class HealthOut(Schema):
@@ -254,24 +254,9 @@ def get_residence(request, residence_id: int):
     return get_object_or_404(Residence.objects.prefetch_related("listings"), id=residence_id)
 
 
-def _resolve_optional_user(request):
-    """Attribute feedback to a JWT-authenticated user when a bearer token is
-    present. Missing token → anonymous (None); present but invalid → 401.
-
-    allauth's public jwt_token_auth returns None for BOTH a missing and an
-    invalid token (and sets request.user on success), so we split the two by
-    inspecting the Authorization header before delegating validation to it.
-    """
-    if not request.headers.get("Authorization", "").lower().startswith("bearer "):
-        return None
-    if jwt_token_auth(request) is None:
-        raise HttpError(401, "invalid or expired token")
-    return request.user
-
-
 @v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, tags=["feedback"])
 def submit_feedback(request, payload: FeedbackIn):
-    user = _resolve_optional_user(request)
+    user = resolve_jwt_user(request, strict=True)
     feedback = Feedback.objects.create(
         user=user,
         message=payload.message,

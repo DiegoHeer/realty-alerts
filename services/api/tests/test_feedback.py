@@ -2,10 +2,30 @@ import json
 from unittest import mock
 
 import pytest
+from django.test import RequestFactory
+from ninja.errors import HttpError
 
 from scraping.models import Feedback
 from scraping.tasks import notify_feedback
+from scraping.throttling import resolve_jwt_user
 from tests.factories import FeedbackFactory
+
+
+@pytest.mark.django_db
+class TestResolveJwtUser:
+    def test_no_token_is_anonymous(self):
+        request = RequestFactory().post("/v1/feedback")
+        assert resolve_jwt_user(request, strict=True) is None
+        assert resolve_jwt_user(request, strict=False) is None
+
+    def test_bad_token_raises_when_strict(self):
+        request = RequestFactory().post("/v1/feedback", HTTP_AUTHORIZATION="Bearer nope")
+        with pytest.raises(HttpError):
+            resolve_jwt_user(request, strict=True)
+
+    def test_bad_token_is_anonymous_when_not_strict(self):
+        request = RequestFactory().post("/v1/feedback", HTTP_AUTHORIZATION="Bearer nope")
+        assert resolve_jwt_user(request, strict=False) is None
 
 
 def _on_commit_inline():
