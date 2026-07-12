@@ -30,6 +30,9 @@ class FeedbackThrottle(SimpleRateThrottle):
     in the handler), and keys IPs off CF-Connecting-IP via the allauth adapter
     rather than Ninja's REMOTE_ADDR/X-Forwarded-For. Fails open if the cache is
     unavailable so an outage never blocks legitimate submissions.
+
+    Stashes per-request state on the shared instance; safe only under sync
+    workers (one request per process).
     """
 
     ANON_RATE = "3/h"
