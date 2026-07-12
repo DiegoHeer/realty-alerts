@@ -27,3 +27,16 @@ class Favorite(models.Model):
 
     def __str__(self) -> str:
         return f"Favorite<{self.user.pk}:{self.residence_id}>"  # ty: ignore[unresolved-attribute]
+
+
+class ResidenceView(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="residence_views")
+    residence = models.ForeignKey("scraping.Residence", on_delete=models.CASCADE, related_name="+")
+    viewed_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["user", "residence"], name="uniq_user_residence_view")]
+        indexes = [models.Index(fields=["user", "-viewed_at"], name="view_user_viewed_idx")]
+
+    def __str__(self) -> str:
+        return f"ResidenceView<{self.user.pk}:{self.residence_id}>"  # ty: ignore[unresolved-attribute]
