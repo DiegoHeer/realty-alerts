@@ -13,3 +13,17 @@ class UserPreferences(models.Model):
 
     def __str__(self) -> str:
         return f"Preferences<{self.user.pk}>"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites")
+    residence = models.ForeignKey("scraping.Residence", on_delete=models.CASCADE, related_name="+")
+    liked_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["user", "residence"], name="uniq_user_favorite")]
+        indexes = [models.Index(fields=["user", "-liked_at"], name="fav_user_liked_idx")]
+
+    def __str__(self) -> str:
+        return f"Favorite<{self.user.pk}:{self.residence_id}>"  # ty: ignore[unresolved-attribute]
