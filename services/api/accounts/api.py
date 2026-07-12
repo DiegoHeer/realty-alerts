@@ -2,15 +2,27 @@ import json
 from datetime import datetime
 
 from allauth.headless.contrib.ninja.security import jwt_token_auth
+from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 
-from accounts.models import UserPreferences
-from accounts.schemas import NotificationsPrefIn, NotificationsPrefOut, SearchPrefIn, SearchPrefOut
+from accounts.models import Favorite, UserPreferences
+from accounts.mru import upsert_and_evict
+from accounts.schemas import (
+    FavoritePutIn,
+    FavoritesOut,
+    NotificationsPrefIn,
+    NotificationsPrefOut,
+    SearchPrefIn,
+    SearchPrefOut,
+)
+from scraping.models import Residence
+from scraping.selectors import residence_summary_qs
 
 me_router = Router(auth=jwt_token_auth)
 
 SEARCH_MAX_BYTES = 4096
+FAVORITES_CAP = 200
 
 
 def _read_document(value: dict, updated_at: datetime | None) -> tuple[dict | None, datetime | None]:
@@ -66,3 +78,43 @@ def put_notification_preferences(request, payload: NotificationsPrefIn):
     )
     value, updated_at = _read_document(preferences.notifications, preferences.notifications_updated_at)
     return {"notifications": value, "updated_at": updated_at}
+
+
+def _favorites_collection(user) -> dict:
+    favorites = list(Favorite.objects.filter(user=user).order_by("-liked_at").values("residence_id", "liked_at"))
+    residence_ids = [row["residence_id"] for row in favorites]
+    residences = residence_summary_qs().in_bulk(residence_ids)
+    items = [
+        {"residence": residences[row["residence_id"]], "liked_at": row["liked_at"]}
+        for row in favorites
+        if row["residence_id"] in residences
+    ]
+    return {"items": items, "total": len(items)}
+
+
+@me_router.get("/favorites", response=FavoritesOut)
+def list_favorites(request):
+    return _favorites_collection(request.user)
+
+
+@me_router.put("/favorites/{residence_id}", response={204: None})
+def put_favorite(request, residence_id: int, payload: FavoritePutIn):
+    residence = Residence.objects.filter(id=residence_id).first()
+    if residence is None:
+        raise HttpError(404, "residence_not_found")
+    liked_at = payload.liked_at or timezone.now()
+    upsert_and_evict(
+        Favorite,
+        user=request.user,
+        residence=residence,
+        timestamp_field="liked_at",
+        timestamp=liked_at,
+        cap=FAVORITES_CAP,
+    )
+    return 204, None
+
+
+@me_router.delete("/favorites/{residence_id}", response={204: None})
+def delete_favorite(request, residence_id: int):
+    Favorite.objects.filter(user=request.user, residence_id=residence_id).delete()
+    return 204, None

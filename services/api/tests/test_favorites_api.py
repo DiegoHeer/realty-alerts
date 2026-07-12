@@ -1,0 +1,92 @@
+from datetime import UTC, datetime
+
+import pytest
+
+from accounts.models import Favorite
+from tests.factories import ListingFactory, ResidenceFactory
+
+
+@pytest.mark.django_db
+def test_favorites_requires_auth(client):
+    assert client.get("/v1/me/favorites").status_code == 401
+
+
+@pytest.mark.django_db
+def test_put_then_get_hydrates_summary(client, user_headers):
+    residence = ResidenceFactory()
+    ListingFactory(residence=residence, image_url="https://example.com/c.jpg")
+    ts = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
+    r = client.put(f"/v1/me/favorites/{residence.id}", json={"liked_at": ts}, headers=user_headers)
+    assert r.status_code == 204
+    body = client.get("/v1/me/favorites", headers=user_headers).json()
+    assert body["total"] == 1
+    item = body["items"][0]
+    assert item["residence"]["id"] == residence.id
+    assert item["residence"]["image_url"] == "https://example.com/c.jpg"  # annotation hydrated
+    assert item["liked_at"] is not None
+
+
+@pytest.mark.django_db
+def test_get_orders_newest_liked_first(client, user_headers):
+    older, newer = ResidenceFactory(), ResidenceFactory()
+    client.put(
+        f"/v1/me/favorites/{older.id}",
+        json={"liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
+        headers=user_headers,
+    )
+    client.put(
+        f"/v1/me/favorites/{newer.id}",
+        json={"liked_at": datetime(2026, 2, 1, tzinfo=UTC).isoformat()},
+        headers=user_headers,
+    )
+    items = client.get("/v1/me/favorites", headers=user_headers).json()["items"]
+    assert [i["residence"]["id"] for i in items] == [newer.id, older.id]
+
+
+@pytest.mark.django_db
+def test_put_unknown_residence_404(client, user_headers):
+    r = client.put("/v1/me/favorites/999999", json={}, headers=user_headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.django_db
+def test_put_rejects_naive_liked_at(client, user_headers):
+    residence = ResidenceFactory()
+    r = client.put(f"/v1/me/favorites/{residence.id}", json={"liked_at": "2026-01-01T00:00:00"}, headers=user_headers)
+    assert r.status_code == 422
+
+
+@pytest.mark.django_db
+def test_put_without_liked_at_defaults_now(client, user_headers):
+    residence = ResidenceFactory()
+    r = client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
+    assert r.status_code == 204
+    assert Favorite.objects.filter(user__isnull=False, residence=residence).exists()
+
+
+@pytest.mark.django_db
+def test_delete_is_idempotent(client, user_headers):
+    residence = ResidenceFactory()
+    client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
+    assert client.delete(f"/v1/me/favorites/{residence.id}", headers=user_headers).status_code == 204
+    assert (
+        client.delete(f"/v1/me/favorites/{residence.id}", headers=user_headers).status_code == 204
+    )  # again → still 204
+    assert not Favorite.objects.filter(residence=residence).exists()
+
+
+@pytest.mark.django_db
+def test_favorites_isolated_between_users(client, test_user, user_headers):
+    from allauth.account.models import EmailAddress
+    from allauth.headless.tokens.strategies.jwt.internal import create_access_token
+    from django.contrib.auth.models import User
+    from django.contrib.sessions.backends.db import SessionStore
+
+    residence = ResidenceFactory()
+    client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
+    user_b = User.objects.create_user(email="b@example.com", username="b@example.com", password="pass12345!")
+    EmailAddress.objects.create(user=user_b, email=user_b.email, verified=True, primary=True)
+    session = SessionStore()
+    session.create()
+    headers_b = {"AUTHORIZATION": f"Bearer {create_access_token(user_b, session, {})}"}
+    assert client.get("/v1/me/favorites", headers=headers_b).json() == {"items": [], "total": 0}
