@@ -13,6 +13,7 @@ from ninja.errors import HttpError
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
+from accounts.api import me_router
 from scraping.models import (
     BagStatus,
     BuildingType,
@@ -556,6 +557,7 @@ def list_neighborhood_shapes(request, filters: Query[_OptionalCity]):
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
 api.add_router("/v1", v1_router)
+api.add_router("/v1/me", me_router)
 
 
 def _parse_price_eur(price_str: str) -> int | None:

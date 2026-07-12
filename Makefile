@@ -36,15 +36,15 @@ pre-commit: ## Run all pre-commit checks
 
 lint: ## Lint all Python services
 	cd services/scraper && uv run ruff check src/ tests/
-	cd services/api && uv run ruff check realty_api/ scraping/ tests/
+	cd services/api && uv run ruff check realty_api/ scraping/ accounts/ tests/
 
 format: ## Format all Python services
 	cd services/scraper && uv run ruff format src/ tests/
-	cd services/api && uv run ruff format realty_api/ scraping/ tests/
+	cd services/api && uv run ruff format realty_api/ scraping/ accounts/ tests/
 
 typecheck: ## Typecheck all Python services
 	cd services/scraper && uv run ty check src/ tests/
-	cd services/api && uv run ty check realty_api/ scraping/ tests/
+	cd services/api && uv run ty check realty_api/ scraping/ accounts/ tests/
 
 test: ## Run all tests
 	cd services/scraper && uv run pytest tests/
