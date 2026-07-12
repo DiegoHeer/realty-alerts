@@ -1,9 +1,9 @@
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 
 
 class UserPreferences(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="preferences")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="preferences")
     search = models.JSONField(default=dict, blank=True)
     search_updated_at = models.DateTimeField(null=True, blank=True)
     notifications = models.JSONField(default=dict, blank=True)
