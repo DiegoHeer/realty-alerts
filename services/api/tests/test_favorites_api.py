@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 
 from accounts.models import Favorite
+from scraping.models import Residence
 from tests.factories import ListingFactory, ResidenceFactory
 
 
@@ -13,34 +15,35 @@ def test_favorites_requires_auth(client):
 
 @pytest.mark.django_db
 def test_put_then_get_hydrates_summary(client, user_headers):
-    residence = ResidenceFactory()
+    residence = cast(Residence, ResidenceFactory())
     ListingFactory(residence=residence, image_url="https://example.com/c.jpg")
     ts = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
-    r = client.put(f"/v1/me/favorites/{residence.id}", json={"liked_at": ts}, headers=user_headers)
+    r = client.put(f"/v1/me/favorites/{residence.pk}", json={"liked_at": ts}, headers=user_headers)
     assert r.status_code == 204
     body = client.get("/v1/me/favorites", headers=user_headers).json()
     assert body["total"] == 1
     item = body["items"][0]
-    assert item["residence"]["id"] == residence.id
+    assert item["residence"]["id"] == residence.pk
     assert item["residence"]["image_url"] == "https://example.com/c.jpg"  # annotation hydrated
     assert item["liked_at"] is not None
 
 
 @pytest.mark.django_db
 def test_get_orders_newest_liked_first(client, user_headers):
-    older, newer = ResidenceFactory(), ResidenceFactory()
+    older = cast(Residence, ResidenceFactory())
+    newer = cast(Residence, ResidenceFactory())
     client.put(
-        f"/v1/me/favorites/{older.id}",
+        f"/v1/me/favorites/{older.pk}",
         json={"liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
         headers=user_headers,
     )
     client.put(
-        f"/v1/me/favorites/{newer.id}",
+        f"/v1/me/favorites/{newer.pk}",
         json={"liked_at": datetime(2026, 2, 1, tzinfo=UTC).isoformat()},
         headers=user_headers,
     )
     items = client.get("/v1/me/favorites", headers=user_headers).json()["items"]
-    assert [i["residence"]["id"] for i in items] == [newer.id, older.id]
+    assert [i["residence"]["id"] for i in items] == [newer.pk, older.pk]
 
 
 @pytest.mark.django_db
@@ -51,26 +54,26 @@ def test_put_unknown_residence_404(client, user_headers):
 
 @pytest.mark.django_db
 def test_put_rejects_naive_liked_at(client, user_headers):
-    residence = ResidenceFactory()
-    r = client.put(f"/v1/me/favorites/{residence.id}", json={"liked_at": "2026-01-01T00:00:00"}, headers=user_headers)
+    residence = cast(Residence, ResidenceFactory())
+    r = client.put(f"/v1/me/favorites/{residence.pk}", json={"liked_at": "2026-01-01T00:00:00"}, headers=user_headers)
     assert r.status_code == 422
 
 
 @pytest.mark.django_db
 def test_put_without_liked_at_defaults_now(client, user_headers):
-    residence = ResidenceFactory()
-    r = client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
+    residence = cast(Residence, ResidenceFactory())
+    r = client.put(f"/v1/me/favorites/{residence.pk}", json={}, headers=user_headers)
     assert r.status_code == 204
     assert Favorite.objects.filter(user__isnull=False, residence=residence).exists()
 
 
 @pytest.mark.django_db
 def test_delete_is_idempotent(client, user_headers):
-    residence = ResidenceFactory()
-    client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
-    assert client.delete(f"/v1/me/favorites/{residence.id}", headers=user_headers).status_code == 204
+    residence = cast(Residence, ResidenceFactory())
+    client.put(f"/v1/me/favorites/{residence.pk}", json={}, headers=user_headers)
+    assert client.delete(f"/v1/me/favorites/{residence.pk}", headers=user_headers).status_code == 204
     assert (
-        client.delete(f"/v1/me/favorites/{residence.id}", headers=user_headers).status_code == 204
+        client.delete(f"/v1/me/favorites/{residence.pk}", headers=user_headers).status_code == 204
     )  # again → still 204
     assert not Favorite.objects.filter(residence=residence).exists()
 
@@ -82,8 +85,8 @@ def test_favorites_isolated_between_users(client, test_user, user_headers):
     from django.contrib.auth.models import User
     from django.contrib.sessions.backends.db import SessionStore
 
-    residence = ResidenceFactory()
-    client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
+    residence = cast(Residence, ResidenceFactory())
+    client.put(f"/v1/me/favorites/{residence.pk}", json={}, headers=user_headers)
     user_b = User.objects.create_user(email="b@example.com", username="b@example.com", password="pass12345!")
     EmailAddress.objects.create(user=user_b, email=user_b.email, verified=True, primary=True)
     session = SessionStore()
@@ -94,15 +97,15 @@ def test_favorites_isolated_between_users(client, test_user, user_headers):
 
 @pytest.mark.django_db
 def test_merge_unions_and_keeps_newer(client, user_headers):
-    residence = ResidenceFactory()
+    residence = cast(Residence, ResidenceFactory())
     client.put(
-        f"/v1/me/favorites/{residence.id}",
+        f"/v1/me/favorites/{residence.pk}",
         json={"liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
         headers=user_headers,
     )
     body = client.post(
         "/v1/me/favorites/merge",
-        json={"items": [{"residence_id": residence.id, "liked_at": datetime(2026, 3, 1, tzinfo=UTC).isoformat()}]},
+        json={"items": [{"residence_id": residence.pk, "liked_at": datetime(2026, 3, 1, tzinfo=UTC).isoformat()}]},
         headers=user_headers,
     ).json()
     assert body["total"] == 1
@@ -114,12 +117,12 @@ def test_merge_unions_and_keeps_newer(client, user_headers):
 
 @pytest.mark.django_db
 def test_merge_skips_unknown_residence_ids(client, user_headers):
-    residence = ResidenceFactory()
+    residence = cast(Residence, ResidenceFactory())
     body = client.post(
         "/v1/me/favorites/merge",
         json={
             "items": [
-                {"residence_id": residence.id, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
+                {"residence_id": residence.pk, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
                 {"residence_id": 999999, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
             ]
         },
@@ -137,8 +140,8 @@ def test_merge_rejects_over_cap(client, user_headers):
 
 @pytest.mark.django_db
 def test_merge_is_idempotent(client, user_headers):
-    residence = ResidenceFactory()
-    payload = {"items": [{"residence_id": residence.id, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()}]}
+    residence = cast(Residence, ResidenceFactory())
+    payload = {"items": [{"residence_id": residence.pk, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()}]}
     first = client.post("/v1/me/favorites/merge", json=payload, headers=user_headers).json()
     second = client.post("/v1/me/favorites/merge", json=payload, headers=user_headers).json()
     assert first == second and second["total"] == 1
@@ -146,8 +149,8 @@ def test_merge_is_idempotent(client, user_headers):
 
 @pytest.mark.django_db
 def test_get_favorites_skips_null_coordinate_residence(client, user_headers):
-    residence = ResidenceFactory(latitude=None, longitude=None)
-    r = client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
+    residence = cast(Residence, ResidenceFactory(latitude=None, longitude=None))
+    r = client.put(f"/v1/me/favorites/{residence.pk}", json={}, headers=user_headers)
     assert r.status_code == 204
     resp = client.get("/v1/me/favorites", headers=user_headers)
     assert resp.status_code == 200  # must not 500 on the null-coord favorite
