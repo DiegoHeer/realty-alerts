@@ -1,6 +1,7 @@
 from allauth.account.adapter import get_adapter
 from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.http import HttpRequest
+from loguru import logger
 from ninja.errors import HttpError
 from ninja.throttling import SimpleRateThrottle
 
@@ -50,6 +51,7 @@ class FeedbackThrottle(SimpleRateThrottle):
         try:
             return super().allow_request(request)
         except Exception:  # cache down/hiccup → don't block legitimate users
+            logger.warning("feedback throttle failing open (cache error)")
             return True
 
     def get_cache_key(self, request):
