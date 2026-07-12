@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from allauth.account.adapter import get_adapter
 from django.conf import settings
 from django.db import OperationalError, connection, transaction
-from django.db.models import F, OuterRef, Subquery
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
@@ -53,6 +53,7 @@ from scraping.schemas import (
     SortOption,
 )
 from scraping.reconciliation import reconcile_residence
+from scraping.selectors import COVER_IMAGE as _COVER_IMAGE
 from scraping.tasks import notify_feedback, resolve_bag
 from scraping.throttling import FeedbackThrottle, resolve_jwt_user
 
@@ -200,16 +201,6 @@ _SORT_ORDER = {
     SortOption.AREA_DESC: (F("surface_area_m2").desc(nulls_last=True), F("id").desc()),
     SortOption.PRICE_PER_M2_ASC: (F("price_per_m2").asc(nulls_last=True), F("id").asc()),
 }
-
-# Best-effort cover photo: freshest listing (any bag_status) with an image.
-# nulls_last mirrors Residence._freshest_resolved_listing and reconciliation.
-_COVER_IMAGE = Subquery(
-    Listing.objects.filter(residence=OuterRef("pk"))
-    .exclude(image_url__isnull=True)
-    .exclude(image_url="")
-    .order_by(F("list_scraped_at").desc(nulls_last=True))
-    .values("image_url")[:1]
-)
 
 
 @v1_router.get("/residences", response=ResidencePage, tags=["catalog"])
