@@ -2,16 +2,45 @@ import json
 from unittest import mock
 
 import pytest
+from django.test import RequestFactory
+from ninja.errors import HttpError
 
 from scraping.models import Feedback
 from scraping.tasks import notify_feedback
+from scraping.throttling import resolve_jwt_user
 from tests.factories import FeedbackFactory
+
+
+@pytest.mark.django_db
+class TestResolveJwtUser:
+    def test_no_token_is_anonymous(self):
+        request = RequestFactory().post("/v1/feedback")
+        assert resolve_jwt_user(request, strict=True) is None
+        assert resolve_jwt_user(request, strict=False) is None
+
+    def test_bad_token_raises_when_strict(self):
+        request = RequestFactory().post("/v1/feedback", HTTP_AUTHORIZATION="Bearer nope")
+        with pytest.raises(HttpError):
+            resolve_jwt_user(request, strict=True)
+
+    def test_bad_token_is_anonymous_when_not_strict(self):
+        request = RequestFactory().post("/v1/feedback", HTTP_AUTHORIZATION="Bearer nope")
+        assert resolve_jwt_user(request, strict=False) is None
 
 
 def _on_commit_inline():
     # django_db wraps each test in a transaction that never commits, so
     # transaction.on_commit callbacks never fire. Run them inline instead.
     return mock.patch("scraping.api.transaction.on_commit", side_effect=lambda fn: fn())
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_limit_cache():
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.mark.django_db
@@ -71,6 +100,44 @@ class TestSubmitFeedback:
 
         assert response.status_code == 422
         assert Feedback.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestFeedbackThrottle:
+    def _post(self, client, **kwargs):
+        return client.post("/v1/feedback", json={"message": "hi"}, **kwargs)
+
+    def test_anonymous_capped_at_3_per_ip(self, client):
+        with _on_commit_inline(), mock.patch("scraping.api.notify_feedback.delay"):
+            for _ in range(3):
+                assert self._post(client).status_code == 201
+            assert self._post(client).status_code == 429
+
+    def test_authenticated_capped_at_10_per_user(self, client, user_headers, test_user):
+        with _on_commit_inline(), mock.patch("scraping.api.notify_feedback.delay"):
+            for _ in range(10):
+                assert self._post(client, headers=user_headers).status_code == 201
+            assert self._post(client, headers=user_headers).status_code == 429
+
+    def test_anon_and_user_buckets_are_independent(self, client, user_headers, test_user):
+        with _on_commit_inline(), mock.patch("scraping.api.notify_feedback.delay"):
+            for _ in range(3):
+                self._post(client)
+            assert self._post(client).status_code == 429  # anon IP bucket exhausted
+            assert self._post(client, headers=user_headers).status_code == 201  # user bucket untouched
+
+    def test_fails_open_when_cache_unavailable(self, client):
+        from ninja.throttling import SimpleRateThrottle
+
+        broken = mock.Mock()
+        broken.get.side_effect = RuntimeError("cache down")
+        with (
+            mock.patch.object(SimpleRateThrottle, "cache", broken),
+            _on_commit_inline(),
+            mock.patch("scraping.api.notify_feedback.delay"),
+        ):
+            for _ in range(5):  # well over the anon cap
+                assert self._post(client).status_code == 201
 
 
 @pytest.mark.django_db
