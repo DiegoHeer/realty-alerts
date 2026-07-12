@@ -2,7 +2,9 @@ import json
 from datetime import datetime
 
 from allauth.headless.contrib.ninja.security import jwt_token_auth
+from django.db import transaction
 from django.utils import timezone
+from loguru import logger
 from ninja import Router, Status
 from ninja.errors import HttpError
 
@@ -10,6 +12,7 @@ from accounts.models import Favorite, UserPreferences
 from accounts.mru import upsert_and_evict
 from accounts.schemas import (
     FavoritePutIn,
+    FavoritesMergeIn,
     FavoritesOut,
     NotificationsPrefIn,
     NotificationsPrefOut,
@@ -94,6 +97,39 @@ def _favorites_collection(user) -> dict:
 
 @me_router.get("/favorites", response=FavoritesOut)
 def list_favorites(request):
+    return _favorites_collection(request.user)
+
+
+@me_router.post("/favorites/merge", response=FavoritesOut)
+def merge_favorites(request, payload: FavoritesMergeIn):
+    if len(payload.items) > FAVORITES_CAP:
+        raise HttpError(422, "too_many_items")
+    now = timezone.now()
+    known_ids = set(
+        Residence.objects.filter(id__in=[item.residence_id for item in payload.items]).values_list("id", flat=True)
+    )
+    skipped = 0
+    with transaction.atomic():
+        for item in payload.items:
+            if item.residence_id not in known_ids:
+                skipped += 1
+                continue
+            liked_at = min(item.liked_at, now)
+            favorite, created = Favorite.objects.get_or_create(
+                user=request.user, residence_id=item.residence_id, defaults={"liked_at": liked_at}
+            )
+            if not created and liked_at > favorite.liked_at:
+                favorite.liked_at = liked_at
+                favorite.save(update_fields=["liked_at"])
+        stale_ids = list(
+            Favorite.objects.filter(user=request.user)
+            .order_by("-liked_at")
+            .values_list("id", flat=True)[FAVORITES_CAP:]
+        )
+        if stale_ids:
+            Favorite.objects.filter(id__in=stale_ids).delete()
+    if skipped:
+        logger.info("favorites merge skipped {} unknown residence ids for user {}", skipped, request.user.pk)
     return _favorites_collection(request.user)
 
 

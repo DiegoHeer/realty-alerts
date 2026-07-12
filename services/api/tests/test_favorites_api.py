@@ -90,3 +90,55 @@ def test_favorites_isolated_between_users(client, test_user, user_headers):
     session.create()
     headers_b = {"AUTHORIZATION": f"Bearer {create_access_token(user_b, session, {})}"}
     assert client.get("/v1/me/favorites", headers=headers_b).json() == {"items": [], "total": 0}
+
+
+@pytest.mark.django_db
+def test_merge_unions_and_keeps_newer(client, user_headers):
+    residence = ResidenceFactory()
+    client.put(
+        f"/v1/me/favorites/{residence.id}",
+        json={"liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
+        headers=user_headers,
+    )
+    body = client.post(
+        "/v1/me/favorites/merge",
+        json={"items": [{"residence_id": residence.id, "liked_at": datetime(2026, 3, 1, tzinfo=UTC).isoformat()}]},
+        headers=user_headers,
+    ).json()
+    assert body["total"] == 1
+    from accounts.models import Favorite
+
+    favorite = Favorite.objects.get(residence=residence)
+    assert favorite.liked_at.year == 2026 and favorite.liked_at.month == 3
+
+
+@pytest.mark.django_db
+def test_merge_skips_unknown_residence_ids(client, user_headers):
+    residence = ResidenceFactory()
+    body = client.post(
+        "/v1/me/favorites/merge",
+        json={
+            "items": [
+                {"residence_id": residence.id, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
+                {"residence_id": 999999, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()},
+            ]
+        },
+        headers=user_headers,
+    ).json()
+    assert body["total"] == 1  # unknown id skipped, not an error
+
+
+@pytest.mark.django_db
+def test_merge_rejects_over_cap(client, user_headers):
+    items = [{"residence_id": n, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()} for n in range(201)]
+    r = client.post("/v1/me/favorites/merge", json={"items": items}, headers=user_headers)
+    assert r.status_code == 422
+
+
+@pytest.mark.django_db
+def test_merge_is_idempotent(client, user_headers):
+    residence = ResidenceFactory()
+    payload = {"items": [{"residence_id": residence.id, "liked_at": datetime(2026, 1, 1, tzinfo=UTC).isoformat()}]}
+    first = client.post("/v1/me/favorites/merge", json=payload, headers=user_headers).json()
+    second = client.post("/v1/me/favorites/merge", json=payload, headers=user_headers).json()
+    assert first == second and second["total"] == 1

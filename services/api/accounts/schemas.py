@@ -38,3 +38,12 @@ class FavoritesOut(Schema):
 
 class FavoritePutIn(Schema):
     liked_at: AwareDatetime | None = None
+
+
+class FavoriteMergeItemIn(Schema):
+    residence_id: int
+    liked_at: AwareDatetime
+
+
+class FavoritesMergeIn(Schema):
+    items: list[FavoriteMergeItemIn]
