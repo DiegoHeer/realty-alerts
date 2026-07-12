@@ -1,6 +1,8 @@
+from allauth.account.adapter import get_adapter
 from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.http import HttpRequest
 from ninja.errors import HttpError
+from ninja.throttling import SimpleRateThrottle
 
 
 def resolve_jwt_user(request: HttpRequest, *, strict: bool):
@@ -18,3 +20,37 @@ def resolve_jwt_user(request: HttpRequest, *, strict: bool):
             raise HttpError(401, "invalid or expired token")
         return None
     return request.user
+
+
+class FeedbackThrottle(SimpleRateThrottle):
+    """Rate-limit feedback per user (valid JWT) else per client IP.
+
+    Resolves identity itself because the endpoint is auth=None (JWT is handled
+    in the handler), and keys IPs off CF-Connecting-IP via the allauth adapter
+    rather than Ninja's REMOTE_ADDR/X-Forwarded-For. Fails open if the cache is
+    unavailable so an outage never blocks legitimate submissions.
+    """
+
+    ANON_RATE = "3/h"
+    USER_RATE = "10/h"
+
+    def __init__(self):
+        # Rate is chosen per-request in allow_request(); skip the base __init__
+        # which would require a fixed rate/scope up front.
+        pass
+
+    def allow_request(self, request):
+        user = resolve_jwt_user(request, strict=False)
+        if user is not None:
+            self.num_requests, self.duration = self.parse_rate(self.USER_RATE)
+            self._ident = f"user:{user.pk}"
+        else:
+            self.num_requests, self.duration = self.parse_rate(self.ANON_RATE)
+            self._ident = f"ip:{get_adapter().get_client_ip(request)}"
+        try:
+            return super().allow_request(request)
+        except Exception:  # cache down/hiccup → don't block legitimate users
+            return True
+
+    def get_cache_key(self, request):
+        return f"throttle_feedback_{self._ident}"

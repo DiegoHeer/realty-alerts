@@ -53,7 +53,7 @@ from scraping.schemas import (
 )
 from scraping.reconciliation import reconcile_residence
 from scraping.tasks import notify_feedback, resolve_bag
-from scraping.throttling import resolve_jwt_user
+from scraping.throttling import FeedbackThrottle, resolve_jwt_user
 
 
 class HealthOut(Schema):
@@ -254,7 +254,7 @@ def get_residence(request, residence_id: int):
     return get_object_or_404(Residence.objects.prefetch_related("listings"), id=residence_id)
 
 
-@v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, tags=["feedback"])
+@v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, throttle=[FeedbackThrottle()], tags=["feedback"])
 def submit_feedback(request, payload: FeedbackIn):
     user = resolve_jwt_user(request, strict=True)
     feedback = Feedback.objects.create(
