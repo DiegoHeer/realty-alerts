@@ -142,3 +142,13 @@ def test_merge_is_idempotent(client, user_headers):
     first = client.post("/v1/me/favorites/merge", json=payload, headers=user_headers).json()
     second = client.post("/v1/me/favorites/merge", json=payload, headers=user_headers).json()
     assert first == second and second["total"] == 1
+
+
+@pytest.mark.django_db
+def test_get_favorites_skips_null_coordinate_residence(client, user_headers):
+    residence = ResidenceFactory(latitude=None, longitude=None)
+    r = client.put(f"/v1/me/favorites/{residence.id}", json={}, headers=user_headers)
+    assert r.status_code == 204
+    resp = client.get("/v1/me/favorites", headers=user_headers)
+    assert resp.status_code == 200  # must not 500 on the null-coord favorite
+    assert resp.json() == {"items": [], "total": 0}  # silently dropped, like a missing residence

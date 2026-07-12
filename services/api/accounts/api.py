@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 
 from allauth.headless.contrib.ninja.security import jwt_token_auth
+from django.contrib.auth.models import AbstractBaseUser
 from django.db import transaction
 from django.utils import timezone
 from loguru import logger
@@ -83,10 +84,10 @@ def put_notification_preferences(request, payload: NotificationsPrefIn):
     return {"notifications": value, "updated_at": updated_at}
 
 
-def _favorites_collection(user) -> dict:
+def _favorites_collection(user: AbstractBaseUser) -> dict:
     favorites = list(Favorite.objects.filter(user=user).order_by("-liked_at").values("residence_id", "liked_at"))
     residence_ids = [row["residence_id"] for row in favorites]
-    residences = residence_summary_qs().in_bulk(residence_ids)
+    residences = residence_summary_qs().filter(latitude__isnull=False, longitude__isnull=False).in_bulk(residence_ids)
     items = [
         {"residence": residences[row["residence_id"]], "liked_at": row["liked_at"]}
         for row in favorites
