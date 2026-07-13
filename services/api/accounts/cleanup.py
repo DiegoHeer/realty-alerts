@@ -12,5 +12,5 @@ def delete_stale_residence_views(*, now: datetime) -> int:
     cutoff = now - timedelta(days=RESIDENCE_VIEW_TTL_DAYS)
     deleted, _ = ResidenceView.objects.filter(viewed_at__lt=cutoff).delete()
     if deleted:
-        logger.info("residence_view_ttl_deleted", deleted=deleted, cutoff=cutoff.isoformat())
+        logger.info("residence_view_ttl_deleted deleted={} cutoff={}", deleted, cutoff.isoformat())
     return deleted
