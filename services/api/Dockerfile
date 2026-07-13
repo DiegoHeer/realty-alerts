@@ -7,8 +7,6 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 RUN uv sync --locked --no-dev --compile-bytecode
 
-# Copy the whole build context (see .dockerignore for exclusions: .venv, tests,
-# caches, secrets). Avoids having to add a COPY line per new Django app.
 COPY . ./
 
 ENV PATH="/app/.venv/bin:$PATH"
