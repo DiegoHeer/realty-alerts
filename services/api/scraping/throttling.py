@@ -3,7 +3,7 @@ from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.http import HttpRequest
 from loguru import logger
 from ninja.errors import HttpError
-from ninja.throttling import SimpleRateThrottle
+from ninja.throttling import SimpleRateThrottle, UserRateThrottle
 
 
 def resolve_jwt_user(request: HttpRequest, *, strict: bool):
@@ -64,3 +64,24 @@ class FeedbackThrottle(SimpleRateThrottle):
 
     def get_cache_key(self, request):
         return f"throttle_feedback_{self._ident}"
+
+
+class UserWriteThrottle(UserRateThrottle):
+    """Rate-limit authenticated write requests per user.
+
+    Shared bucket across favorites/preferences/recent-views writes. Keys off
+    request.user.pk (me_router sets it before throttle checks); the rate comes
+    from settings.NINJA_DEFAULT_THROTTLE_RATES["user_write"].
+    """
+
+    scope = "user_write"
+
+
+class UserMergeThrottle(UserRateThrottle):
+    """Rate-limit the favorites bulk-merge per user.
+
+    Separate, tighter bucket than UserWriteThrottle because a merge writes many
+    rows at once. Rate comes from settings.NINJA_DEFAULT_THROTTLE_RATES["user_merge"].
+    """
+
+    scope = "user_merge"
