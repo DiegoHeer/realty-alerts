@@ -8,7 +8,7 @@ from django.db.models import F
 from django.shortcuts import get_object_or_404
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
-from ninja.errors import HttpError
+from ninja.errors import HttpError, Throttled
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
@@ -72,6 +72,16 @@ class InternalApiKey(APIKeyHeader):
 
 
 api = NinjaAPI(title="Realty Alerts API", version="1.0")
+
+
+@api.exception_handler(Throttled)
+def on_throttled(request, exc: Throttled):
+    """Emit a 429 with a Retry-After header so clients back off. Applies to all
+    throttles (feedback + per-user write buckets)."""
+    response = api.create_response(request, {"detail": exc.message}, status=exc.status_code)
+    if exc.wait is not None:
+        response["Retry-After"] = str(int(exc.wait))
+    return response
 
 
 @api.get("/healthz", auth=None, response=HealthOut)
