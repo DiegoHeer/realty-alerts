@@ -4,19 +4,19 @@ from datetime import UTC, datetime
 from functools import reduce
 
 from allauth.account.adapter import get_adapter
-from allauth.headless.contrib.ninja.security import jwt_token_auth
 from django.conf import settings
 from django.contrib.postgres.search import TrigramWordSimilarity  # ty: ignore[unresolved-import]
 from django.db import OperationalError, connection, transaction
-from django.db.models import F, OuterRef, Q, Subquery
+from django.db.models import F, Q
 from django.db.models.functions import Greatest
 from django.shortcuts import get_object_or_404
 from loguru import logger
 from ninja import NinjaAPI, P, Query, QueryEx, Router, Schema
-from ninja.errors import HttpError
+from ninja.errors import HttpError, Throttled
 from ninja.responses import Status
 from ninja.security import APIKeyHeader
 
+from accounts.api import me_router
 from scraping.models import (
     BagStatus,
     BuildingType,
@@ -58,7 +58,9 @@ from scraping.schemas import (
     SortOption,
 )
 from scraping.reconciliation import reconcile_residence
+from scraping.selectors import COVER_IMAGE as _COVER_IMAGE
 from scraping.tasks import notify_feedback, resolve_bag
+from scraping.throttling import FeedbackThrottle, resolve_jwt_user
 
 
 class HealthOut(Schema):
@@ -75,6 +77,16 @@ class InternalApiKey(APIKeyHeader):
 
 
 api = NinjaAPI(title="Realty Alerts API", version="1.0")
+
+
+@api.exception_handler(Throttled)
+def on_throttled(request, exc: Throttled):
+    """Emit a 429 with a Retry-After header so clients back off. Applies to all
+    throttles (feedback + per-user write buckets)."""
+    response = api.create_response(request, {"detail": exc.message}, status=exc.status_code)
+    if exc.wait is not None:
+        response["Retry-After"] = str(int(exc.wait))
+    return response
 
 
 @api.get("/healthz", auth=None, response=HealthOut)
@@ -205,16 +217,6 @@ _SORT_ORDER = {
     SortOption.PRICE_PER_M2_ASC: (F("price_per_m2").asc(nulls_last=True), F("id").asc()),
 }
 
-# Best-effort cover photo: freshest listing (any bag_status) with an image.
-# nulls_last mirrors Residence._freshest_resolved_listing and reconciliation.
-_COVER_IMAGE = Subquery(
-    Listing.objects.filter(residence=OuterRef("pk"))
-    .exclude(image_url__isnull=True)
-    .exclude(image_url="")
-    .order_by(F("list_scraped_at").desc(nulls_last=True))
-    .values("image_url")[:1]
-)
-
 
 # --- Address typeahead (/v1/residences/search) --------------------------------
 # Fields the search ranks against, in rough display priority.
@@ -314,24 +316,9 @@ def get_residence(request, residence_id: int):
     return get_object_or_404(Residence.objects.prefetch_related("listings"), id=residence_id)
 
 
-def _resolve_optional_user(request):
-    """Attribute feedback to a JWT-authenticated user when a bearer token is
-    present. Missing token → anonymous (None); present but invalid → 401.
-
-    allauth's public jwt_token_auth returns None for BOTH a missing and an
-    invalid token (and sets request.user on success), so we split the two by
-    inspecting the Authorization header before delegating validation to it.
-    """
-    if not request.headers.get("Authorization", "").lower().startswith("bearer "):
-        return None
-    if jwt_token_auth(request) is None:
-        raise HttpError(401, "invalid or expired token")
-    return request.user
-
-
-@v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, tags=["feedback"])
+@v1_router.post("/feedback", auth=None, response={201: FeedbackAck}, throttle=[FeedbackThrottle()], tags=["feedback"])
 def submit_feedback(request, payload: FeedbackIn):
-    user = _resolve_optional_user(request)
+    user = resolve_jwt_user(request, strict=True)
     feedback = Feedback.objects.create(
         user=user,
         message=payload.message,
@@ -616,6 +603,7 @@ def list_neighborhood_shapes(request, filters: Query[_OptionalCity]):
 
 api.add_router("/internal/v1", internal_router, auth=InternalApiKey())
 api.add_router("/v1", v1_router)
+api.add_router("/v1/me", me_router)
 
 
 def _parse_price_eur(price_str: str) -> int | None:

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "scraping",
+    "accounts",
     "django_celery_beat",
     "django_celery_results",
 ]
@@ -136,6 +137,15 @@ def _cache_config(cache_url: str | None) -> dict:
 
 
 CACHES = _cache_config(SETTINGS.cache_url)
+
+# --- Django Ninja throttling ---
+# Per-user write buckets for authenticated /v1/me endpoints. UserWriteThrottle
+# and UserMergeThrottle read their rate from here by scope. Feedback throttling
+# hardcodes its own rates on FeedbackThrottle and is intentionally not listed.
+NINJA_DEFAULT_THROTTLE_RATES = {
+    "user_write": "60/min",
+    "user_merge": "10/min",
+}
 
 # --- Argo Events bridge ---
 # The webhook URL the `scraping.dispatch_list_scrape` Celery task POSTs to

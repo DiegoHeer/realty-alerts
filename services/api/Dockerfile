@@ -7,9 +7,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 RUN uv sync --locked --no-dev --compile-bytecode
 
-COPY manage.py ./
-COPY realty_api/ ./realty_api/
-COPY scraping/ ./scraping/
+COPY . ./
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE=realty_api.settings.prod
