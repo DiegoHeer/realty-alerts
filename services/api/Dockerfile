@@ -10,6 +10,7 @@ RUN uv sync --locked --no-dev --compile-bytecode
 COPY manage.py ./
 COPY realty_api/ ./realty_api/
 COPY scraping/ ./scraping/
+COPY accounts/ ./accounts/
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE=realty_api.settings.prod
