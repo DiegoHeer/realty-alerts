@@ -47,3 +47,13 @@ class FavoriteMergeItemIn(Schema):
 
 class FavoritesMergeIn(Schema):
     items: list[FavoriteMergeItemIn]
+
+
+class RecentViewItemOut(Schema):
+    residence: ResidenceSummaryOut
+    viewed_at: datetime
+
+
+class RecentViewsOut(Schema):
+    items: list[RecentViewItemOut]
+    total: int

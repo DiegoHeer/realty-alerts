@@ -9,7 +9,7 @@ from loguru import logger
 from ninja import Router, Status
 from ninja.errors import HttpError
 
-from accounts.models import Favorite, UserPreferences
+from accounts.models import Favorite, ResidenceView, UserPreferences
 from accounts.mru import upsert_and_evict
 from accounts.schemas import (
     FavoritePutIn,
@@ -17,6 +17,7 @@ from accounts.schemas import (
     FavoritesOut,
     NotificationsPrefIn,
     NotificationsPrefOut,
+    RecentViewsOut,
     SearchPrefIn,
     SearchPrefOut,
 )
@@ -27,6 +28,7 @@ me_router = Router(auth=jwt_token_auth)
 
 SEARCH_MAX_BYTES = 4096
 FAVORITES_CAP = 200
+RECENT_VIEWS_CAP = 12
 
 
 def _read_document(value: dict, updated_at: datetime | None) -> tuple[dict | None, datetime | None]:
@@ -84,13 +86,13 @@ def put_notification_preferences(request, payload: NotificationsPrefIn):
     return {"notifications": value, "updated_at": updated_at}
 
 
-def _favorites_collection(user: AbstractBaseUser) -> dict:
-    favorites = list(Favorite.objects.filter(user=user).order_by("-liked_at").values("residence_id", "liked_at"))
-    residence_ids = [row["residence_id"] for row in favorites]
+def _residence_collection(model, *, user: AbstractBaseUser, timestamp_field: str) -> dict:
+    rows = list(model.objects.filter(user=user).order_by(f"-{timestamp_field}").values("residence_id", timestamp_field))
+    residence_ids = [row["residence_id"] for row in rows]
     residences = residence_summary_qs().filter(latitude__isnull=False, longitude__isnull=False).in_bulk(residence_ids)
     items = [
-        {"residence": residences[row["residence_id"]], "liked_at": row["liked_at"]}
-        for row in favorites
+        {"residence": residences[row["residence_id"]], timestamp_field: row[timestamp_field]}
+        for row in rows
         if row["residence_id"] in residences
     ]
     return {"items": items, "total": len(items)}
@@ -98,7 +100,7 @@ def _favorites_collection(user: AbstractBaseUser) -> dict:
 
 @me_router.get("/favorites", response=FavoritesOut)
 def list_favorites(request):
-    return _favorites_collection(request.user)
+    return _residence_collection(Favorite, user=request.user, timestamp_field="liked_at")
 
 
 @me_router.post("/favorites/merge", response=FavoritesOut)
@@ -131,7 +133,7 @@ def merge_favorites(request, payload: FavoritesMergeIn):
             Favorite.objects.filter(id__in=stale_ids).delete()
     if skipped:
         logger.info("favorites merge skipped {} unknown residence ids for user {}", skipped, request.user.pk)
-    return _favorites_collection(request.user)
+    return _residence_collection(Favorite, user=request.user, timestamp_field="liked_at")
 
 
 @me_router.put("/favorites/{residence_id}", response={204: None})
@@ -154,4 +156,31 @@ def put_favorite(request, residence_id: int, payload: FavoritePutIn):
 @me_router.delete("/favorites/{residence_id}", response={204: None})
 def delete_favorite(request, residence_id: int):
     Favorite.objects.filter(user=request.user, residence_id=residence_id).delete()
+    return Status(204, None)
+
+
+@me_router.get("/recent-views", response=RecentViewsOut)
+def list_recent_views(request):
+    return _residence_collection(ResidenceView, user=request.user, timestamp_field="viewed_at")
+
+
+@me_router.delete("/recent-views", response={204: None})
+def clear_recent_views(request):
+    ResidenceView.objects.filter(user=request.user).delete()
+    return Status(204, None)
+
+
+@me_router.post("/recent-views/{residence_id}", response={204: None})
+def add_recent_view(request, residence_id: int):
+    residence = Residence.objects.filter(id=residence_id).first()
+    if residence is None:
+        raise HttpError(404, "residence_not_found")
+    upsert_and_evict(
+        ResidenceView,
+        user=request.user,
+        residence=residence,
+        timestamp_field="viewed_at",
+        timestamp=timezone.now(),
+        cap=RECENT_VIEWS_CAP,
+    )
     return Status(204, None)
