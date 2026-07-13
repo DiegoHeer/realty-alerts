@@ -21,7 +21,7 @@ def delete_expired_terminal_residences(*, now: datetime) -> int:
 
     deleted, _ = Residence.objects.filter(current_status__in=TERMINAL_STATUSES, status_changed_at__lt=cutoff).delete()
     if deleted:
-        logger.info("residence_ttl_deleted", deleted=deleted, cutoff=cutoff.isoformat())
+        logger.info("residence_ttl_deleted deleted={} cutoff={}", deleted, cutoff.isoformat())
 
     return deleted
 
@@ -49,5 +49,5 @@ def delete_unverified_accounts(*, now: datetime) -> int:
     deleted = deleted_by_model.get("auth.User", 0)
     if deleted:
         cutoff = now - timedelta(days=UNVERIFIED_ACCOUNT_TTL_DAYS)
-        logger.info("unverified_account_ttl_deleted", deleted=deleted, cutoff=cutoff.isoformat())
+        logger.info("unverified_account_ttl_deleted deleted={} cutoff={}", deleted, cutoff.isoformat())
     return deleted
