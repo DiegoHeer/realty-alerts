@@ -23,6 +23,7 @@ from accounts.schemas import (
 )
 from scraping.models import Residence
 from scraping.selectors import residence_summary_qs
+from scraping.throttling import UserMergeThrottle, UserWriteThrottle
 
 me_router = Router(auth=jwt_token_auth)
 
@@ -54,7 +55,7 @@ def get_search_preferences(request):
     return {"search": value, "updated_at": updated_at}
 
 
-@me_router.put("/preferences/search", response=SearchPrefOut)
+@me_router.put("/preferences/search", response=SearchPrefOut, throttle=[UserWriteThrottle()])
 def put_search_preferences(request, payload: SearchPrefIn):
     # Reject oversized payloads before the last-write-wins gate — fail fast on
     # abusive input regardless of whether the write would win. Measure compact
@@ -76,7 +77,7 @@ def get_notification_preferences(request):
     return {"notifications": value, "updated_at": updated_at}
 
 
-@me_router.put("/preferences/notifications", response=NotificationsPrefOut)
+@me_router.put("/preferences/notifications", response=NotificationsPrefOut, throttle=[UserWriteThrottle()])
 def put_notification_preferences(request, payload: NotificationsPrefIn):
     preferences, _ = UserPreferences.objects.get_or_create(user=request.user)
     _apply_last_write_wins(
@@ -103,7 +104,7 @@ def list_favorites(request):
     return _residence_collection(Favorite, user=request.user, timestamp_field="liked_at")
 
 
-@me_router.post("/favorites/merge", response=FavoritesOut)
+@me_router.post("/favorites/merge", response=FavoritesOut, throttle=[UserMergeThrottle()])
 def merge_favorites(request, payload: FavoritesMergeIn):
     if len(payload.items) > FAVORITES_CAP:
         raise HttpError(422, "too_many_items")
@@ -136,7 +137,7 @@ def merge_favorites(request, payload: FavoritesMergeIn):
     return _residence_collection(Favorite, user=request.user, timestamp_field="liked_at")
 
 
-@me_router.put("/favorites/{residence_id}", response={204: None})
+@me_router.put("/favorites/{residence_id}", response={204: None}, throttle=[UserWriteThrottle()])
 def put_favorite(request, residence_id: int, payload: FavoritePutIn):
     residence = Residence.objects.filter(id=residence_id).first()
     if residence is None:
@@ -153,7 +154,7 @@ def put_favorite(request, residence_id: int, payload: FavoritePutIn):
     return Status(204, None)
 
 
-@me_router.delete("/favorites/{residence_id}", response={204: None})
+@me_router.delete("/favorites/{residence_id}", response={204: None}, throttle=[UserWriteThrottle()])
 def delete_favorite(request, residence_id: int):
     Favorite.objects.filter(user=request.user, residence_id=residence_id).delete()
     return Status(204, None)
@@ -164,13 +165,13 @@ def list_recent_views(request):
     return _residence_collection(ResidenceView, user=request.user, timestamp_field="viewed_at")
 
 
-@me_router.delete("/recent-views", response={204: None})
+@me_router.delete("/recent-views", response={204: None}, throttle=[UserWriteThrottle()])
 def clear_recent_views(request):
     ResidenceView.objects.filter(user=request.user).delete()
     return Status(204, None)
 
 
-@me_router.post("/recent-views/{residence_id}", response={204: None})
+@me_router.post("/recent-views/{residence_id}", response={204: None}, throttle=[UserWriteThrottle()])
 def add_recent_view(request, residence_id: int):
     residence = Residence.objects.filter(id=residence_id).first()
     if residence is None:
