@@ -140,6 +140,10 @@ class Residence(models.Model):
             models.Index(fields=["price_per_m2"], name="idx_res_price_per_m2"),
             models.Index(fields=["neighbourhood_code"], name="idx_res_neighbourhood_code"),
         ]
+        # Also: GIN trigram (gin_trgm_ops) indexes on street/city/postcode/
+        # neighbourhood, backing /v1/residences/search. Hand-rolled as raw SQL in
+        # migration 0004 rather than a declarative GinIndex here, since GIN is
+        # Postgres-only and this model still supports the SQLite runserver fallback.
 
     def __str__(self) -> str:
         return f"{self.title or '(no title)'} ({self.city})"
