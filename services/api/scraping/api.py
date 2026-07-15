@@ -228,7 +228,6 @@ SEARCH_WORD_SIMILARITY_THRESHOLD = "0.3"
 
 
 def _match_any_field(lookup: str, value: str) -> Q:
-    """OR a ``field__lookup=value`` predicate across every SEARCH_FIELDS column."""
     return reduce(operator.or_, (Q(**{f"{field}__{lookup}": value}) for field in SEARCH_FIELDS))
 
 
@@ -270,14 +269,12 @@ def list_residences(
     }
 
 
+# Declared before /residences/{residence_id}: Ninja compiles a bare {name}
+# segment to a plain Django <name> converter (not digit-only), so if the int
+# route came first, "search" would match residence_id and 422 instead of
+# reaching this view.
 @v1_router.get("/residences/search", response=list[ResidenceSummaryOut], tags=["catalog"])
 def search_residences(request, q: str, limit: QueryEx[int, P(ge=1, le=25)] = 8):
-    """Fuzzy, ranked address typeahead over geocoded residences — the backend for
-    the app's search-bar suggestions. Uses pg_trgm word similarity with GIN
-    trigram indexes (migration 0004), so it stays typo-tolerant and fast past the
-    100-row list page. Degrades to a plain substring match on the SQLite dev
-    fallback. Declared before ``/residences/{residence_id}`` so the literal path
-    wins over the int route."""
     q = q.strip()
     if len(q) < SEARCH_MIN_QUERY_LEN:
         return []
