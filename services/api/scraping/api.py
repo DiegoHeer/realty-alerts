@@ -289,16 +289,14 @@ def search_residences(request, q: str, limit: QueryEx[int, P(ge=1, le=25)] = 8):
     )
 
     if connection.vendor != "postgresql":
-        qs = base.filter(_match_any_field("icontains", q)).order_by(
-            F("created_at").desc(nulls_last=True), F("id").desc()
-        )
+        qs = base.filter(_match_any_field("icontains", q)).order_by(*_SORT_ORDER[SortOption.NEWEST])
         return list(qs[:limit])
 
     rank = Greatest(*(TrigramWordSimilarity(q, field) for field in SEARCH_FIELDS))
     qs = (
         base.annotate(search_rank=rank)
         .filter(_match_any_field("trigram_word_similar", q))
-        .order_by("-search_rank", F("created_at").desc(nulls_last=True), F("id").desc())
+        .order_by("-search_rank", *_SORT_ORDER[SortOption.NEWEST])
     )
     # set_config(..., is_local=true) scopes the loosened threshold to this
     # transaction so it never leaks onto a pooled connection.
