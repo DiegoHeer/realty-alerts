@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import F
 from django.db.models.functions import Cast, NullIf
+from django.utils.text import slugify
 
 
 class Website(models.TextChoices):
@@ -164,6 +165,19 @@ class Residence(models.Model):
     def image_url(self) -> str | None:
         listing = self._freshest_resolved_listing()
         return listing.image_url if listing else None
+
+    @property
+    def slug(self) -> str | None:
+        """SEO-friendly address slug, e.g. "martin-luther-kinglaan-129". Reads
+        only plain columns on this row (no related query), so it's safe to call
+        per-row on a list queryset unlike `title`/`image_url` above."""
+        if not self.street:
+            return None
+        house_number_part = "".join(
+            str(part) for part in (self.house_number, self.house_letter, self.house_number_suffix) if part
+        )
+        address = f"{self.street} {house_number_part}".strip()
+        return slugify(address) or None
 
 
 class Listing(models.Model):

@@ -74,3 +74,23 @@ def test_freshest_listing_ranks_null_timestamps_last():
     )
 
     assert residence.image_url == "https://example.com/fresh.jpg"  # ty: ignore[unresolved-attribute]
+
+
+def test_slug_combines_street_and_house_number():
+    residence = Residence(street="Martin Luther Kinglaan", house_number=129)
+    assert residence.slug == "martin-luther-kinglaan-129"
+
+
+def test_slug_includes_house_letter_and_suffix():
+    residence = Residence(street="Burgemeester Rothestraat", house_number=18, house_letter="N")
+    assert residence.slug == "burgemeester-rothestraat-18n"
+
+
+def test_slug_strips_diacritics():
+    residence = Residence(street="Ölplein", house_number=4)
+    assert residence.slug == "olplein-4"
+
+
+def test_slug_is_none_without_street():
+    residence = Residence(street=None, house_number=129)
+    assert residence.slug is None

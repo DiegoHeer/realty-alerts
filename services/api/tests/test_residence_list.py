@@ -10,7 +10,7 @@ class TestResidenceList:
     endpoint = "/v1/residences"
 
     def test_returns_residences(self, client):
-        residence = ResidenceFactory()
+        residence = ResidenceFactory(street="Martin Luther Kinglaan", house_number=129)
         ListingFactory(residence=residence)
 
         response = client.get(self.endpoint)
@@ -19,6 +19,7 @@ class TestResidenceList:
         data = response.json()["items"]
         assert len(data) == 1
         assert data[0]["id"] == residence.id  # ty: ignore[unresolved-attribute]
+        assert data[0]["slug"] == "martin-luther-kinglaan-129"
 
     def test_empty_database_returns_empty_list(self, client):
         response = client.get(self.endpoint)
@@ -220,6 +221,7 @@ class TestResidenceList:
             "house_letter",
             "house_number_suffix",
             "postcode",
+            "slug",
             "latitude",
             "longitude",
             "current_price_eur",
