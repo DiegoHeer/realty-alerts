@@ -7,6 +7,8 @@ from tests.factories import ListingFactory, ResidenceFactory
 class TestResidenceDetail:
     def test_returns_full_shape_with_nested_listings(self, client):
         residence = ResidenceFactory(
+            street="Martin Luther Kinglaan",
+            house_number=129,
             bedroom_count=3,
             bathroom_count=2,
             surface_area_m2=120,
@@ -22,6 +24,7 @@ class TestResidenceDetail:
         body = response.json()
         assert body["id"] == residence.id  # ty: ignore[unresolved-attribute]
         assert body["bag_id"] == residence.bag_id
+        assert body["slug"] == "martin-luther-kinglaan-129"
         assert body["bedroom_count"] == 3
         assert body["bathroom_count"] == 2
         assert body["surface_area_m2"] == 120

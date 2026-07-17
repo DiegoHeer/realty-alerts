@@ -85,6 +85,7 @@ class ResidenceOut(Schema):
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
+    slug: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     neighbourhood: str | None = None
@@ -120,6 +121,7 @@ class ResidenceSummaryOut(Schema):
     house_letter: str | None = None
     house_number_suffix: str | None = None
     postcode: str | None = None
+    slug: str | None = None
     latitude: float
     longitude: float
     current_price_eur: int | None = None
@@ -136,6 +138,12 @@ class ResidenceSummaryOut(Schema):
         # the property issues one query per row. AttributeError here means the
         # endpoint forgot to annotate.
         return obj.cover_image_url
+
+    @staticmethod
+    def resolve_slug(obj) -> str | None:
+        # Unlike resolve_image_url, Residence.slug only reads plain columns
+        # already on the row — no annotation needed, no N+1 risk.
+        return obj.slug
 
 
 class ResidencePage(Schema):
