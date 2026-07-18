@@ -1,12 +1,13 @@
 """Render every branded account email to a static HTML file for manual cross-client checks."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand, CommandParser
 from django.template.loader import render_to_string
-from django.utils import translation
+from django.utils import timezone, translation
 from loguru import logger
 
 from scraping.context_processors import email_branding
@@ -31,7 +32,7 @@ def _security_notice_context() -> dict[str, Any]:
         **_base_context(),
         "ip": "203.0.113.5",
         "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-        "timestamp": "18 Jul 2026, 14:32",
+        "timestamp": timezone.make_aware(datetime(2026, 7, 18, 14, 32)),
     }
 
 
