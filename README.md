@@ -1,18 +1,15 @@
 # Realty Alerts
 
-Real estate listing notifications for the Dutch housing market. Get push notifications when new properties appear on Funda, Pararius, and Vastgoed Nederland.
+Real estate listing notifications for the Dutch housing market. Detects when new properties appear on Funda, Pararius, and Vastgoed Nederland and notifies subscribers.
 
 ## Architecture
 
-Application monorepo with 4 services. Deployment is GitOps — see [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) for the cluster and ArgoCD configuration.
+Backend-only repo with two Python services: a CDC scraper and a Django API. The mobile and web frontends live in separate repos and consume this API. Deployment is GitOps — see [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) for the cluster and ArgoCD configuration.
 
 ```
 services/
   scraper/     CDC scraper (Python, K8s CronJobs per website)
   api/         Django 6.0 + Django Ninja backend (Django ORM, psycopg3)
-apps/
-  mobile/      React Native / Expo (TanStack Query, Zustand)
-  web/         Next.js static landing page (Tailwind CSS)
 ```
 
 ## Tech Stack
@@ -21,8 +18,6 @@ apps/
 |---|---|
 | Backend API | Django 6.0, Django Ninja, Django ORM, psycopg3, Gunicorn, WhiteNoise |
 | Scraper | Python, BeautifulSoup, Playwright, httpx |
-| Mobile App | React Native, Expo, TanStack Query, Zustand |
-| Landing Page | Next.js 15, Tailwind CSS |
 | Database | PostgreSQL |
 | Notifications | Expo Push (FCM/APNs) |
 | Deployment | GitOps — [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) |
@@ -47,14 +42,6 @@ make api
 # Scraper tests
 cd services/scraper && uv sync --dev
 uv run pytest tests/ -v
-
-# Mobile app (requires Node.js)
-cd apps/mobile && npm install
-npx expo start
-
-# Landing page (requires Node.js)
-cd apps/web && npm install
-npm run dev
 ```
 
 Or use the root Makefile:
