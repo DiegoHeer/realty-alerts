@@ -57,3 +57,10 @@ class RecentViewItemOut(Schema):
 class RecentViewsOut(Schema):
     items: list[RecentViewItemOut]
     total: int
+
+
+class AccountDeleteIn(Schema):
+    # Optional because social accounts (no usable password) re-authenticate via a
+    # fresh provider-token login rather than by supplying a password here. When a
+    # password IS given it is verified against the current user (see delete_account).
+    password: str | None = None

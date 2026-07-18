@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 
 from allauth.headless.contrib.ninja.security import jwt_token_auth
@@ -12,6 +13,7 @@ from ninja.errors import HttpError
 from accounts.models import Favorite, ResidenceView, UserPreferences
 from accounts.mru import upsert_and_evict
 from accounts.schemas import (
+    AccountDeleteIn,
     FavoritePutIn,
     FavoritesMergeIn,
     FavoritesOut,
@@ -23,7 +25,7 @@ from accounts.schemas import (
 )
 from scraping.models import Residence
 from scraping.selectors import residence_summary_qs
-from scraping.throttling import UserMergeThrottle, UserWriteThrottle
+from scraping.throttling import AccountDeleteThrottle, UserMergeThrottle, UserWriteThrottle
 
 me_router = Router(auth=jwt_token_auth)
 
@@ -184,4 +186,97 @@ def add_recent_view(request, residence_id: int):
         timestamp=timezone.now(),
         cap=RECENT_VIEWS_CAP,
     )
+    return Status(204, None)
+
+
+def _recently_reauthenticated(request) -> bool:
+    """Whether the caller re-authenticated within ACCOUNT_REAUTHENTICATION_TIMEOUT (default 5 min).
+
+    Reads the last authentication timestamp from the allauth session embedded in
+    the caller's JWT. This is deliberately NOT allauth's own
+    ``did_recently_authenticate``: under the headless JWT strategy ``jwt_token_auth``
+    sets ``request.user`` but never attaches the session to ``request.session``, so
+    that helper reads an empty session (always False for password users) AND
+    short-circuits to True for users without a usable password — wrong in both
+    directions. Reading ``methods[-1]["at"]`` from the token's own session works
+    uniformly for password and social accounts.
+
+    Token *refresh* does not bump this timestamp (only login / social login /
+    reauthenticate do), so a long-lived app session goes stale and forces a fresh
+    re-auth — which is the whole point. Relies on allauth internals, so it is
+    covered by an end-to-end test; on any failure it fails closed (returns False,
+    i.e. no deletion).
+    """
+    try:
+        # Kept inline (not module-level) on purpose: these are allauth *internals*, so
+        # if an upgrade moves them the failure lands here — denying deletion (fail
+        # closed) rather than breaking module import. The E2E test catches such a move.
+        from allauth.account import app_settings as account_app_settings
+        from allauth.account.internal.flows.login import AUTHENTICATION_METHODS_SESSION_KEY
+        from allauth.headless.tokens.strategies.jwt.internal import get_token_session
+
+        payload = request.auth
+        if not isinstance(payload, dict):
+            return False
+        session = get_token_session(payload)
+        if session is None:  # session flushed / logged out
+            return False
+        methods = session.get(AUTHENTICATION_METHODS_SESSION_KEY, [])
+        if not methods:
+            return False
+        last_at = methods[-1].get("at")
+        if last_at is None:
+            return False
+        return time.time() - last_at < account_app_settings.REAUTHENTICATION_TIMEOUT
+    except Exception:
+        logger.exception("reauth recency check failed; denying account deletion")
+        return False
+
+
+@me_router.delete("/account", response={204: None}, throttle=[AccountDeleteThrottle()])
+def delete_account(request, payload: AccountDeleteIn):
+    """Permanently delete the authenticated user's OWN account.
+
+    Security: the account is taken solely from the JWT (``request.user``) — there is
+    no user id in the path or body — so a caller can only ever delete themselves,
+    never someone else's account. Deletion additionally requires FRESH proof of
+    identity so a merely-unlocked device (with a long-lived session) can't wipe the
+    account: either the correct current password (password accounts) or a
+    re-authentication within the last few minutes (social accounts, which have no
+    usable password and re-auth via a fresh provider-token login just before this
+    call). A wrong-but-present password is reported distinctly so the app can say so.
+
+    The password is carried in the DELETE body: unusual, but fine here since the
+    companion mobile app is the sole (controlled) client, so no intermediary that
+    strips DELETE bodies sits in the path. Because it doubles as a password-check
+    oracle, the endpoint has its own tight throttle (``AccountDeleteThrottle``).
+
+    The delete cascades to preferences / favorites / recent-views and nulls the user
+    FK on retained feedback (see models). Hard delete: irreversible by design.
+    """
+    user = request.user
+    # Operator accounts must be removed via the admin, never self-served from the
+    # app — this keeps a privileged account from being nuked off an unlocked phone.
+    if user.is_staff or user.is_superuser:
+        raise HttpError(403, "staff_account")
+
+    # Compare the password verbatim — never stripped: leading/trailing spaces are
+    # valid characters in a password. check_password returns False for accounts with
+    # an unusable password (social-only), so those fall through to the recency check.
+    raw_password = payload.password
+    reauthenticated = (
+        raw_password is not None and user.check_password(raw_password)
+    ) or _recently_reauthenticated(request)
+    if not reauthenticated:
+        # "password_incorrect" only fits an account that actually has a password and
+        # supplied a wrong one; social / no-password users are steered to re-auth.
+        if raw_password is not None and user.has_usable_password():
+            raise HttpError(403, "password_incorrect")
+        raise HttpError(403, "reauthentication_required")
+
+    # pk only, no email: this is a right-to-erasure path, so we don't leave the
+    # user's address behind in application logs. A single delete() already cascades
+    # inside one transaction, so no explicit transaction.atomic() is needed.
+    logger.info("self-service account deletion for user {}", user.pk)
+    user.delete()
     return Status(204, None)
