@@ -238,3 +238,26 @@ class TestPasswordResetByCode:
 
         new = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "Rel0cated!pw"})
         assert new.status_code == 200, f"reset rejected after 5 min: {reset.status_code} {reset.content!r}"
+
+
+@pytest.mark.django_db
+class TestVerificationEmailHtml:
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_signup_sends_multipart_branded_email(self, headless_client):
+        _post(
+            headless_client,
+            SIGNUP_URL,
+            {"email": "html@example.com", "name": "Ada", "password": "sup3rs3cret!"},
+        )
+        assert len(mail.outbox) == 1
+        msg = mail.outbox[0]
+        assert msg.from_email == "Huismus <noreply@huismusapp.com>"
+        # HTML alternative present and MJML-compiled:
+        assert msg.alternatives, "expected an HTML alternative"
+        html, mime = msg.alternatives[0]
+        assert mime == "text/html"
+        assert "<html" in html.lower()
+        assert "Huismus" in html
+        # code appears in both parts:
+        code = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body).group()
+        assert code in html
