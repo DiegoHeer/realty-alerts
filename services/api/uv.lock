@@ -532,6 +532,21 @@ wheels = [
 ]
 
 [[package]]
+name = "mjml-python"
+version = "1.4.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/d0/0362ad0cd978006af2576f590969d2166f7bc98793a34a9bf6c2594d7f39/mjml_python-1.4.1.tar.gz", hash = "sha256:b6f577e262f5caefbaec8ae15abcb90a8d2fe02ed089fc97852fd05b927a7f23", size = 17832, upload-time = "2026-06-30T11:57:40.301Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/30/6d08fe76173daba651a391b0fee0f57fc0b73f50eee07fb0cf8146d44136/mjml_python-1.4.1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:b2acfb094fd4cdcbea0337a0f2a030ff8f5575bc4946b4ee8bdbd9a5ac372ae6", size = 552188, upload-time = "2026-06-30T11:57:30.434Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/c4/aa234971b108277610060e1aa7c26bf5339db96e37fa1d4aacd32be794d0/mjml_python-1.4.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:2080a59a4a98c9a3c9f663f4d194f0dddf807036cb33cf8a13e933637eb88921", size = 542747, upload-time = "2026-06-30T11:57:31.888Z" },
+    { url = "https://files.pythonhosted.org/packages/84/89/09b64bd861622a499899ee6ef8b4d2a887956d8f49e2520e394838a1245f/mjml_python-1.4.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:38dcfe71383499455d3b6df7d1eabc4909e84de87f1e5c513d8bc5cda6ceba73", size = 596330, upload-time = "2026-06-30T11:57:33.509Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/ed/b91433d8ee3bacb90c5d685ad64a6fe3969aad5f331213c95c0013ecaf51/mjml_python-1.4.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5a92ef461bae751043eae787e07d4c2f25a71e36379a6b2c0c15fc4d59f100e5", size = 599873, upload-time = "2026-06-30T11:57:35.023Z" },
+    { url = "https://files.pythonhosted.org/packages/db/04/fe95834e46afe2e0311cff2f94c822e9babdc3cb6849e9eb80748e7fd32e/mjml_python-1.4.1-cp38-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:ea0721657841cbb35bb3796cd1ffe93eaaa432ff5f10f18779abc8058172e068", size = 772916, upload-time = "2026-06-30T11:57:36.44Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/bf/56ab3d2e89a34d26c7f66e00472d03be6654ec66b085d30c9e92dfa84baa/mjml_python-1.4.1-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:247ed6a224ed238febc3c729f3bb67ff70ffdf9627e934d5122a62307c62bf7a", size = 684255, upload-time = "2026-06-30T11:57:37.856Z" },
+    { url = "https://files.pythonhosted.org/packages/40/a8/974c4cdec35fdd84c429fd50ed77b5a997011102a94636745a0d001a9aa8/mjml_python-1.4.1-cp38-abi3-win_amd64.whl", hash = "sha256:bdf58eb4531506ac7b3192388aa834a1947024a4f547d3b23ff7db51a287759c", size = 435585, upload-time = "2026-06-30T11:57:39.051Z" },
+]
+
+[[package]]
 name = "oauthlib"
 version = "3.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -779,6 +794,7 @@ dependencies = [
     { name = "gunicorn" },
     { name = "httpx" },
     { name = "loguru" },
+    { name = "mjml-python" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic-settings" },
     { name = "secret-key-generator" },
@@ -809,6 +825,7 @@ requires-dist = [
     { name = "gunicorn", specifier = ">=23" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "loguru", specifier = ">=0.7" },
+    { name = "mjml-python", specifier = ">=1.4.1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3" },
     { name = "pydantic-settings", specifier = ">=2.9" },
     { name = "secret-key-generator", specifier = ">=0.0.8" },

@@ -15,6 +15,7 @@ dependencies = [
     "gunicorn>=23",
     "httpx>=0.28",
     "loguru>=0.7",
+    "mjml-python>=1.4.1",
     "psycopg[binary]>=3.3",
     "pydantic-settings>=2.9",
     "secret-key-generator>=0.0.8",
