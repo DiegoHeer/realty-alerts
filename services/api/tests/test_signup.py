@@ -3,6 +3,7 @@ import re
 
 import pytest
 from django.core import mail
+from django.core.mail import EmailMultiAlternatives
 from django.http import HttpResponse
 from django.test import Client as DjangoTestClient
 from django.test import override_settings
@@ -249,14 +250,18 @@ class TestPasswordResetEmailHtml:
 
         assert len(mail.outbox) == 1
         msg = mail.outbox[0]
+        assert isinstance(msg, EmailMultiAlternatives)
         # HTML alternative present and MJML-compiled:
         assert msg.alternatives, "expected an HTML alternative"
         html, mime = msg.alternatives[0]
+        assert isinstance(html, str)
         assert mime == "text/html"
         assert "<html" in html.lower()
         assert "Huismus" in html
         # code appears in both parts:
-        code = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body).group()
+        match = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body)
+        assert match is not None
+        code = match.group()
         assert code in html
 
 
@@ -284,9 +289,11 @@ class TestPasswordChangedNotification:
         assert response.status_code == 200
         assert len(mail.outbox) == 1
         msg = mail.outbox[0]
+        assert isinstance(msg, EmailMultiAlternatives)
         assert msg.to == [verified_user.email]
         assert msg.alternatives, "expected an HTML alternative"
         html, mime = msg.alternatives[0]
+        assert isinstance(html, str)
         assert mime == "text/html"
         assert "Huismus" in html
         assert "Your password was changed" in html
@@ -303,13 +310,17 @@ class TestVerificationEmailHtml:
         )
         assert len(mail.outbox) == 1
         msg = mail.outbox[0]
+        assert isinstance(msg, EmailMultiAlternatives)
         assert msg.from_email == "Huismus <noreply@huismusapp.com>"
         # HTML alternative present and MJML-compiled:
         assert msg.alternatives, "expected an HTML alternative"
         html, mime = msg.alternatives[0]
+        assert isinstance(html, str)
         assert mime == "text/html"
         assert "<html" in html.lower()
         assert "Huismus" in html
         # code appears in both parts:
-        code = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body).group()
+        match = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body)
+        assert match is not None
+        code = match.group()
         assert code in html
