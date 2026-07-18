@@ -1,0 +1,7 @@
+{% extends "account/email/base_message_branded.txt" %}
+{% load i18n %}
+{% block content %}{% trans "You're all set" %}
+
+{% blocktrans %}Your email address has been confirmed. Welcome to Huismus!{% endblocktrans %}
+
+{% trans "Open Huismus" %}: https://{{ current_site.domain }}{% endblock %}

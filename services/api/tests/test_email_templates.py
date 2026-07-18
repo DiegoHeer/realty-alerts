@@ -88,3 +88,33 @@ def test_email_deleted_message_renders():
     assert "An email address was removed" in html
     assert "removed@example.com" in html
     assert "203.0.113.5" in html
+
+
+@pytest.mark.django_db
+def test_email_confirm_message_renders():
+    html = render_to_string(
+        "account/email/email_confirm_message.html",
+        {
+            "current_site": Site.objects.get(pk=1),
+            "email_logo_url": "https://x/logo.png",
+        },
+    )
+    assert "<html" in html.lower()
+    assert "You're all set" in html
+    assert "Open Huismus" in html
+
+
+@pytest.mark.django_db
+def test_account_already_exists_message_renders():
+    html = render_to_string(
+        "account/email/account_already_exists_message.html",
+        {
+            "current_site": Site.objects.get(pk=1),
+            "email_logo_url": "https://x/logo.png",
+            "email": "x@example.com",
+            "password_reset_url": "https://huismusapp.com/reset/abc",
+        },
+    )
+    assert "<html" in html.lower()
+    assert "You already have an account" in html
+    assert "https://huismusapp.com/reset/abc" in html

@@ -1,0 +1,7 @@
+{% extends "account/email/base_message_branded.txt" %}
+{% load i18n %}
+{% block content %}{% trans "You already have an account" %}
+
+{% blocktrans %}Someone tried to sign up with this email, but you already have a Huismus account. If it was you, just log in — or reset your password if you've forgotten it.{% endblocktrans %}
+
+{% trans "Reset your password" %}: {{ password_reset_url }}{% endblock %}

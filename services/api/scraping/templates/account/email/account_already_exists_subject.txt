@@ -1,0 +1,1 @@
+{% load i18n %}{% trans "You already have an account" %}
