@@ -29,6 +29,9 @@ apps/mobile/design/sets/
 # Database
 *.sqlite3
 
+# Build artifacts
+build/
+
 # Claude Code
 .claude/settings.local.json
 .claude/superpowers/

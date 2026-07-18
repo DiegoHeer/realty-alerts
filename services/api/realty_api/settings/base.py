@@ -58,6 +58,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -80,6 +81,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "scraping.context_processors.email_branding",
             ],
         },
     },
@@ -102,6 +104,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
+LANGUAGES = [
+    ("en", "English"),
+    ("nl", "Nederlands"),
+    ("pt", "Português"),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = SETTINGS.timezone
 USE_I18N = True
 USE_TZ = True
@@ -173,6 +181,9 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# Security-notice emails (password/email changed, email deleted) are only sent
+# when this is True; allauth's send_notification_mail() early-returns otherwise.
+ACCOUNT_EMAIL_NOTIFICATIONS = True
 ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
 ACCOUNT_PASSWORD_RESET_BY_CODE_ENABLED = True
 ACCOUNT_PASSWORD_RESET_BY_CODE_TIMEOUT = 15 * 60
@@ -257,3 +268,6 @@ EMAIL_USE_SSL = SETTINGS.email_use_ssl
 DEFAULT_FROM_EMAIL = SETTINGS.default_from_email
 # Reply-To for transactional auth mail, injected by scraping.adapters.AccountAdapter.
 EMAIL_REPLY_TO = SETTINGS.email_reply_to
+# Base URL email templates prefix onto static asset paths (see
+# scraping.context_processors.email_branding) so images resolve in mail clients.
+EMAIL_ASSET_BASE_URL = SETTINGS.email_asset_base_url.rstrip("/")

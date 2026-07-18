@@ -3,6 +3,7 @@ import re
 
 import pytest
 from django.core import mail
+from django.core.mail import EmailMultiAlternatives
 from django.http import HttpResponse
 from django.test import Client as DjangoTestClient
 from django.test import override_settings
@@ -12,6 +13,7 @@ LOGIN_URL = "/_allauth/app/v1/auth/login"
 SESSION_URL = "/_allauth/app/v1/auth/session"
 PASSWORD_REQUEST_URL = "/_allauth/app/v1/auth/password/request"
 PASSWORD_RESET_URL = "/_allauth/app/v1/auth/password/reset"
+PASSWORD_CHANGE_URL = "/_allauth/app/v1/account/password/change"
 
 
 def _post(client: DjangoTestClient, url: str, payload: dict) -> HttpResponse:
@@ -238,3 +240,87 @@ class TestPasswordResetByCode:
 
         new = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "Rel0cated!pw"})
         assert new.status_code == 200, f"reset rejected after 5 min: {reset.status_code} {reset.content!r}"
+
+
+@pytest.mark.django_db
+class TestPasswordResetEmailHtml:
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_reset_request_sends_multipart_branded_email(self, headless_client, verified_user):
+        _post(headless_client, PASSWORD_REQUEST_URL, {"email": verified_user.email})
+
+        assert len(mail.outbox) == 1
+        msg = mail.outbox[0]
+        assert isinstance(msg, EmailMultiAlternatives)
+        # HTML alternative present and MJML-compiled:
+        assert msg.alternatives, "expected an HTML alternative"
+        html, mime = msg.alternatives[0]
+        assert isinstance(html, str)
+        assert mime == "text/html"
+        assert "<html" in html.lower()
+        assert "Huismus" in html
+        # code appears in both parts:
+        match = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body)
+        assert match is not None
+        code = match.group()
+        assert code in html
+
+
+@pytest.mark.django_db
+class TestPasswordChangedNotification:
+    """ACCOUNT_EMAIL_NOTIFICATIONS must be True or allauth silently drops this mail.
+
+    Regression coverage for the bug where the security-notice emails
+    (password/email changed, email deleted) were rendered and tested but never
+    actually sent because ACCOUNT_EMAIL_NOTIFICATIONS was left at its default (False).
+    """
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_password_change_sends_branded_security_notice(self, headless_client, verified_user):
+        login = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "testpass123!"})
+        access_token = _body(login)["meta"]["access_token"]
+
+        response = headless_client.post(
+            PASSWORD_CHANGE_URL,
+            data=json.dumps({"current_password": "testpass123!", "new_password": "Rel0cated!pw"}),
+            content_type="application/json",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        assert response.status_code == 200
+        assert len(mail.outbox) == 1
+        msg = mail.outbox[0]
+        assert isinstance(msg, EmailMultiAlternatives)
+        assert msg.to == [verified_user.email]
+        assert msg.alternatives, "expected an HTML alternative"
+        html, mime = msg.alternatives[0]
+        assert isinstance(html, str)
+        assert mime == "text/html"
+        assert "Huismus" in html
+        assert "Your password was changed" in html
+
+
+@pytest.mark.django_db
+class TestVerificationEmailHtml:
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_signup_sends_multipart_branded_email(self, headless_client):
+        _post(
+            headless_client,
+            SIGNUP_URL,
+            {"email": "html@example.com", "name": "Ada", "password": "sup3rs3cret!"},
+        )
+        assert len(mail.outbox) == 1
+        msg = mail.outbox[0]
+        assert isinstance(msg, EmailMultiAlternatives)
+        assert msg.from_email == "Huismus <noreply@huismusapp.com>"
+        # HTML alternative present and MJML-compiled:
+        assert msg.alternatives, "expected an HTML alternative"
+        html, mime = msg.alternatives[0]
+        assert isinstance(html, str)
+        assert mime == "text/html"
+        assert "<html" in html.lower()
+        assert "Huismus" in html
+        # code appears in both parts:
+        match = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body)
+        assert match is not None
+        code = match.group()
+        assert code in html

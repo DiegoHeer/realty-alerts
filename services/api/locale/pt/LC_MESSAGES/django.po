@@ -1,0 +1,282 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-18 23:25+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: scraping/templates/account/email/_facts.html:2
+#: scraping/templates/account/email/email_changed_message.txt:7
+#: scraping/templates/account/email/email_deleted_message.txt:7
+#: scraping/templates/account/email/password_changed_message.txt:7
+msgid "When"
+msgstr "Quando"
+
+#: scraping/templates/account/email/_facts.html:3
+#: scraping/templates/account/email/email_changed_message.txt:8
+#: scraping/templates/account/email/email_deleted_message.txt:8
+#: scraping/templates/account/email/password_changed_message.txt:8
+msgid "Device"
+msgstr "Dispositivo"
+
+#: scraping/templates/account/email/_facts.html:4
+#: scraping/templates/account/email/email_changed_message.txt:9
+#: scraping/templates/account/email/email_deleted_message.txt:9
+#: scraping/templates/account/email/password_changed_message.txt:9
+msgid "IP address"
+msgstr "Endereço IP"
+
+#: scraping/templates/account/email/account_already_exists_message.html:3
+msgid "You already have a Huismus account."
+msgstr "Já tem uma conta Huismus."
+
+#: scraping/templates/account/email/account_already_exists_message.html:5
+#: scraping/templates/account/email/account_already_exists_message.txt:3
+#: scraping/templates/account/email/account_already_exists_subject.txt:1
+msgid "You already have an account"
+msgstr "Já tem uma conta"
+
+#: scraping/templates/account/email/account_already_exists_message.html:6
+#: scraping/templates/account/email/account_already_exists_message.txt:5
+msgid ""
+"Someone tried to sign up with this email, but you already have a Huismus "
+"account. If it was you, just log in — or reset your password if you've "
+"forgotten it."
+msgstr ""
+"Alguém tentou registar-se com este e-mail, mas já tem uma conta Huismus. "
+"Se foi você, inicie sessão — ou redefina a palavra-passe se a esqueceu."
+
+#: scraping/templates/account/email/account_already_exists_message.html:7
+#: scraping/templates/account/email/account_already_exists_message.txt:7
+#: scraping/templates/account/email/password_reset_code_message.html:5
+#: scraping/templates/account/email/password_reset_code_message.txt:3
+#: scraping/templates/account/email/password_reset_code_subject.txt:1
+msgid "Reset your password"
+msgstr "Redefinir a palavra-passe"
+
+#: scraping/templates/account/email/base_email.html:29
+#: scraping/templates/account/email/base_message_branded.txt:4
+msgid "A zero-data company. Your searches stay yours."
+msgstr "Uma empresa sem recolha de dados. As suas pesquisas são só suas."
+
+#: scraping/templates/account/email/base_email.html:31
+#: scraping/templates/account/email/email_confirm_message.html:7
+#: scraping/templates/account/email/email_confirm_message.txt:7
+msgid "Open Huismus"
+msgstr "Abrir o Huismus"
+
+#: scraping/templates/account/email/base_email.html:33
+msgid "Privacy"
+msgstr "Privacidade"
+
+#: scraping/templates/account/email/base_email.html:36
+msgid "You're receiving this email because you have a Huismus account."
+msgstr "Está a receber este e-mail porque tem uma conta Huismus."
+
+#: scraping/templates/account/email/base_email.html:36
+msgid "Netherlands"
+msgstr "Países Baixos"
+
+#: scraping/templates/account/email/email_changed_message.html:3
+#: scraping/templates/account/email/email_changed_message.html:6
+#: scraping/templates/account/email/email_changed_message.txt:5
+#, python-format
+msgid ""
+"Your Huismus account email was changed from %(from_email)s to %(to_email)s."
+msgstr ""
+"O e-mail da sua conta Huismus foi alterado de %(from_email)s para "
+"%(to_email)s."
+
+#: scraping/templates/account/email/email_changed_message.html:5
+#: scraping/templates/account/email/email_changed_message.txt:3
+#: scraping/templates/account/email/email_changed_subject.txt:1
+msgid "Your email was changed"
+msgstr "O seu e-mail foi alterado"
+
+#: scraping/templates/account/email/email_changed_message.html:8
+#: scraping/templates/account/email/email_changed_message.txt:11
+#: scraping/templates/account/email/email_deleted_message.html:8
+#: scraping/templates/account/email/email_deleted_message.txt:11
+#: scraping/templates/account/email/password_changed_message.html:8
+#: scraping/templates/account/email/password_changed_message.txt:11
+msgid "Didn't do this?"
+msgstr "Não foi você?"
+
+#: scraping/templates/account/email/email_changed_message.html:9
+#: scraping/templates/account/email/email_changed_message.txt:12
+#: scraping/templates/account/email/email_deleted_message.html:9
+#: scraping/templates/account/email/email_deleted_message.txt:12
+#: scraping/templates/account/email/password_changed_message.html:9
+#: scraping/templates/account/email/password_changed_message.txt:12
+msgid "If this wasn't you, your account may be at risk. Secure it right away."
+msgstr ""
+"Se não foi você, a sua conta pode estar em risco. Proteja-a de imediato."
+
+#: scraping/templates/account/email/email_changed_message.html:10
+#: scraping/templates/account/email/email_changed_message.txt:13
+#: scraping/templates/account/email/email_deleted_message.html:10
+#: scraping/templates/account/email/email_deleted_message.txt:13
+#: scraping/templates/account/email/password_changed_message.html:10
+#: scraping/templates/account/email/password_changed_message.txt:13
+msgid "Secure your account"
+msgstr "Proteja a sua conta"
+
+#: scraping/templates/account/email/email_confirm_message.html:3
+msgid "Your email address has been confirmed."
+msgstr "O seu e-mail foi confirmado."
+
+#: scraping/templates/account/email/email_confirm_message.html:5
+#: scraping/templates/account/email/email_confirm_message.txt:3
+msgid "You're all set"
+msgstr "Está tudo pronto"
+
+#: scraping/templates/account/email/email_confirm_message.html:6
+#: scraping/templates/account/email/email_confirm_message.txt:5
+msgid "Your email address has been confirmed. Welcome to Huismus!"
+msgstr "O seu e-mail foi confirmado. Bem-vindo ao Huismus!"
+
+#: scraping/templates/account/email/email_confirm_subject.txt:1
+msgid "Your email is confirmed"
+msgstr "O seu e-mail está confirmado"
+
+#: scraping/templates/account/email/email_confirmation_message.html:3
+msgid "Enter your code to confirm this email address — expires in 15 minutes."
+msgstr ""
+"Introduza o seu código para confirmar este e-mail — expira em 15 minutos."
+
+#: scraping/templates/account/email/email_confirmation_message.html:5
+#: scraping/templates/account/email/email_confirmation_message.txt:3
+#: scraping/templates/account/email/email_confirmation_subject.txt:1
+msgid "Confirm your email address"
+msgstr "Confirme o seu e-mail"
+
+#: scraping/templates/account/email/email_confirmation_message.html:6
+#: scraping/templates/account/email/email_confirmation_message.txt:5
+msgid "Enter this code to confirm this email address for your Huismus account."
+msgstr "Introduza este código para confirmar este e-mail na sua conta Huismus."
+
+#: scraping/templates/account/email/email_confirmation_message.html:7
+msgid "Your confirmation code"
+msgstr "O seu código de confirmação"
+
+#: scraping/templates/account/email/email_confirmation_message.html:8
+#: scraping/templates/account/email/email_confirmation_message.txt:9
+#: scraping/templates/account/email/email_confirmation_signup_message.html:8
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:9
+#: scraping/templates/account/email/password_reset_code_message.html:8
+#: scraping/templates/account/email/password_reset_code_message.txt:9
+msgid "This code expires in 15 minutes."
+msgstr "Este código expira em 15 minutos."
+
+#: scraping/templates/account/email/email_confirmation_message.html:9
+#: scraping/templates/account/email/email_confirmation_message.txt:11
+msgid "Didn't request this? You can safely ignore this email."
+msgstr "Não solicitou isto? Pode ignorar este e-mail em segurança."
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:3
+msgid ""
+"Enter your code to finish setting up your account — expires in 15 minutes."
+msgstr ""
+"Introduza o seu código para concluir a criação da conta — expira em 15 "
+"minutos."
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:5
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:3
+msgid "Verify your email"
+msgstr "Verifique o seu e-mail"
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:6
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:5
+msgid "Welcome to Huismus! Enter this code to finish creating your account."
+msgstr ""
+"Bem-vindo ao Huismus! Introduza este código para concluir a criação da sua "
+"conta."
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:7
+msgid "Your verification code"
+msgstr "O seu código de verificação"
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:9
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:11
+msgid ""
+"Didn't create a Huismus account? You can safely ignore this email — nothing "
+"will happen."
+msgstr ""
+"Não criou uma conta Huismus? Pode ignorar este e-mail em segurança — nada "
+"acontecerá."
+
+#: scraping/templates/account/email/email_confirmation_signup_subject.txt:1
+msgid "Verify your email address"
+msgstr "Verifique o seu e-mail"
+
+#: scraping/templates/account/email/email_deleted_message.html:3
+#: scraping/templates/account/email/email_deleted_message.html:6
+#: scraping/templates/account/email/email_deleted_message.txt:5
+#, python-format
+msgid ""
+"The email address %(deleted_email)s was removed from your Huismus account."
+msgstr ""
+"O endereço de e-mail %(deleted_email)s foi removido da sua conta Huismus."
+
+#: scraping/templates/account/email/email_deleted_message.html:5
+#: scraping/templates/account/email/email_deleted_message.txt:3
+#: scraping/templates/account/email/email_deleted_subject.txt:1
+msgid "An email address was removed"
+msgstr "Um endereço de e-mail foi removido"
+
+#: scraping/templates/account/email/password_changed_message.html:3
+msgid "The password for your Huismus account was just changed."
+msgstr "A palavra-passe da sua conta Huismus foi alterada."
+
+#: scraping/templates/account/email/password_changed_message.html:5
+#: scraping/templates/account/email/password_changed_message.txt:3
+#: scraping/templates/account/email/password_changed_subject.txt:1
+msgid "Your password was changed"
+msgstr "A sua palavra-passe foi alterada"
+
+#: scraping/templates/account/email/password_changed_message.html:6
+#: scraping/templates/account/email/password_changed_message.txt:5
+msgid ""
+"This is a confirmation that the password for your Huismus account was just "
+"changed."
+msgstr "Isto confirma que a palavra-passe da sua conta Huismus foi alterada."
+
+#: scraping/templates/account/email/password_reset_code_message.html:3
+msgid "Use your code to choose a new password — expires in 15 minutes."
+msgstr ""
+"Utilize o seu código para escolher uma nova palavra-passe — expira em 15 "
+"minutos."
+
+#: scraping/templates/account/email/password_reset_code_message.html:6
+#: scraping/templates/account/email/password_reset_code_message.txt:5
+msgid ""
+"We received a request to reset your Huismus password. Enter this code to "
+"choose a new one."
+msgstr ""
+"Recebemos um pedido para redefinir a sua palavra-passe do Huismus. Introduza "
+"este código para escolher uma nova."
+
+#: scraping/templates/account/email/password_reset_code_message.html:7
+msgid "Your reset code"
+msgstr "O seu código de redefinição"
+
+#: scraping/templates/account/email/password_reset_code_message.html:9
+#: scraping/templates/account/email/password_reset_code_message.txt:11
+msgid ""
+"Didn't request this? You can safely ignore this email — your password won't "
+"change."
+msgstr ""
+"Não solicitou isto? Pode ignorar este e-mail em segurança — a sua palavra-"
+"passe não será alterada."

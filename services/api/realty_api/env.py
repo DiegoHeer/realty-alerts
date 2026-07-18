@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     # Monitored inbox for replies to transactional auth mail. Empty means no
     # Reply-To header is added (see scraping.adapters.AccountAdapter).
     email_reply_to: str = ""
+    # Base URL email templates prefix onto static asset paths (e.g. the logo)
+    # so images render in external mail clients that can't resolve relative URLs.
+    email_asset_base_url: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

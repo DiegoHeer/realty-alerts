@@ -1,0 +1,8 @@
+{% extends "account/email/base_email.html" %}
+{% load i18n %}
+{% block preview %}{% blocktrans %}You already have a Huismus account.{% endblocktrans %}{% endblock %}
+{% block content %}{% load i18n %}
+  <mj-text align="center" font-size="22px" font-weight="700" color="#0B1220" css-class="ink" padding="0 0 12px">{% trans "You already have an account" %}</mj-text>
+  <mj-text css-class="body-text" padding="0 0 22px">{% blocktrans %}Someone tried to sign up with this email, but you already have a Huismus account. If it was you, just log in — or reset your password if you've forgotten it.{% endblocktrans %}</mj-text>
+  {% with button_url=password_reset_url button_label=_("Reset your password") %}{% include "account/email/_button.html" %}{% endwith %}
+{% endblock %}
