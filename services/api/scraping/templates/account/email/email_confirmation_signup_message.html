@@ -1,1 +1,10 @@
-{% include "account/email/email_confirmation_message.html" %}
+{% extends "account/email/base_email.html" %}
+{% load i18n %}
+{% block preview %}{% blocktrans %}Enter your code to finish setting up your account — expires in 15 minutes.{% endblocktrans %}{% endblock %}
+{% block content %}
+  <mj-text align="center" font-size="22px" font-weight="700" color="#0B1220" css-class="ink" padding="0 0 12px">{% trans "Verify your email" %}</mj-text>
+  <mj-text align="center" css-class="body-text" padding="0 0 22px">{% blocktrans %}Welcome to Huismus! Enter this code to finish creating your account.{% endblocktrans %}</mj-text>
+  {% with code_label=_("Your verification code") %}{% include "account/email/_code.html" %}{% endwith %}
+  <mj-text align="center" font-size="13px" color="#8B95A3" css-class="muted" padding="14px 0 0">{% blocktrans %}This code expires in 15 minutes.{% endblocktrans %}</mj-text>
+  <mj-text font-size="13px" color="#8B95A3" css-class="muted" padding="20px 0 0">{% blocktrans %}Didn't create a Huismus account? You can safely ignore this email — nothing will happen.{% endblocktrans %}</mj-text>
+{% endblock %}

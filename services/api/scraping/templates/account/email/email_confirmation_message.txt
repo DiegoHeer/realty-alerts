@@ -1,11 +1,11 @@
 {% extends "account/email/base_message_branded.txt" %}
 {% load i18n %}
-{% block content %}{% trans "Verify your email" %}
+{% block content %}{% trans "Confirm your email address" %}
 
-{% blocktrans %}Welcome to Huismus! Enter this code to finish creating your account.{% endblocktrans %}
+{% blocktrans %}Enter this code to confirm this email address for your Huismus account.{% endblocktrans %}
 
 {{ code }}
 
 {% blocktrans %}This code expires in 15 minutes.{% endblocktrans %}
 
-{% blocktrans %}Didn't create a Huismus account? You can safely ignore this email — nothing will happen.{% endblocktrans %}{% endblock %}
+{% blocktrans %}Didn't request this? You can safely ignore this email.{% endblocktrans %}{% endblock %}
