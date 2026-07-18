@@ -1,0 +1,6 @@
+{% load i18n %}{% autoescape off %}{% block content %}{% endblock %}
+
+—
+{% trans "A zero-data company. Your searches stay yours." %}
+Huismus · https://{{ current_site.domain }}
+{% endautoescape %}
