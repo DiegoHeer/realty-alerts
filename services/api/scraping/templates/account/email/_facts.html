@@ -1,6 +1,5 @@
 {% load i18n %}<mj-table css-class="hair" font-size="14px" color="#0B1220" padding="0 0 8px">
-  {% for label, value in facts %}<tr style="border-top:1px solid #E9EDF3;">
-    <td style="padding:11px 0;color:#8B95A3;">{{ label }}</td>
-    <td style="padding:11px 0;text-align:right;color:#0B1220;" class="ink">{{ value }}</td>
-  </tr>{% endfor %}
+  {% if timestamp %}<tr style="border-top:1px solid #E9EDF3;"><td style="padding:11px 0;color:#8B95A3;">{% trans "When" %}</td><td style="padding:11px 0;text-align:right;color:#0B1220;">{{ timestamp }}</td></tr>{% endif %}
+  {% if user_agent %}<tr style="border-top:1px solid #E9EDF3;"><td style="padding:11px 0;color:#8B95A3;">{% trans "Device" %}</td><td style="padding:11px 0;text-align:right;color:#0B1220;">{{ user_agent }}</td></tr>{% endif %}
+  {% if ip %}<tr style="border-top:1px solid #E9EDF3;"><td style="padding:11px 0;color:#8B95A3;">{% trans "IP address" %}</td><td style="padding:11px 0;text-align:right;color:#0B1220;">{{ ip }}</td></tr>{% endif %}
 </mj-table>
