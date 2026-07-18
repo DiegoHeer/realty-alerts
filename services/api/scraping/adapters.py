@@ -1,10 +1,26 @@
 import dataclasses
 from typing import cast
 
+from allauth.account.adapter import DefaultAccountAdapter
 from allauth.headless.adapter import DefaultHeadlessAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import User
+
+
+class AccountAdapter(DefaultAccountAdapter):
+    """Set a monitored ``Reply-To`` on transactional auth mail.
+
+    Verification codes and password resets are sent from a ``noreply@`` address,
+    so replies are routed to ``settings.EMAIL_REPLY_TO`` (a real inbox) when set.
+    """
+
+    def render_mail(self, template_prefix, email, context, headers=None):
+        msg = super().render_mail(template_prefix, email, context, headers=headers)
+        if reply_to := getattr(settings, "EMAIL_REPLY_TO", ""):
+            msg.reply_to = [reply_to]
+        return msg
 
 
 class HeadlessAdapter(DefaultHeadlessAdapter):

@@ -44,7 +44,10 @@ class Settings(BaseSettings):
     email_host_password: str = ""
     email_use_tls: bool = False
     email_use_ssl: bool = False
-    default_from_email: str = "Realty Alerts <noreply@realty-alerts.app>"
+    default_from_email: str = "Huismus <noreply@huismusapp.com>"
+    # Monitored inbox for replies to transactional auth mail. Empty means no
+    # Reply-To header is added (see scraping.adapters.AccountAdapter).
+    email_reply_to: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
