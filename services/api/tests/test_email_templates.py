@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from django.contrib.sites.models import Site
 from django.core.management import call_command
@@ -40,7 +42,7 @@ def test_password_changed_message_renders():
             "email_logo_url": "https://x/logo.png",
             "ip": "203.0.113.5",
             "user_agent": "Mozilla/5.0",
-            "timestamp": "18 Jul 2026, 14:32",
+            "timestamp": datetime(2026, 7, 18, 14, 32),
         },
     )
     assert "<html" in html.lower()
@@ -62,7 +64,7 @@ def test_email_changed_message_renders():
             "to_email": "new@example.com",
             "ip": "203.0.113.5",
             "user_agent": "Mozilla/5.0",
-            "timestamp": "18 Jul 2026, 14:32",
+            "timestamp": datetime(2026, 7, 18, 14, 32),
         },
     )
     assert "<html" in html.lower()
@@ -82,7 +84,7 @@ def test_email_deleted_message_renders():
             "deleted_email": "removed@example.com",
             "ip": "203.0.113.5",
             "user_agent": "Mozilla/5.0",
-            "timestamp": "18 Jul 2026, 14:32",
+            "timestamp": datetime(2026, 7, 18, 14, 32),
         },
     )
     assert "<html" in html.lower()

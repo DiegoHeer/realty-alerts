@@ -4,7 +4,7 @@
 
 {% blocktrans with deleted_email=deleted_email %}The email address {{ deleted_email }} was removed from your Huismus account.{% endblocktrans %}
 {% if timestamp %}
-{% trans "When" %}: {{ timestamp }}{% endif %}{% if user_agent %}
+{% trans "When" %}: {{ timestamp|date:"j M Y, H:i" }}{% endif %}{% if user_agent %}
 {% trans "Device" %}: {{ user_agent }}{% endif %}{% if ip %}
 {% trans "IP address" %}: {{ ip }}{% endif %}
 

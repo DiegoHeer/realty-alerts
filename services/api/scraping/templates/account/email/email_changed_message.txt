@@ -4,7 +4,7 @@
 
 {% blocktrans with from_email=from_email to_email=to_email %}Your Huismus account email was changed from {{ from_email }} to {{ to_email }}.{% endblocktrans %}
 {% if timestamp %}
-{% trans "When" %}: {{ timestamp }}{% endif %}{% if user_agent %}
+{% trans "When" %}: {{ timestamp|date:"j M Y, H:i" }}{% endif %}{% if user_agent %}
 {% trans "Device" %}: {{ user_agent }}{% endif %}{% if ip %}
 {% trans "IP address" %}: {{ ip }}{% endif %}
 
