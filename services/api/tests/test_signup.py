@@ -241,6 +241,25 @@ class TestPasswordResetByCode:
 
 
 @pytest.mark.django_db
+class TestPasswordResetEmailHtml:
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_reset_request_sends_multipart_branded_email(self, headless_client, verified_user):
+        _post(headless_client, PASSWORD_REQUEST_URL, {"email": verified_user.email})
+
+        assert len(mail.outbox) == 1
+        msg = mail.outbox[0]
+        # HTML alternative present and MJML-compiled:
+        assert msg.alternatives, "expected an HTML alternative"
+        html, mime = msg.alternatives[0]
+        assert mime == "text/html"
+        assert "<html" in html.lower()
+        assert "Huismus" in html
+        # code appears in both parts:
+        code = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body).group()
+        assert code in html
+
+
+@pytest.mark.django_db
 class TestVerificationEmailHtml:
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_signup_sends_multipart_branded_email(self, headless_client):
