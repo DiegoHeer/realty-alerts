@@ -38,8 +38,6 @@ msgstr "Apparaat"
 msgid "IP address"
 msgstr "IP-adres"
 
-#. TRANSLATORS: not present in copy-map.md — pending copy sign-off, falls
-#. back to English until translated.
 #: scraping/templates/account/email/account_already_exists_message.html:3
 msgid "You already have a Huismus account."
 msgstr "Je hebt al een Huismus-account."
@@ -137,8 +135,6 @@ msgstr ""
 msgid "Secure your account"
 msgstr "Beveilig je account"
 
-#. TRANSLATORS: not present in copy-map.md — pending copy sign-off, falls
-#. back to English until translated.
 #: scraping/templates/account/email/email_confirm_message.html:3
 msgid "Your email address has been confirmed."
 msgstr "Je e-mailadres is bevestigd."
