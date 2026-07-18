@@ -42,7 +42,7 @@ msgstr "Endereço IP"
 #. back to English until translated.
 #: scraping/templates/account/email/account_already_exists_message.html:3
 msgid "You already have a Huismus account."
-msgstr ""
+msgstr "Já tem uma conta Huismus."
 
 #: scraping/templates/account/email/account_already_exists_message.html:5
 #: scraping/templates/account/email/account_already_exists_message.txt:3
@@ -139,7 +139,7 @@ msgstr "Proteja a sua conta"
 #. back to English until translated.
 #: scraping/templates/account/email/email_confirm_message.html:3
 msgid "Your email address has been confirmed."
-msgstr ""
+msgstr "O seu e-mail foi confirmado."
 
 #: scraping/templates/account/email/email_confirm_message.html:5
 #: scraping/templates/account/email/email_confirm_message.txt:3

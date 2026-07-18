@@ -42,7 +42,7 @@ msgstr "IP-adres"
 #. back to English until translated.
 #: scraping/templates/account/email/account_already_exists_message.html:3
 msgid "You already have a Huismus account."
-msgstr ""
+msgstr "Je hebt al een Huismus-account."
 
 #: scraping/templates/account/email/account_already_exists_message.html:5
 #: scraping/templates/account/email/account_already_exists_message.txt:3
@@ -141,7 +141,7 @@ msgstr "Beveilig je account"
 #. back to English until translated.
 #: scraping/templates/account/email/email_confirm_message.html:3
 msgid "Your email address has been confirmed."
-msgstr ""
+msgstr "Je e-mailadres is bevestigd."
 
 #: scraping/templates/account/email/email_confirm_message.html:5
 #: scraping/templates/account/email/email_confirm_message.txt:3
