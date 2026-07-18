@@ -22,6 +22,15 @@ def _body(response: HttpResponse) -> dict:
     return json.loads(response.content)
 
 
+@pytest.fixture(autouse=True)
+def _clear_rate_limit_cache():
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.fixture
 def headless_client() -> DjangoTestClient:
     return DjangoTestClient()
@@ -97,6 +106,32 @@ class TestVerificationEmail:
 
         assert len(mail.outbox) == 1
         assert mail.outbox[0].to == ["verify@example.com"]
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        EMAIL_REPLY_TO="support@huismusapp.com",
+    )
+    def test_verification_email_sets_reply_to_when_configured(self, headless_client):
+        _post(
+            headless_client,
+            SIGNUP_URL,
+            {"email": "verify@example.com", "name": "Ada Lovelace", "password": "sup3rs3cret!"},
+        )
+
+        assert mail.outbox[0].reply_to == ["support@huismusapp.com"]
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        EMAIL_REPLY_TO="",
+    )
+    def test_verification_email_omits_reply_to_when_unset(self, headless_client):
+        _post(
+            headless_client,
+            SIGNUP_URL,
+            {"email": "verify@example.com", "name": "Ada Lovelace", "password": "sup3rs3cret!"},
+        )
+
+        assert mail.outbox[0].reply_to == []
 
 
 @pytest.mark.django_db

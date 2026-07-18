@@ -177,6 +177,8 @@ ACCOUNT_PASSWORD_RESET_BY_CODE_TIMEOUT = 15 * 60
 
 # Collect a required display name at signup, persisted to User.first_name.
 ACCOUNT_SIGNUP_FORM_CLASS = "scraping.forms.SignupForm"
+# Adds a monitored Reply-To (settings.EMAIL_REPLY_TO) to transactional auth mail.
+ACCOUNT_ADAPTER = "scraping.adapters.AccountAdapter"
 # Expose that name on the serialized headless user object (login/session).
 HEADLESS_ADAPTER = "scraping.adapters.HeadlessAdapter"
 
@@ -251,3 +253,5 @@ EMAIL_HOST_PASSWORD = SETTINGS.email_host_password
 EMAIL_USE_TLS = SETTINGS.email_use_tls
 EMAIL_USE_SSL = SETTINGS.email_use_ssl
 DEFAULT_FROM_EMAIL = SETTINGS.default_from_email
+# Reply-To for transactional auth mail, injected by scraping.adapters.AccountAdapter.
+EMAIL_REPLY_TO = SETTINGS.email_reply_to
