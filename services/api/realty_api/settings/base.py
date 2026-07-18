@@ -145,6 +145,8 @@ CACHES = _cache_config(SETTINGS.cache_url)
 NINJA_DEFAULT_THROTTLE_RATES = {
     "user_write": "60/min",
     "user_merge": "10/min",
+    # Destructive + doubles as a password-check oracle, so far tighter than writes.
+    "account_delete": "5/min",
 }
 
 # --- Argo Events bridge ---

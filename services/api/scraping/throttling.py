@@ -85,3 +85,16 @@ class UserMergeThrottle(UserRateThrottle):
     """
 
     scope = "user_merge"
+
+
+class AccountDeleteThrottle(UserRateThrottle):
+    """Rate-limit account deletion per user — deliberately much tighter than the
+    shared write bucket.
+
+    The endpoint verifies a password, so it doubles as a credential-check oracle
+    against a merely-unlocked device; a few attempts per minute is plenty for a
+    genuine mistyped password while denying rapid guessing. Rate comes from
+    settings.NINJA_DEFAULT_THROTTLE_RATES["account_delete"].
+    """
+
+    scope = "account_delete"

@@ -46,6 +46,18 @@ def _social_user(email: str = "social@example.com") -> User:
     return user
 
 
+@pytest.fixture(autouse=True)
+def _clear_rate_limit_cache():
+    # The AccountDeleteThrottle bucket lives in the process cache and is keyed by
+    # user pk; pks repeat across transaction-rolled-back tests, so clear it between
+    # tests to keep the tight 5/min limit from leaking. Mirrors test_me_throttling.
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.mark.django_db
 def test_requires_auth(client):
     assert client.delete(ACCOUNT_URL).status_code == 401
@@ -64,6 +76,31 @@ def test_wrong_password_is_rejected(client, test_user, user_headers):
     assert r.status_code == 403
     assert r.json()["detail"] == "password_incorrect"
     assert User.objects.filter(pk=test_user.pk).exists()  # untouched
+
+
+@pytest.mark.django_db
+def test_password_is_compared_verbatim_not_stripped(client):
+    # Leading/trailing spaces are valid password characters; the correct password
+    # (with its spaces) must authenticate — i.e. the handler must not strip it.
+    spaced = "  spaced pw  "
+    user = User.objects.create_user(email="spacey@example.com", username="spacey@example.com", password=spaced)
+    EmailAddress.objects.create(user=user, email=user.email, verified=True, primary=True)
+    headers = _headers_for(user)  # no recent re-auth, so the password is the only proof
+    r = client.delete(ACCOUNT_URL, json={"password": spaced}, headers=headers)
+    assert r.status_code == 204
+    assert not User.objects.filter(pk=user.pk).exists()
+
+
+@pytest.mark.django_db
+def test_social_user_supplying_a_password_is_told_to_reauthenticate(client):
+    # A social account has no usable password, so any password is meaningless —
+    # the error must be reauthentication_required, not the misleading password_incorrect.
+    user = _social_user()
+    headers = _headers_for(user)  # no recent re-auth
+    r = client.delete(ACCOUNT_URL, json={"password": "anything"}, headers=headers)
+    assert r.status_code == 403
+    assert r.json()["detail"] == "reauthentication_required"
+    assert User.objects.filter(pk=user.pk).exists()
 
 
 @pytest.mark.django_db
@@ -152,3 +189,12 @@ def test_only_deletes_the_caller(client, test_user, user_headers):
     # The other account and its data survive — deletion is scoped to the JWT's user.
     assert User.objects.filter(pk=other.pk).exists()
     assert Favorite.objects.filter(user=other).exists()
+
+
+@pytest.mark.django_db
+def test_repeated_attempts_are_tightly_throttled(client, test_user, user_headers):
+    # Wrong-password attempts don't delete, so they'd otherwise let the endpoint be
+    # used as a password-guessing oracle; the dedicated bucket (5/min) cuts it off.
+    for _ in range(5):
+        assert client.delete(ACCOUNT_URL, json={"password": "nope"}, headers=user_headers).status_code == 403
+    assert client.delete(ACCOUNT_URL, json={"password": "nope"}, headers=user_headers).status_code == 429

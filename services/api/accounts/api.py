@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 
 from allauth.headless.contrib.ninja.security import jwt_token_auth
@@ -24,7 +25,7 @@ from accounts.schemas import (
 )
 from scraping.models import Residence
 from scraping.selectors import residence_summary_qs
-from scraping.throttling import UserMergeThrottle, UserWriteThrottle
+from scraping.throttling import AccountDeleteThrottle, UserMergeThrottle, UserWriteThrottle
 
 me_router = Router(auth=jwt_token_auth)
 
@@ -207,8 +208,9 @@ def _recently_reauthenticated(request) -> bool:
     i.e. no deletion).
     """
     try:
-        import time
-
+        # Kept inline (not module-level) on purpose: these are allauth *internals*, so
+        # if an upgrade moves them the failure lands here — denying deletion (fail
+        # closed) rather than breaking module import. The E2E test catches such a move.
         from allauth.account import app_settings as account_app_settings
         from allauth.account.internal.flows.login import AUTHENTICATION_METHODS_SESSION_KEY
         from allauth.headless.tokens.strategies.jwt.internal import get_token_session
@@ -231,7 +233,7 @@ def _recently_reauthenticated(request) -> bool:
         return False
 
 
-@me_router.delete("/account", response={204: None}, throttle=[UserWriteThrottle()])
+@me_router.delete("/account", response={204: None}, throttle=[AccountDeleteThrottle()])
 def delete_account(request, payload: AccountDeleteIn):
     """Permanently delete the authenticated user's OWN account.
 
@@ -244,6 +246,11 @@ def delete_account(request, payload: AccountDeleteIn):
     usable password and re-auth via a fresh provider-token login just before this
     call). A wrong-but-present password is reported distinctly so the app can say so.
 
+    The password is carried in the DELETE body: unusual, but fine here since the
+    companion mobile app is the sole (controlled) client, so no intermediary that
+    strips DELETE bodies sits in the path. Because it doubles as a password-check
+    oracle, the endpoint has its own tight throttle (``AccountDeleteThrottle``).
+
     The delete cascades to preferences / favorites / recent-views and nulls the user
     FK on retained feedback (see models). Hard delete: irreversible by design.
     """
@@ -253,14 +260,23 @@ def delete_account(request, payload: AccountDeleteIn):
     if user.is_staff or user.is_superuser:
         raise HttpError(403, "staff_account")
 
-    password = (payload.password or "").strip()
-    # check_password returns False for users with an unusable password (social-only),
-    # so those correctly fall through to the recent-reauthentication check.
-    reauthenticated = bool(password) and user.check_password(password)
-    if not reauthenticated and not _recently_reauthenticated(request):
-        raise HttpError(403, "password_incorrect" if password else "reauthentication_required")
+    # Compare the password verbatim — never stripped: leading/trailing spaces are
+    # valid characters in a password. check_password returns False for accounts with
+    # an unusable password (social-only), so those fall through to the recency check.
+    raw_password = payload.password
+    reauthenticated = (
+        raw_password is not None and user.check_password(raw_password)
+    ) or _recently_reauthenticated(request)
+    if not reauthenticated:
+        # "password_incorrect" only fits an account that actually has a password and
+        # supplied a wrong one; social / no-password users are steered to re-auth.
+        if raw_password is not None and user.has_usable_password():
+            raise HttpError(403, "password_incorrect")
+        raise HttpError(403, "reauthentication_required")
 
-    logger.info("self-service account deletion for user {} ({})", user.pk, user.email)
-    with transaction.atomic():
-        user.delete()
+    # pk only, no email: this is a right-to-erasure path, so we don't leave the
+    # user's address behind in application logs. A single delete() already cascades
+    # inside one transaction, so no explicit transaction.atomic() is needed.
+    logger.info("self-service account deletion for user {}", user.pk)
+    user.delete()
     return Status(204, None)
