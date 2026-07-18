@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.sites.models import Site
+from django.core.management import call_command
 from django.template.loader import render_to_string
 
 
@@ -118,3 +119,12 @@ def test_account_already_exists_message_renders():
     assert "<html" in html.lower()
     assert "You already have an account" in html
     assert "https://huismusapp.com/reset/abc" in html
+
+
+@pytest.mark.django_db
+def test_email_previews_command_writes_files(tmp_path):
+    call_command("email_previews", out_dir=str(tmp_path), lang="en")
+
+    preview = tmp_path / "email_confirmation_signup.en.html"
+    assert preview.exists()
+    assert "<html" in preview.read_text(encoding="utf-8").lower()
