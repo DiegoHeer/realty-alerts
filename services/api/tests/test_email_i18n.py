@@ -1,4 +1,8 @@
+import pytest
 from django.conf import settings
+from django.contrib.sites.models import Site
+from django.template.loader import render_to_string
+from django.utils import translation
 
 
 def test_supported_languages_configured():
@@ -19,3 +23,29 @@ def test_locale_middleware_installed():
         < mw.index("django.middleware.locale.LocaleMiddleware")
         < mw.index("django.middleware.common.CommonMiddleware")
     )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "lang,needle",
+    [
+        ("en", "Verify your email"),
+        ("nl", "Verifieer je e-mailadres"),
+        ("pt", "Verifique o seu e-mail"),
+    ],
+)
+def test_verification_email_localized(lang, needle):
+    # The signup verification copy ("Verify your email") lives in
+    # email_confirmation_signup_message.html; the reconfirm-email template
+    # email_confirmation_message.html carries the distinct "Confirm your
+    # email address" copy split out in the task-8 copy change.
+    with translation.override(lang):
+        html = render_to_string(
+            "account/email/email_confirmation_signup_message.html",
+            {
+                "code": "7F2K-9QD4",
+                "current_site": Site.objects.get(pk=1),
+                "email_logo_url": "https://x/logo.png",
+            },
+        )
+    assert needle in html

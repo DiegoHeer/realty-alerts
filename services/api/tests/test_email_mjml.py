@@ -32,6 +32,7 @@ def test_mjml_tag_applies_trans_before_compile():
             "<mj-text>{% trans 'Verify your email' %}</mj-text>"
             "</mj-column></mj-section></mj-body></mjml>{% endmjml %}"
         )
-    # With no catalog yet, msgid passes through; asserts the tag renders trans nodes, not raw {% %}.
+    # The nl catalog now translates this msgid; asserts the tag resolves trans
+    # nodes (using the active catalog) before compiling, not raw {% %} syntax.
     assert "{% trans" not in out
-    assert "Verify your email" in out
+    assert "Verifieer je e-mailadres" in out

@@ -1,0 +1,129 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-18 23:00+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: scraping/templates/account/email/base_email.html:29
+#: scraping/templates/account/email/base_message_branded.txt:4
+msgid "A zero-data company. Your searches stay yours."
+msgstr "Een zero-data-bedrijf. Je zoekopdrachten blijven van jou."
+
+#: scraping/templates/account/email/base_email.html:31
+msgid "Open Huismus"
+msgstr "Open Huismus"
+
+#: scraping/templates/account/email/base_email.html:33
+msgid "Privacy"
+msgstr "Privacy"
+
+#: scraping/templates/account/email/base_email.html:36
+msgid "You're receiving this email because you have a Huismus account."
+msgstr "Je ontvangt deze e-mail omdat je een Huismus-account hebt."
+
+#: scraping/templates/account/email/base_email.html:36
+msgid "Netherlands"
+msgstr "Nederland"
+
+#: scraping/templates/account/email/email_confirmation_message.html:3
+msgid "Enter your code to confirm this email address — expires in 15 minutes."
+msgstr "Voer je code in om dit e-mailadres te bevestigen — verloopt over 15 minuten."
+
+#: scraping/templates/account/email/email_confirmation_message.html:5
+#: scraping/templates/account/email/email_confirmation_message.txt:3
+#: scraping/templates/account/email/email_confirmation_subject.txt:1
+msgid "Confirm your email address"
+msgstr "Bevestig je e-mailadres"
+
+#: scraping/templates/account/email/email_confirmation_message.html:6
+#: scraping/templates/account/email/email_confirmation_message.txt:5
+msgid "Enter this code to confirm this email address for your Huismus account."
+msgstr "Voer deze code in om dit e-mailadres voor je Huismus-account te bevestigen."
+
+#: scraping/templates/account/email/email_confirmation_message.html:7
+msgid "Your confirmation code"
+msgstr "Je bevestigingscode"
+
+#: scraping/templates/account/email/email_confirmation_message.html:8
+#: scraping/templates/account/email/email_confirmation_message.txt:9
+#: scraping/templates/account/email/email_confirmation_signup_message.html:8
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:9
+#: scraping/templates/account/email/password_reset_code_message.html:8
+#: scraping/templates/account/email/password_reset_code_message.txt:9
+msgid "This code expires in 15 minutes."
+msgstr "Deze code verloopt over 15 minuten."
+
+#: scraping/templates/account/email/email_confirmation_message.html:9
+#: scraping/templates/account/email/email_confirmation_message.txt:11
+msgid "Didn't request this? You can safely ignore this email."
+msgstr "Heb je dit niet aangevraagd? Je kunt deze e-mail veilig negeren."
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:3
+msgid ""
+"Enter your code to finish setting up your account — expires in 15 minutes."
+msgstr "Voer je code in om je account aan te maken — verloopt over 15 minuten."
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:5
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:3
+msgid "Verify your email"
+msgstr "Verifieer je e-mailadres"
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:6
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:5
+msgid "Welcome to Huismus! Enter this code to finish creating your account."
+msgstr "Welkom bij Huismus! Voer deze code in om je account aan te maken."
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:7
+msgid "Your verification code"
+msgstr "Je verificatiecode"
+
+#: scraping/templates/account/email/email_confirmation_signup_message.html:9
+#: scraping/templates/account/email/email_confirmation_signup_message.txt:11
+msgid ""
+"Didn't create a Huismus account? You can safely ignore this email — nothing "
+"will happen."
+msgstr "Geen Huismus-account aangemaakt? Je kunt deze e-mail veilig negeren — er gebeurt niets."
+
+#: scraping/templates/account/email/email_confirmation_signup_subject.txt:1
+msgid "Verify your email address"
+msgstr "Verifieer je e-mailadres"
+
+#: scraping/templates/account/email/password_reset_code_message.html:3
+msgid "Use your code to choose a new password — expires in 15 minutes."
+msgstr "Gebruik je code om een nieuw wachtwoord te kiezen — verloopt over 15 minuten."
+
+#: scraping/templates/account/email/password_reset_code_message.html:5
+#: scraping/templates/account/email/password_reset_code_message.txt:3
+#: scraping/templates/account/email/password_reset_code_subject.txt:1
+msgid "Reset your password"
+msgstr "Wachtwoord opnieuw instellen"
+
+#: scraping/templates/account/email/password_reset_code_message.html:6
+#: scraping/templates/account/email/password_reset_code_message.txt:5
+msgid ""
+"We received a request to reset your Huismus password. Enter this code to "
+"choose a new one."
+msgstr "We hebben een verzoek ontvangen om je Huismus-wachtwoord opnieuw in te stellen. Voer deze code in om een nieuw wachtwoord te kiezen."
+
+#: scraping/templates/account/email/password_reset_code_message.html:7
+msgid "Your reset code"
+msgstr "Je resetcode"
+
+#: scraping/templates/account/email/password_reset_code_message.html:9
+#: scraping/templates/account/email/password_reset_code_message.txt:11
+msgid ""
+"Didn't request this? You can safely ignore this email — your password won't "
+"change."
+msgstr "Heb je dit niet aangevraagd? Je kunt deze e-mail veilig negeren — je wachtwoord verandert niet."
