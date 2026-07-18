@@ -1,5 +1,5 @@
 {% load i18n %}<mj-table css-class="hair" font-size="14px" color="#0B1220" padding="0 0 8px">
-  {% if timestamp %}<tr style="border-top:1px solid #E9EDF3;"><td class="muted" style="padding:11px 0;color:#8B95A3;">{% trans "When" %}</td><td class="ink" style="padding:11px 0;text-align:right;color:#0B1220;">{{ timestamp|date:"j M Y, H:i" }}</td></tr>{% endif %}
-  {% if user_agent %}<tr style="border-top:1px solid #E9EDF3;"><td class="muted" style="padding:11px 0;color:#8B95A3;">{% trans "Device" %}</td><td class="ink" style="padding:11px 0;text-align:right;color:#0B1220;">{{ user_agent }}</td></tr>{% endif %}
-  {% if ip %}<tr style="border-top:1px solid #E9EDF3;"><td class="muted" style="padding:11px 0;color:#8B95A3;">{% trans "IP address" %}</td><td class="ink" style="padding:11px 0;text-align:right;color:#0B1220;">{{ ip }}</td></tr>{% endif %}
+  {% if timestamp %}<tr style="border-top:1px solid #E9EDF3;"><td class="muted" style="padding:11px 0;color:#60646C;">{% trans "When" %}</td><td class="ink" style="padding:11px 0;text-align:right;color:#0B1220;">{{ timestamp|date:"j M Y, H:i" }}</td></tr>{% endif %}
+  {% if user_agent %}<tr style="border-top:1px solid #E9EDF3;"><td class="muted" style="padding:11px 0;color:#60646C;">{% trans "Device" %}</td><td class="ink" style="padding:11px 0;text-align:right;color:#0B1220;">{{ user_agent }}</td></tr>{% endif %}
+  {% if ip %}<tr style="border-top:1px solid #E9EDF3;"><td class="muted" style="padding:11px 0;color:#60646C;">{% trans "IP address" %}</td><td class="ink" style="padding:11px 0;text-align:right;color:#0B1220;">{{ ip }}</td></tr>{% endif %}
 </mj-table>
