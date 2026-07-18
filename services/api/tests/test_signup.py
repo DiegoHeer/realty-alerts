@@ -12,6 +12,7 @@ LOGIN_URL = "/_allauth/app/v1/auth/login"
 SESSION_URL = "/_allauth/app/v1/auth/session"
 PASSWORD_REQUEST_URL = "/_allauth/app/v1/auth/password/request"
 PASSWORD_RESET_URL = "/_allauth/app/v1/auth/password/reset"
+PASSWORD_CHANGE_URL = "/_allauth/app/v1/account/password/change"
 
 
 def _post(client: DjangoTestClient, url: str, payload: dict) -> HttpResponse:
@@ -257,6 +258,38 @@ class TestPasswordResetEmailHtml:
         # code appears in both parts:
         code = re.search(r"[A-Z0-9]{4}-[A-Z0-9]{4}", msg.body).group()
         assert code in html
+
+
+@pytest.mark.django_db
+class TestPasswordChangedNotification:
+    """ACCOUNT_EMAIL_NOTIFICATIONS must be True or allauth silently drops this mail.
+
+    Regression coverage for the bug where the security-notice emails
+    (password/email changed, email deleted) were rendered and tested but never
+    actually sent because ACCOUNT_EMAIL_NOTIFICATIONS was left at its default (False).
+    """
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_password_change_sends_branded_security_notice(self, headless_client, verified_user):
+        login = _post(headless_client, LOGIN_URL, {"email": verified_user.email, "password": "testpass123!"})
+        access_token = _body(login)["meta"]["access_token"]
+
+        response = headless_client.post(
+            PASSWORD_CHANGE_URL,
+            data=json.dumps({"current_password": "testpass123!", "new_password": "Rel0cated!pw"}),
+            content_type="application/json",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        assert response.status_code == 200
+        assert len(mail.outbox) == 1
+        msg = mail.outbox[0]
+        assert msg.to == [verified_user.email]
+        assert msg.alternatives, "expected an HTML alternative"
+        html, mime = msg.alternatives[0]
+        assert mime == "text/html"
+        assert "Huismus" in html
+        assert "Your password was changed" in html
 
 
 @pytest.mark.django_db
