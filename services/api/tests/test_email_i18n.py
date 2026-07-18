@@ -49,3 +49,30 @@ def test_verification_email_localized(lang, needle):
             },
         )
     assert needle in html
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "lang,needle",
+    [
+        ("en", "Your password was changed"),
+        ("nl", "Je wachtwoord is gewijzigd"),
+        ("pt", "A sua palavra-passe foi alterada"),
+    ],
+)
+def test_password_changed_notice_localized(lang, needle):
+    # Security notice added in Task 11/12; msgids were extracted and
+    # translated in Task 13. Exercises the H1 plus the facts-table labels
+    # (When/Device/IP address) rendered via _facts.html.
+    with translation.override(lang):
+        html = render_to_string(
+            "account/email/password_changed_message.html",
+            {
+                "ip": "203.0.113.7",
+                "user_agent": "Safari on macOS",
+                "timestamp": "2026-07-18 21:04 UTC",
+                "current_site": Site.objects.get(pk=1),
+                "email_logo_url": "https://x/logo.png",
+            },
+        )
+    assert needle in html
