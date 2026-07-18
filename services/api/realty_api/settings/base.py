@@ -81,6 +81,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "scraping.context_processors.email_branding",
             ],
         },
     },
@@ -262,3 +263,6 @@ EMAIL_USE_SSL = SETTINGS.email_use_ssl
 DEFAULT_FROM_EMAIL = SETTINGS.default_from_email
 # Reply-To for transactional auth mail, injected by scraping.adapters.AccountAdapter.
 EMAIL_REPLY_TO = SETTINGS.email_reply_to
+# Base URL email templates prefix onto static asset paths (see
+# scraping.context_processors.email_branding) so images resolve in mail clients.
+EMAIL_ASSET_BASE_URL = SETTINGS.email_asset_base_url.rstrip("/")
