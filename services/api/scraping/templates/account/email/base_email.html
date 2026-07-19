@@ -30,6 +30,7 @@
     <mj-preview>{% block preview %}{% endblock %}</mj-preview>
   </mj-head>
   <mj-body background-color="#E7ECF3" css-class="bg">
+    <mj-wrapper padding="32px 0">
     <mj-section css-class="card" border-radius="14px" padding="44px 24px">
       <mj-column>
         <mj-image src="{{ email_logo_url }}" alt="Huismus" width="62px" border-radius="15px" padding="0 0 10px" />
@@ -47,5 +48,6 @@
         </mj-text>
       </mj-column>
     </mj-section>
+    </mj-wrapper>
   </mj-body>
 </mjml>{% endmjml %}
