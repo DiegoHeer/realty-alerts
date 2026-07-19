@@ -25,20 +25,6 @@
             "envFile": "${workspaceFolder}/services/api/.env",
             "django": true,
             "justMyCode": false
-        },
-        {
-            "name": "App: Web",
-            "type": "node-terminal",
-            "request": "launch",
-            "command": "npm run dev",
-            "cwd": "${workspaceFolder}/apps/web"
-        },
-        {
-            "name": "App: Mobile",
-            "type": "node-terminal",
-            "request": "launch",
-            "command": "npm start",
-            "cwd": "${workspaceFolder}/apps/mobile"
         }
     ]
 }

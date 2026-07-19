@@ -13,8 +13,6 @@
       "Bash(cd services/api && uv:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",
-      "Bash(cd apps/mobile &&:*)",
-      "Bash(cd apps/web &&:*)",
       "Bash(ruff:*)",
       "Bash(pytest:*)",
       "Bash(docker:*)",

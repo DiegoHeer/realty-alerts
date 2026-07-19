@@ -1,4 +1,4 @@
-.PHONY: help dev scraper api api-migrate api-superuser api-shell mobile web pre-commit lint format typecheck test build build-scraper build-api build-web
+.PHONY: help dev scraper api api-migrate api-superuser api-shell pre-commit lint format typecheck test build build-scraper build-api
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -23,12 +23,6 @@ api-superuser: ## Create a Django admin superuser locally
 api-shell: ## Open a Django shell locally
 	cd services/api && uv run python manage.py shell
 
-mobile: ## Start Expo dev server
-	cd apps/mobile && npx expo start
-
-web: ## Start Next.js dev server
-	cd apps/web && npm run dev
-
 # --- Quality ---
 
 pre-commit: ## Run all pre-commit checks
@@ -49,8 +43,6 @@ typecheck: ## Typecheck all Python services
 test: ## Run all tests
 	cd services/scraper && uv run pytest tests/
 	cd services/api && uv run pytest tests/
-	cd apps/mobile && npm test
-	cd apps/web && npm test
 
 # --- Build ---
 
@@ -60,7 +52,4 @@ build-scraper: ## Build scraper Docker image
 build-api: ## Build API Docker image
 	docker build -t ghcr.io/diegoheer/realty-alerts/api:latest services/api
 
-build-web: ## Build landing page Docker image
-	docker build -t ghcr.io/diegoheer/realty-alerts/web:latest apps/web
-
-build: build-scraper build-api build-web ## Build all Docker images
+build: build-scraper build-api ## Build all Docker images

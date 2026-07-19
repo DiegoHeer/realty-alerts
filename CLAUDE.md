@@ -43,7 +43,7 @@ All commits follow [Conventional Commits v1.0.0](https://www.conventionalcommits
 
 ### Allowed scopes
 
-Scope is **required** and must be one of: `api`, `scraper`, `mobile`, `web`, `docker`, `ci`, `deps`, `repo`.
+Scope is **required** and must be one of: `api`, `scraper`, `docker`, `ci`, `deps`, `repo`.
 
 - Use `repo` for cross-cutting changes (root configs, Makefile, top-level docs).
 - Use `deps` for dependency bumps that span services; otherwise scope to the service (`feat(api): ...`).
@@ -61,7 +61,7 @@ Example:
 feat(api)!: drop legacy /v1 listings endpoint
 
 BREAKING CHANGE: clients must migrate to /v2/listings. The /v1 route
-now returns 410 Gone. Mobile app ≥ 1.4 already uses /v2.
+now returns 410 Gone. Frontend clients ≥ 1.4 already use /v2.
 ```
 
 ### Atomic commits
@@ -80,10 +80,10 @@ Good:
 
 - `feat(scraper): add Funda fetch strategy`
 - `fix(api): handle null price in ListingRead`
-- `refactor(mobile): extract useListingFilters hook`
-- `build(deps): bump expo from 52.0.0 to 52.0.7`
+- `refactor(api): extract listing match query into manager method`
+- `build(deps): bump django from 6.0.0 to 6.0.1`
 - `docs(repo): document conventional commits in CLAUDE.md`
-- `ci(repo): run mobile jest only on apps/mobile changes`
+- `ci(repo): run api pytest only on services/api changes`
 - `test(scraper): cover VastgoedNL pagination edge case`
 
 Bad (and why):
@@ -95,15 +95,13 @@ Bad (and why):
 
 ## Project Overview
 
-Realty Alerts — real estate listing notifications for the Dutch housing market. Monorepo holding application code only; deployment is GitOps via [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) (Talos + k3s + ArgoCD).
+Realty Alerts — real estate listing notifications for the Dutch housing market. This repo now holds only the backend (a Python scraper + a Django API); the mobile and web frontends live in separate repos and consume this API. Deployment is GitOps via [realty-ai-platform](https://github.com/DiegoHeer/realty-ai-platform) (Talos + k3s + ArgoCD).
 
 ## Repository Structure
 
 ```
 services/scraper/   Python CDC scraper (BeautifulSoup, Playwright, httpx, requests)
 services/api/       Django 6.0 + Django Ninja backend (Django ORM, psycopg3, Gunicorn)
-apps/mobile/        React Native / Expo (TanStack Query, Zustand)
-apps/web/           Next.js 15 static landing page (Tailwind CSS)
 ```
 
 ## Development Commands
@@ -114,7 +112,7 @@ make pre-commit       # run all pre-commit checks
 make lint             # ruff check both Python services
 make format           # ruff format both Python services
 make typecheck        # ty check both Python services
-make test             # pytest (scraper + api) + jest (mobile) + vitest (web)
+make test             # pytest (scraper + api)
 make build            # build all Docker images
 
 # Per-service
@@ -123,8 +121,6 @@ make api              # python manage.py runserver on :8000
 make api-migrate      # python manage.py migrate
 make api-superuser    # python manage.py createsuperuser
 make api-shell        # python manage.py shell
-make mobile           # expo start
-make web              # next dev
 ```
 
 ## Python Conventions (services/scraper, services/api)
@@ -139,12 +135,6 @@ make web              # next dev
 - Fully synchronous (no Celery yet)
 - Tests: pytest + pytest-mock; scraper adds factory-boy + respx, api adds pytest-django + factory-boy
 - Pre-commit hooks: ruff check + ruff format + ty typecheck per service, trailing whitespace, end-of-file fixer, YAML/TOML checks
-
-## Frontend Conventions (apps/mobile, apps/web)
-
-- TypeScript throughout
-- Mobile: Expo 52, React Native 0.76, React 18, Expo Router
-- Web: Next.js 15, React 19, Tailwind CSS 4, Framer Motion
 
 ## Django & Django Ninja Conventions (services/api)
 
@@ -179,9 +169,6 @@ cd services/scraper && uv run pytest tests/ -v
 
 # API (needs PostgreSQL — use docker-compose.dev.yml)
 cd services/api && uv run pytest tests/ -v
-
-# Mobile
-cd apps/mobile && npm test
 ```
 
 ## Docker
@@ -190,7 +177,6 @@ cd apps/mobile && npm test
 docker compose -f docker-compose.dev.yml up -d   # PostgreSQL + Playwright
 make build-scraper    # ghcr.io/diegoheer/realty-alerts/scraper:latest
 make build-api        # ghcr.io/diegoheer/realty-alerts/api:latest
-make build-web        # ghcr.io/diegoheer/realty-alerts/web:latest
 ```
 
 ## Installed Skills
@@ -214,19 +200,3 @@ Skills live in `.claude/skills/` and are auto-loaded by Claude Code. Use the rig
 | `pytest-django-patterns` | pytest-django, factory-boy, fixtures, TDD with the Django test client |
 | `pydantic` | `pydantic-settings` for env config and `ninja.Schema` (Pydantic v2) request/response models |
 | `pytest` | General pytest fixtures, parametrize, mocking — pairs with `pytest-django-patterns` for Django specifics |
-
-### Mobile (`apps/mobile/`)
-
-| Skill | When to use |
-|---|---|
-| `react-native` | RN 0.76+ / Expo 52+ breaking changes, New Architecture, React 19 migration pitfalls |
-| `zustand` | Store patterns, `useShallow`, persist middleware, TypeScript `create<T>()()` pattern, client vs server state separation |
-| `frontend-design` | UI components, screens, polished design — use for any visual work (official Anthropic skill) |
-
-### Web (`apps/web/`)
-
-| Skill | When to use |
-|---|---|
-| `tailwindcss-fundamentals-v4` | Tailwind v4 syntax: `@theme` directive, OKLCH colors, `@utility`, CSS-first config (not v3 `tailwind.config.js`) |
-| `framer-motion-animator` | Entrance/exit animations, scroll-triggered effects, page transitions, `useReducedMotion` |
-| `frontend-design` | Landing page components, layout, visual polish (official Anthropic skill) |
